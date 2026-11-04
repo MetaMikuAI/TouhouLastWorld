@@ -6,7 +6,7 @@ public sealed partial class OfflineServer
 {
     private static bool SupportsAdditional(string api) => api is "gold_box_renovation_start" or "gold_box_renovation_end" or "gather_phantasm_point" or "gather_gold" or "friend/receive" or "friend/give" or "delete_account" or "get_tower_unit_info" or "tower_top" or "tutorial_update" or "logout" or "set_age"
         or "unit_level_limitbreak" or "unit_rare_awaken" or "unit_rank_promote" or "unit_rank_promote_item_set" or "phantasm_point_buy" or "phantasm_box_renovation_start" or "phantasm_box_renovation_end" or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting"
-        or "picture_spec_actualize_chemicals" or "picture_spec_actualize" or "limitbreak_strong_fragrantwood" or "unit_extra_spec_actualize" or "unit_spec_actualize" or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
+        or "unit_destiny_value_up" or "picture_spec_actualize_chemicals" or "picture_spec_actualize" or "limitbreak_strong_fragrantwood" or "unit_extra_spec_actualize" or "unit_spec_actualize" or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
         or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
@@ -27,6 +27,7 @@ public sealed partial class OfflineServer
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "friend/give" => GiveContactGift(arguments),
+        "unit_destiny_value_up" => IncreaseDestiny(arguments),
         "unit_rank_promote_item_set" => SetRankMaterial(arguments),
         "unit_rank_promote" => PromoteRank(arguments),
         "unit_rare_awaken" => AwakenUnit(arguments),

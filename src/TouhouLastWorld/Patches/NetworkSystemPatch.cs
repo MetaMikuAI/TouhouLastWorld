@@ -73,6 +73,22 @@ public partial class NetworkSystemPatch
                     next.spec_actualize, picture.spec_actualize_limit, next.item_id, next.item_value, 0) };
             }
         }
+        if (api == "unit_destiny_value_up")
+        {
+            var change = request.TryCast<UnitDestinyValueUpRequest>();
+            var unit = change == null ? null : User.This()?.unit?.Find(change.user_unit_id);
+            var master = MasterDB.This();
+            var definition = unit == null ? null : master?.Unit?.Find(unit.unit_id);
+            var setting = master?.Setting;
+            arguments = new LocalArguments(change?.user_unit_id, Ids: change?.material_user_unit_id_list?.ToArray());
+            if (change != null && unit != null && definition != null && setting != null)
+                arguments = arguments with { DestinyGrowth = new(unit.unit_id, unit.destiny_value, setting.DESTINY_VALUE_MAX,
+                [
+                    new(definition.limitbreak_item_id, change.material_item_num, setting.DESTINY_VALUE_ADD_FOR_PAPER_DOLL),
+                    new(setting.DESTINY_VALUE_MATERIAL_ID, change.material_exclusive_item_num, 1),
+                    new(definition.destiny_value_up_item_id, change.unit_exclusive_item_num, setting.DESTINY_VALUE_ADD_UNIT_EXCLUSIVE_ITEM)
+                ]) };
+        }
         if (api == "unit_level_limitbreak")
         {
             var change = request.TryCast<UnitLevelLimitbreakRequest>();

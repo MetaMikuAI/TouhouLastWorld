@@ -2086,3 +2086,41 @@ Check(chemicalGrown["gold"]!.GetValue<int>() == 4900
     && chemicalGrown["picture"]!["picture_list"]![0]!["spec_actualize"]!.GetValue<int>() == 2,
     "chemical growth consumes only materials and advances equipment");
 Console.WriteLine("Passed 2 chemical growth checks.");
+
+var destinyGrowthSeed = JsonNode.Parse(seed)!;
+destinyGrowthSeed["unit"]!["unit_list"]![0]!["destiny_value"] = 80;
+destinyGrowthSeed["item"]!["item_list"] = new JsonArray(
+    new JsonObject { ["item_id"] = 71, ["num"] = 5 },
+    new JsonObject { ["item_id"] = 72, ["num"] = 5 },
+    new JsonObject { ["item_id"] = 73, ["num"] = 5 });
+var destinyGrowthRule = new LocalDestinyGrowth(destinyGrowthSeed["unit"]!["unit_list"]![0]!["unit_id"]!.GetValue<int>(),
+    80, 100, [new(71, 2, 5), new(72, 3, 1), new(73, 1, 10)]);
+var destinyGrowthDirectory = directory + "-destiny-growth";
+var destinyGrowthServer = new OfflineServer(destinyGrowthDirectory, destinyGrowthSeed.ToJsonString(), "offline://resources/");
+destinyGrowthServer.Dispatch("game_init");
+destinyGrowthServer.Dispatch("login");
+Check(destinyGrowthServer.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, Ids: [123], DestinyGrowth: destinyGrowthRule)).Status == 503
+    && destinyGrowthServer.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, DestinyGrowth: destinyGrowthRule with { Materials = [new(71, 0, 5), new(72, 0, 1), new(73, 0, 10)] })).Status == 400,
+    "destiny growth rejects unsupported unit materials and empty selection");
+Check(destinyGrowthServer.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, DestinyGrowth: destinyGrowthRule with { Materials = [new(71, 2, 5), new(72, 6, 1), new(73, 1, 10)] })).Status == 409
+    && destinyGrowthServer.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 5,
+    "destiny growth insufficient later material leaves earlier inventory unchanged");
+var destinyGrown = destinyGrowthServer.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, DestinyGrowth: destinyGrowthRule)).Body!["user_update"]!;
+Check(destinyGrown["unit"]!["unit_list"]![0]!["destiny_value"]!.GetValue<int>() == 100
+    && destinyGrown["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 3
+    && destinyGrown["item"]!["item_list"]![1]!["num"]!.GetValue<int>() == 2
+    && destinyGrown["item"]!["item_list"]![2]!["num"]!.GetValue<int>() == 4,
+    "destiny growth deducts all selected materials and clamps the combined gain");
+var destinyGrowthReload = new OfflineServer(destinyGrowthDirectory, seed, "offline://resources/");
+destinyGrowthReload.Dispatch("game_init");
+destinyGrowthReload.Dispatch("login");
+Check(destinyGrowthReload.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, DestinyGrowth: destinyGrowthRule)).Status == 409
+    && destinyGrowthReload.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, DestinyGrowth: destinyGrowthRule with { Current = 100 })).Status == 409,
+    "destiny growth persists and rejects stale or capped requests");
+destinyGrowthSeed["_local_idle"] = new JsonObject { ["unit_slot_list"] = new JsonArray(new JsonObject { ["user_object_id"] = rankMaterialId, ["content"] = 2 }) };
+var busyDestinyServer = new OfflineServer(directory + "-destiny-busy", destinyGrowthSeed.ToJsonString(), "offline://resources/");
+busyDestinyServer.Dispatch("game_init");
+busyDestinyServer.Dispatch("login");
+Check(busyDestinyServer.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, DestinyGrowth: destinyGrowthRule)).Status == 409,
+    "destiny growth rejects active background growth");
+Console.WriteLine("Passed 5 destiny growth checks.");
