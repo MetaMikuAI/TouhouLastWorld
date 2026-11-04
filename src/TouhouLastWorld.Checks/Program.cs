@@ -154,7 +154,7 @@ foreach (var (route, field) in new[]
 {
     ("get_history", "bronze_trophy_count"), ("achievement_top", "achievement_list"),
     ("get_dispatch_list", "dispatch_list"), ("mission_top", "mission"),
-    ("friend_get_candidate_list", "helper_list"), ("get_auto_replay_info", "win_rate"),
+    ("friend_get_candidate_list", "helper_list"),
     ("picture_book/get_user_picture_book_list", "user_completed_info"),
     ("avatar/list", "avatar_list"), ("get_shrine_office_shop_list", "shop_list")
 })
@@ -171,7 +171,7 @@ Check(flags.Dispatch("tutorial_update", arguments: new(Value: 1)).Body!["user_up
 var progressReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
 progressReload.Dispatch("game_init");
 Check(progressReload.Dispatch("login").Body!["user"]!["progress_value"]!.GetValue<int>() == 10000, "progress persists");
-Console.WriteLine("Passed 23 query and progress checks.");
+Console.WriteLine("Passed 21 query and progress checks.");
 var music = flags.Dispatch("music_list").Body!;
 Check(music["collect"]!.AsArray().Count == 0 && music["unlock"]!.AsArray().Count == 0, "empty music lists");
 foreach (var route in new[] { "pass_card/show_task", "pass_card/show_shop" })

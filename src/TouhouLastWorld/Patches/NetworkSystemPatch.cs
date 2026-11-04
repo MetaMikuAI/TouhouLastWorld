@@ -39,6 +39,17 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
+        if (api == "get_auto_replay_info")
+        {
+            var query = request.TryCast<GetAutoReplayInfoRequest>();
+            arguments = query == null ? null : new LocalArguments(ReplayMeasure: new(query.quest_type, query.target_id, query.difficulty));
+        }
+        if (api == "update_auto_replay_info")
+        {
+            var update = request.TryCast<UpdateAutoReplayInfoRequest>();
+            arguments = update == null ? null : new LocalArguments(ReplayMeasure: new(update.quest_type, update.target_id,
+                update.difficulty, update.win_rate, update.action_num));
+        }
         if (api == "update_profile_setting")
             arguments = new LocalArguments(Text: request.TryCast<UpdateProfileSettingAPIRequest>()?.profile_setting);
         if (api == "update_profile_setting2")

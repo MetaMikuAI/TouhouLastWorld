@@ -6,11 +6,13 @@ public sealed partial class OfflineServer
 {
     private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" or "set_age"
         or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting"
-        or "update_profile_setting2" || QueryTemplates.ContainsKey(api);
+        or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "get_auto_replay_info" => ReplayMeasurement(arguments?.ReplayMeasure, false),
+        "update_auto_replay_info" => ReplayMeasurement(arguments?.ReplayMeasure, true),
         "update_profile_setting" => SaveProfileLayout(arguments?.Text),
         "update_profile_setting2" => new(0, new()
         {
