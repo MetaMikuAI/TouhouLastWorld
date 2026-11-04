@@ -145,7 +145,7 @@
 | PictureRecycleRequest | 未确认 | 未实现 | — |
 | PictureSpecActualizeChemicalRequest | 未确认 | 未实现 | — |
 | PictureSpecActualizeRequest | 未确认 | 未实现 | — |
-| PopupAdWindowRequest | 未确认 | 未实现 | — |
+| PopupAdWindowRequest | popup | 最小响应 | 确认弹窗打开通知，恢复调用方交互；不上传、不记录、不改变资产 |
 | previewAvatarAPIAsyncRequest | 未确认 | 未实现 | — |
 | ProfileUserInfoUpdateRequest | user_info_update | 业务实现 | 三种派生请求更新名称或简介，基础文本校验、原子保存；不含远端文本审核 |
 | QuestHelperSelectRequest | 未确认 | 未实现 | — |
