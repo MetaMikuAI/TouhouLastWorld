@@ -24,7 +24,7 @@
 | BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 |
 | BattleStartRequest | battle_start | 最小响应 | 空响应 |
 | BootRequest | boot | 最小响应 | 初始化后确认启动；无需建号，不收集广告标识，不变更账号 |
-| BuyGoodsRequest | 未确认 | 未实现 | — |
+| BuyGoodsRequest | pass_card/buy_goods | 业务实现 | 按配置扣币购买一份，校验限购和库存并保存；支持金币、晶体、普通物品 |
 | CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 |
 | CheckUserRequest | check_user | 业务实现 | 本地身份存在性检查 |
 | CheckVersionRequest | offline://version/check | 最小响应 | 原始文本入口返回当前安装版本；渠道未匹配时使用首条记录，不提供升级下载 |

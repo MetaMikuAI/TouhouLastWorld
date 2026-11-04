@@ -2527,3 +2527,27 @@ Check(passBuyReload.Dispatch("pass_card/show_task").Body!["user_pass_card"]!["le
     && passBuyReload.Dispatch("pass_card/user_orb_add_level", arguments: new(Value: 20, PassRewards: passRewardRules)).Status == 20000,
     "pass purchased levels and spent balance survive restart");
 Console.WriteLine("Passed 3 pass level purchase checks.");
+
+var passShopSeed = passSeed.DeepClone();
+passShopSeed["_local_pass_card"]!["coin"] = 15;
+passShopSeed["_local_pass_card"]!["pass_card_goods"] = new JsonArray();
+var passShopDirectory = directory + "-pass-shop";
+var passShopServer = new OfflineServer(passShopDirectory, passShopSeed.ToJsonString(), "offline://resources/");
+passShopServer.Dispatch("game_init");
+passShopServer.Dispatch("login");
+var passGoodsRule = new LocalPassGoods(8, 10, 1, new(12, 99992, 2, 100));
+Check(passShopServer.Dispatch("pass_card/buy_goods", arguments: new(Value: 8, PassGoods: passGoodsRule with { Cost = 20 })).Status == 20010
+    && passShopServer.Dispatch("pass_card/buy_goods", arguments: new(Value: 8, PassGoods: passGoodsRule with { Reward = new(12, 99992, 2, 1) })).Status == 409,
+    "pass shop validates balance and inventory before consuming coins or purchase count");
+var passGoodsReply = passShopServer.Dispatch("pass_card/buy_goods", arguments: new(Value: 8, PassGoods: passGoodsRule)).Body!;
+Check(passGoodsReply["user_pass_card"]!["coin"]!.GetValue<int>() == 5
+    && passGoodsReply["user_pass_card"]!["pass_card_goods"]![0]!["buy_times"]!.GetValue<int>() == 1
+    && passGoodsReply["user_update"]!["item"]!["item_list"]!.AsArray().Single(item => item!["item_id"]!.GetValue<int>() == 99992)!["num"]!.GetValue<int>() == 2,
+    "pass shop buys one configured bundle and increments its purchase count");
+var passShopReload = new OfflineServer(passShopDirectory, seed, "offline://resources/");
+passShopReload.Dispatch("game_init");
+passShopReload.Dispatch("login");
+Check(passShopReload.Dispatch("pass_card/buy_goods", arguments: new(Value: 8, PassGoods: passGoodsRule)).Status == 409
+    && passShopReload.Dispatch("pass_card/show_shop").Body!["user_pass_card"]!["coin"]!.GetValue<int>() == 5,
+    "pass shop purchase limit and balance survive restart");
+Console.WriteLine("Passed 3 pass shop checks.");

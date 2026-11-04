@@ -4,9 +4,38 @@ namespace TouhouLastWorld;
 
 public sealed record LocalPassTask(int Id, int Experience, int[] Levels, int[] VipLevels);
 public sealed record LocalPassReward(int Level, LocalInventoryReward[] Free, LocalInventoryReward[] Vip);
+public sealed record LocalPassGoods(int Id, int Cost, int Limit, LocalInventoryReward Reward);
 
 public sealed partial class OfflineServer
 {
+    private LocalReply BuyPassGoods(LocalArguments? request)
+    {
+        if (request?.Value is null or <= 0) return new(400, null, "Positive goods ID required.");
+        var rule = request.PassGoods;
+        if (rule is null || rule.Id != request.Value || rule.Cost < 0 || rule.Limit <= 0)
+            return new(503, null, "Goods definition unavailable.");
+        var updated = user.DeepClone().AsObject();
+        if (updated["_local_pass_card"] is not JsonObject pass || pass["pass_card_goods"] is not JsonArray goods)
+            return new(409, null, "Local shop state unavailable.");
+        var purchased = goods.FirstOrDefault(entry => entry?["goods_id"]?.GetValue<int>() == rule.Id);
+        var count = purchased?["buy_times"]?.GetValue<int>() ?? 0;
+        if (count < 0 || count >= rule.Limit) return new(409, null, "Goods purchase limit reached.");
+        var coins = pass["coin"]?.GetValue<int>() ?? 0;
+        if (coins < rule.Cost) return new(20010, null, "Insufficient local coins.");
+        var error = ApplyInventoryReward(updated, rule.Reward);
+        if (error is not null) return error;
+        pass["coin"] = coins - rule.Cost;
+        if (purchased is null) goods.Add(new JsonObject { ["goods_id"] = rule.Id, ["buy_times"] = 1 });
+        else purchased["buy_times"] = count + 1;
+        Save(updated);
+        return new(0, new()
+        {
+            ["user_pass_card"] = pass.DeepClone(),
+            ["user_update"] = new JsonObject { ["gold"] = updated["gold"]!.DeepClone(),
+                ["crystal"] = updated["crystal"]!.DeepClone(), ["item"] = updated["item"]!.DeepClone() }
+        });
+    }
+
     private LocalReply BuyPassLevels(LocalArguments? request)
     {
         if (request?.Value is null or <= 0 || request.Value % 20 != 0)

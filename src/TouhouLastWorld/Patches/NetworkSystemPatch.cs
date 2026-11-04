@@ -35,6 +35,24 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "pass_card/buy_goods")
+        {
+            var change = request.TryCast<BuyGoodsRequest>();
+            var master = MasterDB.This();
+            var row = change == null ? null : master?.PassCardShop?.Find(change.goods_id);
+            var setting = master?.Setting;
+            arguments = new LocalArguments(Value: change?.goods_id);
+            if (row != null && setting != null)
+            {
+                var capacity = row.object_type switch
+                {
+                    3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
+                    12 when master?.Item?.Find(row.item_id) != null => setting.ITEM_MAX, _ => 0
+                };
+                arguments = arguments with { PassGoods = new(row.id, row.consume_coin, row.limit_times,
+                    new(row.object_type, row.item_id, row.value, capacity)) };
+            }
+        }
         if (api == "pass_card/user_orb_add_level")
             arguments = ReadPassRewardDefinitions(new LocalArguments(Value: request.TryCast<AddLevelRequest>()?.orb));
         if (api == "pass_card/collect_reward") arguments = ReadPassRewards(request.TryCast<CollectRewardRequest>());
