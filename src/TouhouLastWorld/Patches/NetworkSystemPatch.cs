@@ -48,6 +48,12 @@ public partial class NetworkSystemPatch
             var capacity = MasterDB.This()?.LectureRoomUnitExpansion?.Find(Plugin.Server.LectureExpansionRank)?.slot_count;
             arguments = new LocalArguments(request.TryCast<LectureRoomUnitSetRequest>()?.user_unit_id, capacity);
         }
+        if (api == "lecture_room_unit_expansion")
+        {
+            var rank = Plugin.Server.LectureExpansionRank;
+            var next = rank == int.MaxValue ? null : MasterDB.This()?.LectureRoomUnitExpansion?.Find(rank + 1);
+            arguments = next == null ? null : new LocalArguments(rank + 1, next.consume_orb);
+        }
         if (api == "transcribe_kpi")
             arguments = new LocalArguments(Value: request.TryCast<TranscribeKpiRequest>()?.transcribe_value);
         if (api == "unit_voice_update")

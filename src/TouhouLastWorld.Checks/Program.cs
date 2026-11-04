@@ -477,3 +477,24 @@ Check(fullFacility.Dispatch("lecture_room_unit_set", arguments: new(2, 1)).Statu
     && fullFacility.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![1]!["is_lecture"]!.GetValue<int>() == 0,
     "full facility rejects without mutation");
 Console.WriteLine("Passed 6 facility joining checks.");
+var expansionSeed = JsonNode.Parse(seed)!.AsObject();
+expansionSeed["orb"]!["free"] = 3;
+expansionSeed["orb"]!["purchased"] = 7;
+var expansionDirectory = directory + "-expansion";
+var expansion = new OfflineServer(expansionDirectory, expansionSeed.ToJsonString(), "offline://resources/");
+expansion.Dispatch("game_init");
+expansion.Dispatch("login");
+Check(expansion.Dispatch("lecture_room_unit_expansion").Status == 503, "missing expansion data rejected");
+Check(expansion.Dispatch("lecture_room_unit_expansion", arguments: new(2, 1)).Status == 409, "expansion cannot skip levels");
+Check(expansion.Dispatch("lecture_room_unit_expansion", arguments: new(1, 11)).Status == 409
+    && expansion.LectureExpansionRank == 0, "insufficient expansion funds preserve level");
+var expanded = expansion.Dispatch("lecture_room_unit_expansion", arguments: new(1, 5)).Body!["user_update"]!;
+Check(expanded["orb"]!["free"]!.GetValue<long>() == 0 && expanded["orb"]!["purchased"]!.GetValue<long>() == 5
+    && expansion.LectureExpansionRank == 1, "expansion debits free balance first and updates level");
+Check(expansion.Dispatch("lecture_room_unit_expansion", arguments: new(1, 5)).Status == 409,
+    "stale expansion quote rejected");
+var expansionReload = new OfflineServer(expansionDirectory, expansionSeed.ToJsonString(), "offline://resources/");
+expansionReload.Dispatch("game_init");
+Check(expansionReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 5
+    && expansionReload.LectureExpansionRank == 1, "expansion debit and level persist together");
+Console.WriteLine("Passed 6 facility expansion checks.");

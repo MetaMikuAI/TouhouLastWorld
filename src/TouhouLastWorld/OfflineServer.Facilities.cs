@@ -6,6 +6,33 @@ public sealed partial class OfflineServer
 {
     public int LectureExpansionRank => user["lecture_room"]!["unit"]!["expansion_rank"]!.GetValue<int>();
 
+    private LocalReply ExpandLectureUnit(LocalArguments? request)
+    {
+        if (request?.EntityId is null or <= 0 or > int.MaxValue || request.Value is null or < 0)
+            return new(503, null, "Next facility level unavailable.");
+        if (request.EntityId != (long)LectureExpansionRank + 1)
+            return new(409, null, "Facility level changed.");
+        var updated = user.DeepClone().AsObject();
+        var orb = updated["orb"]!.AsObject();
+        var free = orb["free"]!.GetValue<long>();
+        var purchased = orb["purchased"]!.GetValue<long>();
+        var cost = request.Value.Value;
+        if (free < 0 || purchased < 0 || (decimal)free + purchased < cost)
+            return new(409, null, "Insufficient local balance.");
+        var freeSpent = Math.Min(free, cost);
+        orb["free"] = free - freeSpent;
+        orb["purchased"] = purchased - (cost - freeSpent);
+        updated["lecture_room"]!["unit"]!["expansion_rank"] = (int)request.EntityId.Value;
+        Save(updated);
+        return new(0, new()
+        {
+            ["user_update"] = new JsonObject
+            {
+                ["lecture_room"] = updated["lecture_room"]!.DeepClone(), ["orb"] = orb.DeepClone()
+            }
+        });
+    }
+
     private LocalReply AddLectureUnit(LocalArguments? request)
     {
         if (request?.EntityId is null or <= 0) return new(400, null, "Positive unit ID required.");
