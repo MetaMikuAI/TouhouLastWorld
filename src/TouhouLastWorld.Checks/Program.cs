@@ -3643,3 +3643,31 @@ Check(batchPoorServer.Dispatch("batch_search", arguments: new(Batch: batchRule))
     && batchPoorServer.Dispatch("batch_search", arguments: new(Batch: batchRule with { Quests = [batchRule.Quests[0]] })).Body!["drop_list"]!.AsArray().Count == 2,
     "insufficient balance preserves prepared rewards for a smaller affordable batch");
 Console.WriteLine("Passed 5 batch settlement checks.");
+
+var rerollSeed = JsonNode.Parse(seed)!;
+rerollSeed["_local_rogue_draw"] = new JsonObject { ["drawn_seals"] = new JsonArray(11, 12, 13),
+    ["remaining_draws"] = 2, ["remaining_rerolls"] = 2 };
+rerollSeed["_local_rogue_reroll_sequence"] = new JsonArray(new JsonArray(14, 15, 16), new JsonArray(11, 12, 13));
+var rerollDirectory = directory + "-reroll";
+var rerollServer = new OfflineServer(rerollDirectory, rerollSeed.ToJsonString(), "offline://resources/");
+rerollServer.Dispatch("game_init");
+rerollServer.Dispatch("login");
+var rerollRule = new LocalReroll(0, [11, 12, 13], 2, 2, [11, 12, 13, 14, 15, 16]);
+Check(rerollServer.Dispatch("roguelite_reroll", arguments: new(Reroll: rerollRule with { Selected = 11 })).Status == 503
+    && rerollServer.Dispatch("roguelite_reroll", arguments: new(Reroll: rerollRule with { Offered = [14, 15, 16] })).Status == 409
+    && rerollServer.Dispatch("roguelite_reroll", arguments: new(Reroll: rerollRule with { Definitions = [11, 12, 13] })).Status == 503,
+    "effect redraw, stale selection and unknown prepared candidates preserve the draw");
+var rerollReply = rerollServer.Dispatch("roguelite_reroll", arguments: new(Reroll: rerollRule));
+Check(rerollReply.Status == 0 && rerollReply.Body!["drawn_seals"]![0]!.GetValue<int>() == 14
+    && rerollReply.Body["remaining_draws"]!.GetValue<int>() == 2 && rerollReply.Body["remaining_rerolls"]!.GetValue<int>() == 1
+    && rerollServer.Dispatch("roguelite_reroll", arguments: new(Reroll: rerollRule)).Status == 409,
+    "ordinary redraw consumes one reroll while rejecting stale retries");
+var rerollReload = new OfflineServer(rerollDirectory, seed, "offline://resources/");
+rerollReload.Dispatch("game_init");
+var rerollSaved = rerollReload.Dispatch("login").Body!["user"]!;
+Check(rerollSaved["_local_rogue_draw"]!["remaining_rerolls"]!.GetValue<int>() == 1
+    && rerollSaved["_local_rogue_reroll_sequence"]!.AsArray().Count == 1
+    && rerollReload.Dispatch("roguelite_reroll", arguments: new(Reroll: rerollRule with { Offered = [14, 15, 16], Rerolls = 1 })).Status == 0
+    && rerollReload.Dispatch("roguelite_reroll", arguments: new(Reroll: rerollRule with { Rerolls = 0 })).Status == 409,
+    "saved draw outcomes persist and exhausted rerolls cannot advance again");
+Console.WriteLine("Passed 3 redraw settlement checks.");

@@ -162,7 +162,7 @@
 | RogueLiteEventEndRequest | 未确认 | 未实现 | — |
 | RogueLiteMapEndRequest | 未确认 | 未实现 | — |
 | RogueLiteMapStartRequest | 未确认 | 未实现 | — |
-| RogueLiteRerollRequest | 未确认 | 未实现 | — |
+| RogueLiteRerollRequest | roguelite_reroll | 业务实现 | 普通重抽校验当前候选及次数，消费本地预置候选序列并扣一次重抽；需已有本地抽取状态，地图建局与恢复、随机候选生成、效果重抽未实现 |
 | RogueLiteTopRequest | roguelite_top | 最小响应 | 返回已保存预设并按主数据补齐空槽；地图未开始、详情为空、抽取额度为零，不生成关卡或奖励 |
 | SeriesBattleEndRequest | series_battle_end | 业务实现 | 胜利推进、末关保存通关并清空进度；失败保留进度，消费待结算记录防止重复发奖；支持固定金币及首次金币/晶体/物品奖励，经验、随机掉落和挑战条件未实现 |
 | SeriesBattleGetReplayInfoRequest | get_series_battle_replay_info | 业务实现 | 按关卡及 1–5 分区读取重放；未请求或无记录的字段为空 |

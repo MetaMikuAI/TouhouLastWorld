@@ -13,5 +13,6 @@ public static class PatchRegistry
         harmony.PatchAll(typeof(ItemHeaderBehaviourPatch));
         harmony.PatchAll(typeof(GachaBehaviorPatch));
         harmony.PatchAll(typeof(GachaPanelPatch));
+        harmony.PatchAll(typeof(RogueLiteMapDrawPanelPatch));
     }
 }
