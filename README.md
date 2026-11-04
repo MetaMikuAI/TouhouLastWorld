@@ -123,7 +123,7 @@
 | MailTopRequest | mail_top | 最小响应 | 空列表；不含领取与删除 |
 | MiniGameRequest | 未确认 | 未实现 | — |
 | MissionEndRequest | 未确认 | 未实现 | — |
-| MissionTopRequest | 未确认 | 未实现 | — |
+| MissionTopRequest | mission_top | 最小响应 | 空分类、未完成与已完成列表；不含奖励 |
 | MultipleSpiritsWeeklyTopRequest | 未确认 | 未实现 | — |
 | MusicLikeRequest | 未确认 | 未实现 | — |
 | MusicShowRequest | 未确认 | 未实现 | — |
