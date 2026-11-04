@@ -27,9 +27,9 @@
 | BattleStartRequest | battle_start | 最小响应 | 空响应 | 未测 |
 | BootRequest | boot | 最小响应 | 初始化后确认启动；无需建号，不收集广告标识，不变更账号 | 未测 |
 | BuyGoodsRequest | pass_card/buy_goods | 业务实现 | 按配置扣币购买一份，校验限购和库存并保存；支持金币、晶体、普通物品 | 未测 |
-| CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 | 未测 |
-| CheckUserRequest | check_user | 业务实现 | 本地身份存在性检查 | 未测 |
-| CheckVersionRequest | offline://version/check | 最小响应 | 原始文本入口返回当前安装版本；渠道未匹配时使用首条记录，不提供升级下载 | 未测 |
+| CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 | 通过（登录链） |
+| CheckUserRequest | check_user | 业务实现 | 本地身份存在性检查 | 通过（现有账号登录） |
+| CheckVersionRequest | offline://version/check | 最小响应 | 原始文本入口返回当前安装版本；渠道未匹配时使用首条记录，不提供升级下载 | 通过（登录链） |
 | ClearHistoryPlayerInfoRequest | get_clear_history_playerinfo | 业务实现 | 按编号读取本地资料快照，校验角色、服装、称号及统计字段；缺失时报错，累计统计生成未实现 | 未测 |
 | ClearHistoryRequest | get_clear_history | 最小响应 | 无最佳记录，排行及最近记录为空；不生成战绩 | 未测 |
 | ClearHistoryTeamInfoRequest | get_clear_history_teaminfo | 业务实现 | 按完整查询条件读取本地历史队伍快照，校验角色、服装和装备定义；缺失或不完整时报错，快照生成未实现 | 未测 |
@@ -80,7 +80,7 @@
 | GachaRetryFixRequest | retry_gacha_fix | 业务实现 | 确认已有待定角色，校验有效期及容量后入库、记录图鉴和确认标记，重试返回原编号；仅本地角色模板，候选生成及其他对象未实现 | 未测 |
 | GachaTopRequest | gacha_top | 最小响应 | 固定本地列表 | 未测 |
 | GainFreeItemRequest | gain_free_item | 业务实现 | 领取本地商店唯一免费商品，按模块 UTC 日期限每日一次并保存；支持金币、晶体、物品，未配置或配置不明确时拒绝领取 | 未测 |
-| GameInitRequest | game_init | 业务实现 | 本地会话与入口 | 未测 |
+| GameInitRequest | game_init | 业务实现 | 本地会话与入口 | 通过（登录链） |
 | GatherGoldRequest | gather_gold | 业务实现 | 收取本地已保存库存，按当前等级容量入账，超出部分保留；主页同步余量，不计算时间产出 | 未测 |
 | GatherPhantasmPointRequest | gather_phantasm_point | 业务实现 | 收取本地已保存点数库存，按当前等级容量入账，超出部分保留；同步主页余量，不计算时间产出 | 未测 |
 | GetAutoReplayInfoRequest | get_auto_replay_info | 业务实现 | 按目标读取已保存测量值；无记录返回零，不重算战斗 | 未测 |
@@ -103,11 +103,11 @@
 | HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存非负音乐编号，零值恢复默认；不校验资源可用性，不解锁音乐 | 未测 |
 | HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 | 未测 |
 | HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式；外观、动作及音乐仅保存编号，不校验素材可用性 | 未测 |
-| HomeRequest | home | 最小响应 | 空摘要 | 未测 |
+| HomeRequest | home | 最小响应 | 空摘要 | 通过（进入及返回主页） |
 | IdleSearchCompleteUpgradeRequest | afk_complete_upgrade | 业务实现 | 到期后提升对应成长值一级并清槽；重验上限与开始快照，防重复领取；无附加奖励 | 未测 |
 | IdleSearchReceiveDropRequest | afk_receive_drop | 最小响应 | 仅空掉落响应；已有待领奖励返回 503，不生成、发放或清除奖励 | 未测 |
 | IdleSearchSetRequest | afk_set | 业务实现 | 按主数据时长和成长限制保存、取消槽位；校验归属与占用；不结算成长或奖励 | 未测 |
-| IdleSearchTopRequest | afk_top | 最小响应 | 返回已存槽位与阶段；无阶段推进或奖励 | 未测 |
+| IdleSearchTopRequest | afk_top | 最小响应 | 返回已存槽位与阶段；无阶段推进或奖励 | 通过（主页空槽位） |
 | ItemExchangeRequest | item_exchange | 业务实现 | 普通物品按配置比例扣料、增加库存并保存；校验容量；其他类型及非单件产出配置尚不支持 | 未测 |
 | LectureRoomFoodAdditionRequest | lecture_room_food_addition | 业务实现 | 按主数据价格扣除体力与货币，增加物品库存并统一保存；货币优先使用免费余额，不自动投放或结算成长 | 未测 |
 | LectureRoomFoodDistributionRequest | lecture_room_food_distribution | 业务实现 | 扣库存、增加储量并保存分钟级效果期限；本地规则为储量截至容量、同类效果续时；暂不结算投放前的时间消耗与成长 | 未测 |
@@ -118,14 +118,14 @@
 | LectureRoomUnitTrustUpRequest | lecture_room_unit_trust_up | 业务实现 | 结算已保存的待领取信赖值并清除领取标记；校验归属、入驻和上限；尚不自动生成待领取值 | 未测 |
 | LectureRoomUpdateRequest | lecture_room_update | 最小响应 | 返回已保存设施状态及零结算；未实现时间推进、食物消耗与经验增长 | 未测 |
 | LevelGiftRequest | pass_card/get_level_gift | 业务实现 | 固定扣除 150，增加 20 级且不超过 80；保存购买标记，禁止重复购买；需已有本地进度及 VIP 资格 | 未测 |
-| LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 | 未测 |
+| LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 | 通过（现有账号登录） |
 | LogoutRequest | logout | 业务实现 | 校验本地身份并结束会话；保留身份与存档 | 未测 |
 | MailDeleteRequest | mail_delete | 业务实现 | 删除本地 open_type > 0 的已读邮件并持久化；保留未读邮件，不发放附件 | 未测 |
 | MailReceiveRequest | mail_receive | 业务实现 | 无期限邮件的金币、结晶、道具入库并标记；按主数据限额整批校验、防重领；限期、特殊奖励或超额整批保留 | 未测 |
-| MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 | 未测 |
+| MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 | 通过（空邮箱） |
 | MiniGameRequest | mini_game_top | 最小响应 | 为全部主表项目返回本地首次奖励标记，默认未领取；剩余点数默认零，不生成进度或发放奖励 | 未测 |
-| MissionEndRequest | mission_end | 业务实现 | 单个或批量领取本地已完成任务，按主表发放固定金币/晶体/物品并保存领取记录；整批回滚，随机奖励、任务进度生成与周期重置未实现 | 未测 |
-| MissionTopRequest | mission_top | 最小响应 | 返回本地未完成、待领取列表及对应分类，默认空；任务进度生成未实现 | 未测 |
+| MissionEndRequest | mission_end | 业务实现 | 单个或批量领取本地已完成任务，按主表发放固定金币、晶体、物品或单日扫荡券并保存领取记录；每日登录任务按游戏日防重，其他任务进度、券过期和随机奖励未实现 | 通过（每日登录单领） |
+| MissionTopRequest | mission_top | 业务实现 | 从主表生成每日登录任务，按本次登录和游戏日计算进度及可领状态；其他任务读取已保存列表 | 通过（每日登录任务） |
 | MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 业务实现 | 按有效主表返回本地通关进度，未通关项返回初始记录；不生成奖励或排名 | 未测 |
 | MusicLikeRequest | music_collect | 未实现 | 请求 bgm_id/status，响应 is_success；status 取值含义待调用逻辑确认 | 未测 |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 | 未测 |
@@ -238,7 +238,7 @@
 | UserGoogleInfoUpdateRequest | 未确认 | 未实现 | — | 未测 |
 | UserTwitterInfoDeleteRequest | user_twitter_info_delete | 业务实现 | 清除当前本地存档的关联标记与已保存编号；校验已有编号，不撤销外部平台授权 | 未测 |
 | UserTwitterInfoUpdateRequest | user_twitter_info_update | 业务实现 | 保存当前存档的本地编号与关联标记；重复编号可重试，更换前须解除，不验证外部授权或迁移账号 | 未测 |
-| VersionGetRequest | version_get | 最小响应 | 固定版本与资源路径 | 未测 |
+| VersionGetRequest | version_get | 最小响应 | 固定版本与资源路径 | 通过（登录链） |
 | VersusBattleEndRequest | multiple_spirits_weekly_battle_end | 业务实现 | 核对入场等级、规则与成员，保存基础及追加通关等级，发放新增档位固定金币/晶体/物品；按客户端最高等级领取标记实现，重复结算拒绝；随机掉落、排名登记未实现，保留待结算记录 | 未测 |
 | VersusBattleStartRequest | multiple_spirits_weekly_battle_start | 业务实现 | 校验开放条件、基础等级与主表追加规则、队伍，按本地配置扣点并保存待结算记录；重试不重复扣点，助战及消耗规则自动生成未实现 | 未测 |
 | VotivePictureExchangeRequest | votive_picture_exchange | 业务实现 | 按配置消耗材料兑换装备，校验有效期与容量，创建独立对象并更新图鉴；角色等其他对象未实现 | 未测 |
