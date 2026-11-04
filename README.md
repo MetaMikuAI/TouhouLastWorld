@@ -219,7 +219,7 @@
 | UnitRareAwakenRequest | unit_rare_awaken | 业务实现 | 按下一阶配置消耗碎片并保存觉醒阶数；校验归属、当前阶数及同类挂机互斥，属性仍由客户端配置计算 |
 | UnitRecycleRequest | 未确认 | 未实现 | — |
 | UnitResetPointAllocationRequest | reset_point_allocation | 业务实现 | 清空九类分配并返还已用点数；首次或主数据免费期不扣款，其余扣金币；本地无分配时不收费，不重算历史点数来源 |
-| UnitSpecActualizeRequest | 未确认 | 未实现 | — |
+| UnitSpecActualizeRequest | unit_spec_actualize | 业务实现 | 按六项基础材料类型和转生消耗系数增加属性；校验库存、整除数量与当前上限，批量一次保存 |
 | UnitVoiceAutosetUpdateRequest | unit_voice_autoset_update | 业务实现 | 开关校验与保存；不含自动分配内容 |
 | UnitVoiceUpdateRequest | unit_voice_update | 业务实现 | 保存已收录或持有条目的语音偏好；不校验语音资源与解锁条件 |
 | UpdateAutoReplayInfoRequest | update_auto_replay_info | 业务实现 | 按任务类型、目标及难度保存客户端测量值；非负校验，不重算战斗 |

@@ -1970,3 +1970,31 @@ Check(limitBreakReload.Dispatch("unit_level_limitbreak", arguments: new(rankMate
     && limitBreakReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
     "limit break survives restart without accepting stale advancement");
 Console.WriteLine("Passed 4 limit break checks.");
+
+var statSeed = JsonNode.Parse(seed)!;
+statSeed["item"]!["item_list"] = new JsonArray(
+    new JsonObject { ["item_id"] = 71, ["num"] = 10 }, new JsonObject { ["item_id"] = 72, ["num"] = 4 });
+var statDirectory = directory + "-stats";
+var statServer = new OfflineServer(statDirectory, statSeed.ToJsonString(), "offline://resources/");
+statServer.Dispatch("game_init");
+statServer.Dispatch("login");
+var statRules = new LocalStatMaterial[] { new(71, 6, 1, 2, 0, 10), new(72, 4, 6, 2, 0, 10) };
+Check(statServer.Dispatch("unit_spec_actualize", arguments: new(rankMaterialId, StatMaterials: [statRules[0] with { Count = 3 }])).Status == 400
+    && statServer.Dispatch("unit_spec_actualize", arguments: new(rankMaterialId, StatMaterials: [statRules[0] with { Maximum = 2 }])).Status == 409,
+    "strengthening requires whole points within the current limit");
+Check(statServer.Dispatch("unit_spec_actualize", arguments: new(rankMaterialId, StatMaterials: [statRules[0], statRules[1] with { Count = 6 }])).Status == 409
+    && statServer.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 10,
+    "a later material failure does not consume earlier materials");
+var statReply = statServer.Dispatch("unit_spec_actualize", arguments: new(rankMaterialId, StatMaterials: statRules)).Body!["user_update"]!;
+Check(statReply["unit"]!["unit_list"]![0]!["add_life_point"]!.GetValue<int>() == 3
+    && statReply["unit"]!["unit_list"]![0]!["add_speed"]!.GetValue<int>() == 2
+    && statReply["unit"]!["unit_list"]![0]!["add_yang_attack"]!.GetValue<int>() == 0
+    && statReply["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 4,
+    "strengthening applies material costs to the selected stats only");
+var statReload = new OfflineServer(statDirectory, seed, "offline://resources/");
+statReload.Dispatch("game_init");
+statReload.Dispatch("login");
+Check(statReload.Dispatch("unit_spec_actualize", arguments: new(rankMaterialId, StatMaterials: statRules)).Status == 409
+    && statReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["add_speed"]!.GetValue<int>() == 2,
+    "strengthening persists and rejects stale stat snapshots");
+Console.WriteLine("Passed 4 strengthening checks.");
