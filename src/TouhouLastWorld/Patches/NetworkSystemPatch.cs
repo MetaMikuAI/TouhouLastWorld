@@ -60,6 +60,12 @@ public partial class NetworkSystemPatch
             var next = rank == int.MaxValue ? null : MasterDB.This()?.LectureRoomFoodExpansion?.Find(rank + 1);
             arguments = next == null ? null : new LocalArguments(rank + 1, next.consume_orb);
         }
+        if (api == "training_room_expansion")
+        {
+            var rank = Plugin.Server.TrainingExpansionRank;
+            var next = rank == int.MaxValue ? null : MasterDB.This()?.TrainingRoomExpansion?.Find(rank + 1);
+            arguments = next == null ? null : new LocalArguments(rank + 1, next.consume_orb);
+        }
         if (api == "transcribe_kpi")
             arguments = new LocalArguments(Value: request.TryCast<TranscribeKpiRequest>()?.transcribe_value);
         if (api == "unit_voice_update")

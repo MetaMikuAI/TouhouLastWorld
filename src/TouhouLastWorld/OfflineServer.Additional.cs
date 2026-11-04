@@ -14,7 +14,7 @@ public sealed partial class OfflineServer
         or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
         or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
-        or "lecture_room_food_expansion" || QueryTemplates.ContainsKey(api);
+        or "lecture_room_food_expansion" or "training_room_expansion" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
@@ -24,8 +24,9 @@ public sealed partial class OfflineServer
         "unit_voice_update" => SetVoice(arguments),
         "lecture_room_unit_remove" => RemoveLectureUnit(arguments?.EntityId),
         "lecture_room_unit_set" => AddLectureUnit(arguments),
-        "lecture_room_unit_expansion" => ExpandLecture(arguments, "unit"),
-        "lecture_room_food_expansion" => ExpandLecture(arguments, "food"),
+        "lecture_room_unit_expansion" => ExpandFacility(arguments, "lecture_room", "unit"),
+        "lecture_room_food_expansion" => ExpandFacility(arguments, "lecture_room", "food"),
+        "training_room_expansion" => ExpandFacility(arguments, "training_room"),
         "lecture_room_update" => new(0, new()
         {
             ["spend_info"] = new JsonObject { ["passage_time"] = 0, ["food"] = 0, ["exp"] = 0 },
