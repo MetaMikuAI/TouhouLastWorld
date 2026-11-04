@@ -37,7 +37,7 @@
 | ComicGetPagesRequest | comic_get_pages | 业务实现 | 按主数据单价扣点并增加可读页数，校验余额与总页数，统一持久化；暂不校验发布期 |
 | ComicReadEndRequest | comic_read_end | 业务实现 | 保存最大已读页数，拒绝未持有条目和超出可读范围的页数；不发放奖励 |
 | DailyArenaTopRequest | daily_arena_top | 最小响应 | 读取本地敌方配置、难度和领取次数；缺少波次或槽位返回 503，不生成配置、不刷新日期或结算奖励，不验证资源完整性 |
-| DeleteAccountRequest | 未确认 | 未实现 | — |
+| DeleteAccountRequest | delete_account | 业务实现 | 删除本地身份、存档内容及模块旧备份，会话失效；中断后继续清理，重新建号使用新身份，不操作外部账号 |
 | DispatchBulkEndRequest | 未确认 | 未实现 | — |
 | DispatchCancelRequest | dispatch_cancel | 业务实现 | 删除本地任务并返回客户端删除标记；不发放奖励，本地不退款；不存在的任务返回未找到 |
 | DispatchEndRequest | 未确认 | 未实现 | — |

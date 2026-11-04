@@ -1577,3 +1577,34 @@ foreach (var badCsv in new[] { "1,123", towerUnitCsv + "\n" + towerUnitCsv, "999
     Check(badTowerUnits.Dispatch("get_tower_unit_info").Status == 503, "invalid, duplicate or unowned continuation records are rejected");
 }
 Console.WriteLine("Passed 6 unit continuation checks.");
+
+var deletionDirectory = directory + "-account-deletion";
+var deletionServer = new OfflineServer(deletionDirectory, seed, "offline://resources/");
+Check(deletionServer.Dispatch("delete_account").Status == 401, "account deletion requires initialization");
+deletionServer.Dispatch("game_init");
+Check(deletionServer.Dispatch("delete_account").Status == 401, "account deletion requires an existing account");
+var deletedIdentity = deletionServer.Dispatch("login").Body!["device_id"]!.GetValue<string>();
+deletionServer.Dispatch("set_age", arguments: new(Value: 2));
+File.WriteAllText(Path.Combine(deletionDirectory, "user.json.before-seed-fix"), "old snapshot");
+Check(deletionServer.Dispatch("delete_account").Status == 0
+    && !File.Exists(Path.Combine(deletionDirectory, "account.json"))
+    && !File.Exists(Path.Combine(deletionDirectory, "user.json.before-seed-fix"))
+    && JsonNode.Parse(File.ReadAllText(Path.Combine(deletionDirectory, "user.json")))!.AsObject().Count == 1,
+    "deletion removes the identity, saved content and module backup while retaining a durable marker");
+Check(deletionServer.Dispatch("login").Status == 401, "deletion invalidates the current session");
+var afterDeletion = new OfflineServer(deletionDirectory, seed, "offline://resources/");
+afterDeletion.Dispatch("game_init");
+Check(afterDeletion.Dispatch("check_user").Status == 401, "deleted account cannot return after restart");
+var replacementAccount = afterDeletion.Dispatch("login").Body!;
+Check(replacementAccount["device_id"]!.GetValue<string>() != deletedIdentity
+    && replacementAccount["user"]!["age_limit_type"]!.GetValue<int>() == JsonNode.Parse(seed)!["age_limit_type"]!.GetValue<int>(),
+    "new registration creates a distinct identity with initial state");
+File.WriteAllText(Path.Combine(deletionDirectory, "user.json"), "{\"_local_account_deleted\":true}");
+File.WriteAllText(Path.Combine(deletionDirectory, "account.json.tmp"), "unfinished identity");
+var interruptedDeletion = new OfflineServer(deletionDirectory, seed, "offline://resources/");
+interruptedDeletion.Dispatch("game_init");
+Check(interruptedDeletion.Dispatch("check_user").Status == 401
+    && !File.Exists(Path.Combine(deletionDirectory, "account.json"))
+    && !File.Exists(Path.Combine(deletionDirectory, "account.json.tmp")),
+    "restart completes deletion committed before identity-file cleanup");
+Console.WriteLine("Passed 7 local account deletion checks.");

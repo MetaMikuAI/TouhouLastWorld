@@ -39,6 +39,7 @@ public sealed partial class OfflineServer
     private JsonObject user;
     private readonly string userPath;
     private readonly JsonObject unitTemplate;
+    private readonly JsonObject initialUser;
     private readonly string accountPath;
     private LocalAccount? account;
     private sealed record LocalAccount(string DeviceId, string UserId, string PublicId);
@@ -50,19 +51,21 @@ public sealed partial class OfflineServer
         var path = Path.Combine(directory, "user.json");
         userPath = path;
         unitTemplate = JsonNode.Parse(seed)!["unit"]!["unit_list"]![0]!.AsObject();
+        initialUser = JsonNode.Parse(seed)!.AsObject();
         accountPath = Path.Combine(directory, "account.json");
-        if (File.Exists(accountPath))
-            account = JsonSerializer.Deserialize<LocalAccount>(File.ReadAllText(accountPath))
-                ?? throw new InvalidDataException("Invalid local account.");
         this.resourceRoot = resourceRoot;
         user = JsonNode.Parse(File.Exists(path) ? File.ReadAllText(path) : seed) as JsonObject
             ?? throw new InvalidDataException("Local user must be a JSON object.");
+        if (!AccountDeleted && File.Exists(accountPath))
+            account = JsonSerializer.Deserialize<LocalAccount>(File.ReadAllText(accountPath))
+                ?? throw new InvalidDataException("Invalid local account.");
         if (!File.Exists(path))
         {
             File.WriteAllText(path + ".tmp", user.ToJsonString());
             File.Move(path + ".tmp", path);
         }
-        MigrateInitialData();
+        if (AccountDeleted) FinishAccountDeletion();
+        else MigrateInitialData();
     }
 
     public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
@@ -162,7 +165,7 @@ public sealed partial class OfflineServer
         body["session_id"] = session;
         body["encryption_key"] = InitialKey;
         body["response_time"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        if (api == "logout") session = null;
+        if (api is "logout" or "delete_account") session = null;
         return new(0, body);
     }
 
@@ -314,11 +317,34 @@ public sealed partial class OfflineServer
     private void EnsureAccount()
     {
         if (account is not null) return;
+        if (AccountDeleted)
+        {
+            FinishAccountDeletion();
+            Save(initialUser.DeepClone().AsObject());
+            MigrateInitialData();
+        }
         var created = new LocalAccount(Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"),
             "LOCAL" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant());
         File.WriteAllText(accountPath + ".tmp", JsonSerializer.Serialize(created));
         File.Move(accountPath + ".tmp", accountPath);
         account = created;
+    }
+
+    private bool AccountDeleted => user["_local_account_deleted"]?.GetValue<bool>() == true;
+
+    private LocalReply DeleteAccount()
+    {
+        Save(new JsonObject { ["_local_account_deleted"] = true });
+        account = null;
+        FinishAccountDeletion();
+        return new(0, new());
+    }
+
+    private void FinishAccountDeletion()
+    {
+        File.Delete(accountPath);
+        File.Delete(accountPath + ".tmp");
+        File.Delete(userPath + ".before-seed-fix");
     }
 
     public static string VersionManifest(int appVersion) => new JsonObject
