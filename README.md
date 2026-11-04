@@ -21,12 +21,12 @@
 | AutoReplayEndRequest | 未确认 | 未实现 | — | 未测 |
 | AutoReplayStartRequest | auto_replay_start | 最小响应 | 无运行任务时返回原生“未启动”状态，不扣费；已有任务拒绝覆盖；后台执行与奖励结算尚未实现 | 未测 |
 | BatchSearchRequest | batch_search | 业务实现 | 校验成员资格及最高难度完成状态，按主表与活动剩余次数每次扣 12 点，原子领取本地预置金币/晶体/物品结果并更新次数；随机结果生成、每日重置未实现 | 未测 |
-| BattleEndRequest | battle_end | 业务实现 | 按主线关卡主表结算赛钱、经验与挑战，保存通关状态并拒绝重复结算；物品和缘分掉落待补 | 通过（序章首战） |
+| BattleEndRequest | battle_end | 业务实现 | 按主线关卡主表结算赛钱、经验与挑战，保存通关状态并拒绝重复结算；物品和缘分掉落待补 | 通过（序章，自有伙伴经验） |
 | BattlePassMissionEndRequest | battle_pass_mission_end | 业务实现 | 单个或批量领取本地已完成任务经验，按主表累计阈值升级并保存领取记录；仅纯经验任务，任务进度生成、附加奖励与周期重置未实现 | 未测 |
 | BattlePassReceiveRewardRequest | battle_pass_receive_reward | 业务实现 | 按本地档位状态领取已达等级的固定金币/晶体/物品，分别保存三档进度；要求完整等级定义，整批回滚，随机奖励与档位购买未实现 | 未测 |
 | BattlePassTopRequest | battle_pass_top | 最小响应 | 返回本地任务及领取等级快照，默认空；不生成任务或奖励 | 未测 |
 | BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 | 未测 |
-| BattleStartRequest | battle_start | 业务实现 | 校验无助战主线关卡及编队，扣除灵点并保存待结算记录 | 通过（序章首战） |
+| BattleStartRequest | battle_start | 业务实现 | 校验无助战主线关卡及编队，扣除灵点并保存待结算记录 | 通过（序章） |
 | BootRequest | boot | 最小响应 | 初始化后确认启动；无需建号，不收集广告标识，不变更账号 | 未测 |
 | BuyGoodsRequest | pass_card/buy_goods | 业务实现 | 按配置扣币购买一份，校验限购和库存并保存；支持金币、晶体、普通物品 | 未测 |
 | CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 | 通过（登录链） |
@@ -190,7 +190,7 @@
 | SweepRequest | mop_up | 未实现 | 依赖上次战斗、队伍与分关卡次数；请求券数及可选挑战等级，响应按 round 分组掉落；券扣除顺序、成员消耗及结算记录待实现 | 未测 |
 | SwitchDoRequest | 未确认 | 未实现 | — | 未测 |
 | SwitchUserInfoGetRequest | 未确认 | 未实现 | — | 未测 |
-| TeamUpdateRequest | team_update | 业务实现 | 更新队名、成员、强化位及灵点成本，首次保存时按主表创建普通编队槽；剧情临时队伍由客户端管理 | 通过（普通编队、剧情入场） |
+| TeamUpdateRequest | team_update | 业务实现 | 更新队名、成员、强化位及灵点成本，首次保存时按主表创建普通编队槽；剧情编队合入自有伙伴，临时槽位仅用于当前会话 | 通过（普通编队、剧情编队） |
 | TowerBattleEndRequest | tower_battle_end | 业务实现 | 保存双方损伤、胜利推进楼层并消费待结算记录；最高层使用重复奖励，支持单候选金币/晶体/物品组，经验、随机掉落和挑战条件未实现 | 未测 |
 | TowerBattleStartRequest | tower_battle_start | 业务实现 | 校验主表、已开放楼层和本地队伍，保存待结算记录；重复进入幂等，不改变通关层数或恢复损伤，活动开放条件未接入 | 未测 |
 | TowerTopRequest | tower_top | 最小响应 | 读取已保存楼层、进入标记、敌方快照和剩余恢复次数；不推进楼层或生成战斗 | 未测 |

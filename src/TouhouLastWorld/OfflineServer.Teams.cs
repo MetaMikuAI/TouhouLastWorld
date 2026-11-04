@@ -59,22 +59,22 @@ public sealed partial class OfflineServer
         return new(0, new() { ["user_update"] = new JsonObject { ["team"] = updated["team"]!.DeepClone() } });
     }
 
+    private long[] storyTeamMembers = [];
+
     private LocalReply UpdateTeam(LocalTeamUpdate? request)
     {
         if (request is null || request.Number < 0 || request.Cost < 0 || request.CostWithFriend < 0
             || (request.Name is not null && (string.IsNullOrWhiteSpace(request.Name) || request.Name.Any(char.IsControl)))
             || request.Units?.Length > 6 || request.EnhancedUnits?.Length > 6)
             return new(400, null, "Invalid team fields.");
-        // 零号剧情队伍由客户端管理，提交时已剔除临时角色。
-        if (request.Number == 0)
-            return request.Name is null && request.Units?.All(id => id == 0) == true
-                && request.EnhancedUnits?.Any(id => id != 0) != true
-                ? new(0, new()) : new(400, null, "Invalid story team fields.");
+        var storyTeam = request.Number == 0;
+        if (storyTeam && (request.Name is not null || request.Units is null))
+            return new(400, null, "Invalid story team fields.");
 
         var updated = user.DeepClone().AsObject();
         var section = updated["team"]!.AsObject();
         var teams = section["team_list"]!.AsArray();
-        var team = teams.FirstOrDefault(entry => entry!["number"]!.GetValue<int>() == request.Number);
+        var team = storyTeam ? null : teams.FirstOrDefault(entry => entry!["number"]!.GetValue<int>() == request.Number);
         if (team is null)
         {
             if (request.Number > request.NormalSlotLimit) return new(404, null, "Team slot not found.");
@@ -83,7 +83,7 @@ public sealed partial class OfflineServer
                 ["number"] = request.Number, ["name"] = "", ["use_cost"] = 0,
                 ["user_unit_id_list"] = TeamSlots([]), ["season_enhancement_user_unit_id_list"] = TeamSlots([])
             };
-            teams.Add(team);
+            if (!storyTeam) teams.Add(team);
         }
         var members = request.Units ?? team["user_unit_id_list"]!.AsArray().Select(id => id!.GetValue<long>()).ToArray();
         var positive = members.Where(id => id > 0).ToArray();
@@ -104,6 +104,15 @@ public sealed partial class OfflineServer
                 .Select((id, index) => index < members.Length && id!.GetValue<long>() == members[index] ? members[index] : 0L).ToArray();
         }
         if (enhanced is not null) team["season_enhancement_user_unit_id_list"] = TeamSlots(enhanced);
+        // 原生 Team.UpdateNPC 会把零号编队的普通伙伴合入临时剧情槽位。
+        if (storyTeam)
+        {
+            storyTeamMembers = positive;
+            return new(0, new()
+            {
+                ["user_update"] = new JsonObject { ["team"] = new JsonObject { ["team_list"] = new JsonArray(team) } }
+            });
+        }
         Save(updated);
         return new(0, new() { ["user_update"] = new JsonObject { ["team"] = section.DeepClone() } });
     }

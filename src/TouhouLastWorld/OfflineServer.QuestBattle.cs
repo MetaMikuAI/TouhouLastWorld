@@ -24,13 +24,17 @@ public sealed partial class OfflineServer
     {
         if (request is null) return new(501, null, "This battle entry is unavailable offline.");
         if (request.EpisodeId <= 0 || request.BattleId <= 0 || request.Difficulty is < 0 or > 2
-            || request.TeamNumber < 0 || request.TeamNumber == 0 && request.OwnedParticipants.Length != 0
+            || request.TeamNumber < 0
             || request.Cost < 0 || request.Participants.Length == 0
             || request.Participants.Any(id => id <= 0) || request.OwnedParticipants.Any(id => !request.Participants.Contains(id)))
             return new(400, null, "Invalid quest battle entry.");
         if (!request.Open) return new(409, null, "Quest battle is locked.");
-        // 纯剧情队伍使用客户端保留的零号编队。
-        if (request.TeamNumber > 0)
+        if (request.TeamNumber == 0)
+        {
+            if (!request.OwnedParticipants.SequenceEqual(storyTeamMembers))
+                return new(409, null, "Battle formation does not match the story team.");
+        }
+        else
         {
             var team = user["team"]!["team_list"]!.AsArray()
                 .FirstOrDefault(row => row?["number"]?.GetValue<int>() == request.TeamNumber);

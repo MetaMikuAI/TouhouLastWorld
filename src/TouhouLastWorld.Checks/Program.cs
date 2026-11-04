@@ -376,8 +376,14 @@ var savedTeam = teams.Dispatch("team_update", arguments: new(Team: new(1, null, 
 Check(savedTeam["user_unit_id_list"]!.AsArray().Count == 6 && savedTeam["use_cost"]!.GetValue<int>() == 5,
     "team slots normalized and cost stored");
 Check(teams.Dispatch("team_update", arguments: new(Team: new(0, null, new long[6], 0, new long[6], 0))).Status == 0
-    && teams.Dispatch("team_update", arguments: new(Team: new(0, null, [1], 5, null, 0))).Status == 400,
-    "story team submission accepts only temporary empty slots");
+    && teams.Dispatch("team_update", arguments: new(Team: new(0, null, [0, 999], 5, null, 0))).Status == 404,
+    "temporary story teams require owned members");
+var mixedStoryTeam = teams.Dispatch("team_update", arguments: new(Team: new(0, null, [0, 1], 5, null, 0)))
+    .Body!["user_update"]!["team"]!["team_list"]![0]!;
+Check(mixedStoryTeam["number"]!.GetValue<int>() == 0
+    && mixedStoryTeam["user_unit_id_list"]![1]!.GetValue<long>() == 1
+    && !teams.Dispatch("login").Body!["user"]!["team"]!["team_list"]!.AsArray().Any(row => row!["number"]!.GetValue<int>() == 0),
+    "story team update returns a temporary row without saving a normal team slot");
 Check(teams.Dispatch("team_update", arguments: new(Team: new(2, null, [1], 5, null, 0, 10))).Status == 0
     && teams.Dispatch("team_update", arguments: new(Team: new(11, null, [1], 5, null, 0, 10))).Status == 404,
     "new normal teams are created within the master slot limit");

@@ -104,6 +104,7 @@ public sealed partial class OfflineServer
         {
             session = Guid.NewGuid().ToString("N");
             lastLoginAt = null;
+            storyTeamMembers = [];
         }
         if (session is null) return new(401, null, "Offline game_init required.");
         if (api == "check_user" && account is null) return new(401, null, "Offline account required.");
