@@ -12,7 +12,7 @@
 | AddLevelRequest | pass_card/user_orb_add_level | 业务实现 | 每级扣除 20，校验余额与 80 级上限，保留经验并保存等级；不自动领取奖励 |
 | AppleSwitchDoRequest | 未确认 | 未实现 | — |
 | AppleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
-| ArenaBattleEndRequest | arena_battle_end | 业务实现 | 周常按原生公式重算分数、保存高分队伍并领取新跨过档位的积分；失败释放待结算记录，重复结算拒绝；日常胜利奖励与周期重置未实现 |
+| ArenaBattleEndRequest | arena_battle_end | 业务实现 | 日常按新增难度档发放主表固定及轮换奖励，周常重算分数、保存高分队伍并领取新增档位积分；失败释放记录，重复结算拒绝；支持金币/晶体/物品/积分，周期重置未实现 |
 | ArenaBattleStartRequest | arena_battle_start | 业务实现 | 校验主表、本地入场规则、队伍及周常跨场成员限制，按配置扣点并保存待结算状态；重试不重复扣点，入场规则自动生成及结算未实现 |
 | AutoReplayEndRequest | 未确认 | 未实现 | — |
 | AutoReplayStartRequest | auto_replay_start | 最小响应 | 无运行任务时返回原生“未启动”状态，不扣费；已有任务拒绝覆盖；后台执行与奖励结算尚未实现 |

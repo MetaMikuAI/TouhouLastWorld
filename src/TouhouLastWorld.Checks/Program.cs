@@ -3490,5 +3490,39 @@ Check(arenaLowerEnd.Status == 0 && arenaLowerEnd.Body!["first_cleared_reward_lis
 Check(arenaEntryReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: new(1, 0, [], false, null, null, 0))).Status == 503
     && arenaEntryReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: new(0, 0, [], false, null, null, 0))).Status == 0
     && arenaEntryReload.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule)).Status == 0,
-    "unsupported daily wins retain the entry while defeat releases it for another attempt");
+    "missing daily reward definitions retain the entry while defeat releases it for another attempt");
 Console.WriteLine("Passed 5 arena settlement checks.");
+
+var dailyEndSeed = arenaEntrySeed.DeepClone();
+dailyEndSeed["_local_daily_arena"]!["clear_diffculty"] = 0;
+var dailyEndDirectory = directory + "-daily-end";
+var dailyEndServer = new OfflineServer(dailyEndDirectory, dailyEndSeed.ToJsonString(), "offline://resources/");
+dailyEndServer.Dispatch("game_init");
+dailyEndServer.Dispatch("login");
+dailyEndServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule));
+var dailyEndDefinition = new LocalArenaDaily(1, [new(1, [new(3, 0, 5, 100000), new(21, 0, 3, 100)]), new(2, [new(6, 0, 2, 100000)])]);
+var dailyEndRule = new LocalArenaEnd(1, 0, [], false, null, null, 0, dailyEndDefinition);
+Check(dailyEndServer.Dispatch("arena_battle_end", arguments: new(ArenaEnd: dailyEndRule with { Daily = dailyEndDefinition with { Day = 2 } })).Status == 503
+    && dailyEndServer.Dispatch("arena_battle_end", arguments: new(ArenaEnd: dailyEndRule with { Daily = new(1,
+        [dailyEndDefinition.Stages[0], new(2, [new(6, 0, 2, 1)])]) })).Status == 409,
+    "wrong rotation day and later reward overflow preserve the complete daily settlement");
+var dailyEndReply = dailyEndServer.Dispatch("arena_battle_end", arguments: new(ArenaEnd: dailyEndRule));
+Check(dailyEndReply.Status == 0 && dailyEndReply.Body!["first_cleared_reward_list"]!.AsArray().Count == 3
+    && dailyEndReply.Body["user_update"]!["arena_point"]!.GetValue<int>() == 3
+    && dailyEndReply.Body["user_update"]!["gold"]!.GetValue<int>() == dailyEndSeed["gold"]!.GetValue<int>() + 5
+    && dailyEndReply.Body["user_arena"]!["daily_cleared_difficulty"]!.GetValue<int>() == 2,
+    "daily victory grants each newly cleared stage once after atomic rollback");
+var dailyEndReload = new OfflineServer(dailyEndDirectory, seed, "offline://resources/");
+dailyEndReload.Dispatch("game_init");
+dailyEndReload.Dispatch("login");
+var dailyEndOverview = dailyEndReload.Dispatch("daily_arena_top").Body!;
+Check(dailyEndOverview["clear_diffculty"]!.GetValue<int>() == 2 && dailyEndOverview["last_clear_difficulty"]!.GetValue<int>() == 2
+    && dailyEndOverview["reward_day_count"]!.GetValue<int>() == 1,
+    "daily progress survives restart without changing the rotation day");
+dailyEndReload.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule));
+var dailyEndRepeat = dailyEndReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: dailyEndRule));
+Check(dailyEndRepeat.Status == 0 && dailyEndRepeat.Body!["first_cleared_reward_list"]!.AsArray().Count == 0
+    && dailyEndRepeat.Body["user_update"]!["arena_point"]!.GetValue<int>() == 3
+    && dailyEndReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: dailyEndRule)).Status == 409,
+    "repeated daily victories do not grant cleared stages again");
+Console.WriteLine("Passed 4 daily settlement checks.");
