@@ -29,7 +29,7 @@
 | CheckUserRequest | check_user | 业务实现 | 本地身份存在性检查 |
 | CheckVersionRequest | 未确认 | 未实现 | — |
 | ClearHistoryPlayerInfoRequest | 未确认 | 未实现 | — |
-| ClearHistoryRequest | 未确认 | 未实现 | — |
+| ClearHistoryRequest | get_clear_history | 最小响应 | 无最佳记录，排行及最近记录为空；不生成战绩 |
 | ClearHistoryTeamInfoRequest | 未确认 | 未实现 | — |
 | CollectExpRequest | 未确认 | 未实现 | — |
 | CollectRewardRequest | 未确认 | 未实现 | — |

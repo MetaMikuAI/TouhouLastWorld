@@ -6,6 +6,10 @@ public sealed partial class OfflineServer
 {
     private static readonly Dictionary<string, JsonObject> QueryTemplates = new()
     {
+        ["get_clear_history"] = new()
+        {
+            ["best"] = null, ["ranking"] = new JsonArray(), ["justnow"] = new JsonArray()
+        },
         ["pass_card/show_task"] = new() { ["user_pass_card"] = EmptyPassCard() },
         ["pass_card/show_shop"] = new() { ["user_pass_card"] = EmptyPassCard() },
         ["music_list"] = new() { ["collect"] = new JsonArray(), ["unlock"] = new JsonArray() },
