@@ -182,7 +182,7 @@
 | ShopOrderRequest | 未确认 | 未实现 | — |
 | ShowRewardRequest | 未确认 | 未实现 | — |
 | ShowShopRequest | 未确认 | 未实现 | — |
-| ShowTaskRequest | 未确认 | 未实现 | — |
+| ShowTaskRequest | pass_card/show_task | 最小响应 | 未开通摘要与空任务；不含权益和奖励 |
 | SweepRequest | 未确认 | 未实现 | — |
 | SwitchDoRequest | 未确认 | 未实现 | — |
 | SwitchUserInfoGetRequest | 未确认 | 未实现 | — |

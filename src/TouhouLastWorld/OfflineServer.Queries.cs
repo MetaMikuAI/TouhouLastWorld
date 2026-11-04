@@ -6,6 +6,7 @@ public sealed partial class OfflineServer
 {
     private static readonly Dictionary<string, JsonObject> QueryTemplates = new()
     {
+        ["pass_card/show_task"] = new() { ["user_pass_card"] = EmptyPassCard() },
         ["music_list"] = new() { ["collect"] = new JsonArray(), ["unlock"] = new JsonArray() },
         ["get_shrine_office_shop_list"] = new() { ["shop_list"] = new JsonArray() },
         ["avatar/list"] = new() { ["avatar_list"] = new JsonArray() },
@@ -29,5 +30,14 @@ public sealed partial class OfflineServer
             ["bronze_trophy_count"] = 0, ["silver_trophy_count"] = 0, ["gold_trophy_count"] = 0,
             ["unit_get_count"] = 0, ["quest_complete_count"] = 0, ["dispatch_complete_count"] = 0
         }
+    };
+
+    private static JsonObject EmptyPassCard() => new()
+    {
+        ["left_day"] = 0, ["current_exp"] = 0, ["is_vip"] = 0, ["is_had_gift"] = 0,
+        ["coin"] = 0, ["level"] = 0, ["is_reward"] = 0, ["is_task"] = 0,
+        ["had_got_free_reward_level"] = new JsonArray(), ["had_got_vip_reward_level"] = new JsonArray(),
+        ["free_rewards"] = new JsonArray(), ["vip_rewards"] = new JsonArray(),
+        ["tasks"] = new JsonArray(), ["pass_card_goods"] = new JsonArray()
     };
 }
