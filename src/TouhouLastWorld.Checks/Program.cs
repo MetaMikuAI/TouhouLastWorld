@@ -3453,3 +3453,42 @@ arenaWeeklyServer.Dispatch("weekly_arena_battle_score_reset", arguments: new(Val
 Check(arenaWeeklyServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaWeeklyRule)).Status == 0,
     "weekly reset releases the occupied character for admission");
 Console.WriteLine("Passed 5 arena admission checks.");
+
+var arenaEndSeed = arenaWeeklySeed.DeepClone();
+arenaEndSeed["_local_weekly_arena"]!["total_battle_score"] = 0;
+for (var number = 1; number <= 4; number++)
+{
+    var entry = arenaEndSeed["_local_weekly_arena"]!["weekly_battle_data"]![$"battle_number{number}"]!;
+    entry["total_score"] = 0;
+    entry["is_clear"] = 0;
+    entry["unit_list"] = new JsonArray();
+    entry["user_unit_list"] = new JsonArray();
+}
+var arenaEndDirectory = directory + "-arena-end";
+var arenaEndServer = new OfflineServer(arenaEndDirectory, arenaEndSeed.ToJsonString(), "offline://resources/");
+arenaEndServer.Dispatch("game_init");
+arenaEndServer.Dispatch("login");
+Check(arenaEndServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaWeeklyRule)).Status == 0,
+    "weekly settlement starts with a persisted entry");
+var arenaEndRule = new LocalArenaEnd(1, 1, [], false, new(1, 0, 64, 24, 20, 20), [new(1, 20, 5), new(2, 60, 7)], 100);
+Check(arenaEndServer.Dispatch("arena_battle_end", arguments: new(ArenaEnd: arenaEndRule with { Score = new(1, 0, 65, 24, 20, 20) })).Status == 409
+    && arenaEndServer.Dispatch("arena_battle_end", arguments: new(ArenaEnd: arenaEndRule with { Capacity = 10 })).Status == 409,
+    "score mismatch and reward overflow leave the pending settlement intact");
+var arenaEndReply = arenaEndServer.Dispatch("arena_battle_end", arguments: new(ArenaEnd: arenaEndRule));
+Check(arenaEndReply.Status == 0 && arenaEndReply.Body!["first_cleared_reward_list"]![0]!["object_type"]!.GetValue<int>() == 21
+    && arenaEndReply.Body["user_update"]!["arena_point"]!.GetValue<int>() == 12
+    && arenaEndServer.Dispatch("arena_battle_end", arguments: new(ArenaEnd: arenaEndRule)).Status == 409,
+    "weekly settlement grants crossed thresholds once and consumes the pending entry");
+var arenaEndReload = new OfflineServer(arenaEndDirectory, seed, "offline://resources/");
+arenaEndReload.Dispatch("game_init");
+arenaEndReload.Dispatch("login");
+arenaEndReload.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaWeeklyRule));
+var arenaLowerEnd = arenaEndReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: arenaEndRule with { Score = new(17, 10, 20, 0, 0, 20) }));
+Check(arenaLowerEnd.Status == 0 && arenaLowerEnd.Body!["first_cleared_reward_list"]!.AsArray().Count == 0
+    && arenaEndReload.Dispatch("weekly_arena_top").Body!["weekly_battle_data"]!["battle_number1"]!["total_score"]!.GetValue<int>() == 64,
+    "lower repeat scores preserve the saved best score and do not grant thresholds again");
+Check(arenaEntryReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: new(1, 0, [], false, null, null, 0))).Status == 503
+    && arenaEntryReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: new(0, 0, [], false, null, null, 0))).Status == 0
+    && arenaEntryReload.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule)).Status == 0,
+    "unsupported daily wins retain the entry while defeat releases it for another attempt");
+Console.WriteLine("Passed 5 arena settlement checks.");
