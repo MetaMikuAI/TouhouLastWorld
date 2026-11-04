@@ -2853,3 +2853,14 @@ tutorialSnapshot["unit"]!["unit_list"]!.AsArray().Clear();
 Check(introConfirmedReload.Dispatch("tutorial_first_gacha_do").Body!["user"]!["unit"]!["unit_list"]!.AsArray().Count == 2,
     "tutorial inventory does not mutate or duplicate the saved roster");
 Console.WriteLine("Passed 3 tutorial inventory checks.");
+Check(server.Dispatch("tutorial_first_gacha_confirm").Status == 409,
+    "tutorial confirmation requires previously confirmed inventory");
+var tutorialRestore = introConfirmedReload.Dispatch("tutorial_first_gacha_confirm").Body!["user_update"]!;
+Check(tutorialRestore["unit"]!["unit_list"]!.AsArray().Count == 2
+    && tutorialRestore["team"]!["team_list"]!.AsArray().Count == 1
+    && tutorialRestore["album"]!["unit_list"]!.AsArray().Count == 1
+    && tutorialRestore["home_unit_info"] is not null,
+    "tutorial confirmation restores roster, teams, album and home state cleared by the native request");
+Check(introConfirmedReload.Dispatch("tutorial_first_gacha_confirm").Body!["user_update"]!["unit"]!["unit_list"]!.AsArray().Count == 2,
+    "tutorial confirmation does not grant additional inventory on repeated calls");
+Console.WriteLine("Passed 3 tutorial restoration checks.");
