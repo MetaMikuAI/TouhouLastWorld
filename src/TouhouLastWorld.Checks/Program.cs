@@ -340,3 +340,20 @@ Check(savedUser["team"]!["team_list"]![0]!["user_unit_id_list"]![1]!.GetValue<lo
     "team and markers persist");
 Check(teamReload.Dispatch("friend_top").Body!["helper_user_unit_id1"]!.GetValue<long>() == 1, "helper persists and overview reads selection");
 Console.WriteLine("Passed 14 team, marker and helper checks.");
+Check(teams.Dispatch("home_select_unit_update", arguments: new(Value: 1)).Status == 400
+    && teams.Dispatch("home_select_unit_update", arguments: new(Value: -1)).Status == 400, "home selection bounds");
+Check(teams.Dispatch("home_select_unit_update", arguments: new(Value: 0)).Body!["user_update"]!["home_unit_info"]!["select_unit_index"]!.GetValue<int>() == 0,
+    "home selection saved");
+Check(teams.Dispatch("home_bgm_update", arguments: new(Value: -1)).Status == 400, "negative home music rejected");
+Check(teams.Dispatch("home_bgm_update", arguments: new(Value: 123)).Status == 0, "home music saved");
+Check(teams.Dispatch("unit_bgm_update", arguments: new(999, 123)).Status == 404, "unit music requires owned unit");
+Check(teams.Dispatch("unit_bgm_update", arguments: new(1, -1)).Status == 400, "negative unit music rejected");
+Check(teams.Dispatch("unit_bgm_update", arguments: new(1, 456)).Status == 0, "unit music saved");
+var homeReload = new OfflineServer(teamDirectory, teamSeed.ToJsonString(), "offline://resources/");
+homeReload.Dispatch("game_init");
+var homeUser = homeReload.Dispatch("login").Body!["user"]!;
+Check(homeUser["select_bgm"]!.GetValue<int>() == 123 && homeUser["unit"]!["unit_list"]![0]!["select_bgm"]!.GetValue<int>() == 456
+    && homeUser["bgm_item"]!["received_bgm_item_id_list"]!.AsArray().Count == 0, "music preferences persist without granting items");
+Check(homeReload.Dispatch("home_bgm_update", arguments: new(Value: 0)).Body!["user_update"]!["select_bgm"]!.GetValue<int>() == 0,
+    "home music default restored");
+Console.WriteLine("Passed 9 home preference checks.");
