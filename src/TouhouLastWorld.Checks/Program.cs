@@ -3179,3 +3179,30 @@ Check(miniOverviewServer.Dispatch("mini_game_top", arguments: new(Ids: new[] { 1
     && miniOverviewServer.Dispatch("login").Body!["user"]!["phantasm_point"]!["points"]!.GetValue<int>() == 100,
     "entry overview rejects duplicate definitions and grants no points");
 Console.WriteLine("Passed 2 entry overview checks.");
+var pointExchangeSeed = JsonNode.Parse(seed)!;
+pointExchangeSeed["_local_gacha_points"] = new JsonArray(new JsonObject { ["gacha_point_id"] = 2, ["value"] = 300 });
+var pointExchangeServer = new OfflineServer(directory + "-point-exchange", pointExchangeSeed.ToJsonString(), "offline://resources/");
+pointExchangeServer.Dispatch("game_init");
+pointExchangeServer.Dispatch("login");
+var pointExchangeRule = new LocalPointExchange(8, 2, 100, 1, 10, 501, 1000, true, new(501, 10, 20, 30));
+var pointExchangeBefore = pointExchangeServer.Dispatch("login").Body!["user"]!.ToJsonString();
+Check(pointExchangeServer.Dispatch("gacha_point_exchange", arguments: new(PointExchange: pointExchangeRule with { Active = false })).Status == 409
+    && pointExchangeServer.Dispatch("gacha_point_exchange", arguments: new(PointExchange: pointExchangeRule with { Cost = 301 })).Status == 409
+    && pointExchangeServer.Dispatch("gacha_point_exchange", arguments: new(PointExchange: pointExchangeRule with { Capacity = 0 })).Status == 503
+    && pointExchangeServer.Dispatch("login").Body!["user"]!.ToJsonString() == pointExchangeBefore,
+    "point exchange rejects unavailable offers and insufficient funds without state changes");
+var pointExchangeResult = pointExchangeServer.Dispatch("gacha_point_exchange", arguments: new(PointExchange: pointExchangeRule)).Body!;
+var pointExchangeItem = pointExchangeResult["user_update"]!["picture"]!["picture_list"]!.AsArray()
+    .Single(row => row!["user_picture_id"]!.GetValue<long>() == pointExchangeResult["gain_object"]!["unique_id"]!.GetValue<long>())!;
+Check(pointExchangeResult["gacha_point"]!.GetValue<int>() == 200 && pointExchangeResult["remaining_count"]!.GetValue<int>() == 0
+    && pointExchangeItem["picture_id"]!.GetValue<int>() == 501 && pointExchangeItem["parameter2_value"]!.GetValue<int>() == 20,
+    "point exchange returns remaining balance and count with the persisted equipment identifier");
+var pointExchangeReload = new OfflineServer(directory + "-point-exchange", seed, "offline://resources/");
+pointExchangeReload.Dispatch("game_init");
+pointExchangeReload.Dispatch("login");
+var pointExchangeOverview = pointExchangeReload.Dispatch("gacha_top").Body!;
+Check(pointExchangeReload.Dispatch("gacha_point_exchange", arguments: new(PointExchange: pointExchangeRule)).Status == 409
+    && pointExchangeOverview["gacha_point_list"]![0]!["value"]!.GetValue<int>() == 200
+    && pointExchangeOverview["gacha_point_exchange_count_list"]![0]!["count"]!.GetValue<int>() == 1,
+    "point exchange limits and overview balances survive restart");
+Console.WriteLine("Passed 3 point exchange checks.");

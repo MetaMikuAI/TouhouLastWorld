@@ -74,7 +74,7 @@
 | FriendSettingHelperRequest | friend_setting_helper | 业务实现 | 校验助战成员归属，保存选择及上报战力，总览同步回读；不重新计算战力 |
 | FriendTopRequest | friend_top | 最小响应 | 读取旧版本地关系、收发申请与助战编号；不生成远端数据 |
 | GachaDoRequest | gacha_do | 业务实现 | 仅固定本地池：扣费、入库、保存 |
-| GachaPointExchangeRequest | 未确认 | 未实现 | — |
+| GachaPointExchangeRequest | gacha_point_exchange | 业务实现 | 按主表扣除本地积分、记录限次并入库，支持单件装备及本地角色模板；积分生成、限定候选和其他奖励未实现 |
 | GachaRetryFixRequest | retry_gacha_fix | 业务实现 | 确认已有待定角色，校验有效期及容量后入库、记录图鉴和确认标记，重试返回原编号；仅本地角色模板，候选生成及其他对象未实现 |
 | GachaTopRequest | gacha_top | 最小响应 | 固定本地列表 |
 | GainFreeItemRequest | gain_free_item | 业务实现 | 领取本地商店唯一免费商品，按模块 UTC 日期限每日一次并保存；支持金币、晶体、物品，未配置或配置不明确时拒绝领取 |

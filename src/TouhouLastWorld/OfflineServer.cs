@@ -44,7 +44,8 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalIntroGrant? IntroGrant = null, LocalHistoryQuery? HistoryQuery = null,
     LocalHistoryDefinitions? HistoryDefinitions = null, LocalUnitRecycle? UnitRecycle = null,
     LocalDispatchSettlement? DispatchSettlement = null, LocalRetryFix? RetryFix = null, LocalMissionClaim? MissionClaim = null,
-    LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null);
+    LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null,
+    LocalPointExchange? PointExchange = null);
 
 public sealed partial class OfflineServer
 {
@@ -156,8 +157,8 @@ public sealed partial class OfflineServer
             "battle_start" => new(),
             "gacha_top" => new()
             {
-                ["gacha_list"] = GachaButtons(), ["gacha_point_exchange_count_list"] = new JsonArray(),
-                ["gacha_point_list"] = new JsonArray(), ["special_gacha_list"] = new JsonArray()
+                ["gacha_list"] = GachaButtons(), ["gacha_point_exchange_count_list"] = user["_local_gacha_exchange_counts"]?.DeepClone() ?? new JsonArray(),
+                ["gacha_point_list"] = user["_local_gacha_points"]?.DeepClone() ?? new JsonArray(), ["special_gacha_list"] = new JsonArray()
             },
             "battle_end" => FinishBattle(battleResult!.Value),
             "gacha_do" => DrawGacha(count!.Value),
