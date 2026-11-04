@@ -40,10 +40,13 @@ public partial class NetworkSystemPatch
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
         if (api == "user_info_update")
+        {
+            var names = request.TryCast<Comic.UserInfoUpdateRequest>();
             arguments = new LocalArguments(Profile: new LocalProfileUpdate(
-                request.TryCast<UserPlayerNameUpdateRequest>()?.player_name,
-                request.TryCast<UserHeroNameUpdateRequest>()?.hero_name,
+                names?.player_name ?? request.TryCast<UserPlayerNameUpdateRequest>()?.player_name,
+                names?.hero_name ?? request.TryCast<UserHeroNameUpdateRequest>()?.hero_name,
                 request.TryCast<UserCommentUpdateRequest>()?.comment));
+        }
         if (api == "tutorial_update")
             arguments = new LocalArguments(Value: request.TryCast<TutorialUpdateRequest>()?.progress_value);
         if (api == "unit_voice_autoset_update")

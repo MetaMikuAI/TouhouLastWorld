@@ -33,7 +33,7 @@
 | ClearHistoryTeamInfoRequest | 未确认 | 未实现 | — |
 | CollectExpRequest | 未确认 | 未实现 | — |
 | CollectRewardRequest | 未确认 | 未实现 | — |
-| Comic.UserInfoUpdateRequest | 未确认 | 未实现 | — |
+| Comic.UserInfoUpdateRequest | user_info_update | 业务实现 | 单独或同时更新两个名称；基础文本校验、原子保存，不含远端文本审核 |
 | ComicGetPagesRequest | 未确认 | 未实现 | — |
 | ComicReadEndRequest | 未确认 | 未实现 | — |
 | DailyArenaTopRequest | 未确认 | 未实现 | — |
