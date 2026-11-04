@@ -547,3 +547,29 @@ Check(cancelledUser["training_room"]!["unit_list"]!.AsArray().Count == 1, "cance
 Check(JsonNode.DeepEquals(cancelSeed["unit"], cancelledUser["unit"])
     && JsonNode.DeepEquals(cancelSeed["orb"], cancelledUser["orb"]), "cancellation does not grant growth or currency");
 Console.WriteLine("Passed 6 training cancellation checks.");
+var equipmentSeed = JsonNode.Parse(seed)!.AsObject();
+equipmentSeed["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"] = 11L;
+equipmentSeed["picture"]!["picture_list"] = new JsonArray(
+    new JsonObject { ["user_picture_id"] = 11L, ["equip_user_unit_id"] = 1L, ["is_protection"] = 1 },
+    new JsonObject { ["user_picture_id"] = 12L, ["equip_user_unit_id"] = 2L, ["is_protection"] = 0 });
+var equipmentDirectory = directory + "-equipment";
+var equipment = new OfflineServer(equipmentDirectory, equipmentSeed.ToJsonString(), "offline://resources/");
+equipment.Dispatch("game_init");
+equipment.Dispatch("login");
+Check(equipment.Dispatch("unit_equip_picture_reset", arguments: new(EntityId: 0)).Status == 400, "equipment reset requires positive ID");
+Check(equipment.Dispatch("unit_equip_picture_reset", arguments: new(EntityId: 999)).Status == 404, "equipment reset requires ownership");
+var resetEquipment = equipment.Dispatch("unit_equip_picture_reset", arguments: new(EntityId: 1)).Body!["user_update"]!;
+Check(Enumerable.Range(1, 5).All(slot => resetEquipment["unit"]!["unit_list"]![0]![$"equip_spellcard{slot}_user_picture_id"]!.GetValue<long>() == 0),
+    "all equipment slots cleared");
+Check(resetEquipment["picture"]!["picture_list"]![0]!["equip_user_unit_id"]!.GetValue<long>() == 0
+    && resetEquipment["picture"]!["picture_list"]![0]!["is_protection"]!.GetValue<int>() == 1
+    && resetEquipment["picture"]!["picture_list"]![1]!["equip_user_unit_id"]!.GetValue<long>() == 2,
+    "reverse link cleared without changing protection or other owners");
+Check(equipment.Dispatch("unit_equip_picture_reset", arguments: new(EntityId: 1)).Status == 0, "equipment reset is idempotent");
+var equipmentReload = new OfflineServer(equipmentDirectory, equipmentSeed.ToJsonString(), "offline://resources/");
+equipmentReload.Dispatch("game_init");
+var equipmentUser = equipmentReload.Dispatch("login").Body!["user"]!;
+Check(equipmentUser["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"]!.GetValue<long>() == 0
+    && equipmentUser["picture"]!["picture_list"]![0]!["equip_user_unit_id"]!.GetValue<long>() == 0,
+    "both equipment references persist together");
+Console.WriteLine("Passed 6 equipment reset checks.");

@@ -208,7 +208,7 @@
 | UnitDestinyValueUpRequest | 未确认 | 未实现 | — |
 | UnitEquipCostumeRequest | 未确认 | 未实现 | — |
 | UnitEquipPictureRequest | 未确认 | 未实现 | — |
-| UnitEquipPictureResetRequest | 未确认 | 未实现 | — |
+| UnitEquipPictureResetRequest | unit_equip_picture_reset | 业务实现 | 清空持有实例的 5 个装备槽与装备反向引用；保留装备、保护状态及其他实例配置 |
 | UnitExtraSpecActualizeRequest | 未确认 | 未实现 | — |
 | UnitLevelLimitbreakRequest | 未确认 | 未实现 | — |
 | UnitLimitbreakStrongFragrantWoodRequest | 未确认 | 未实现 | — |
