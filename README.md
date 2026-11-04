@@ -122,8 +122,8 @@
 | MailReceiveRequest | mail_receive | 业务实现 | 无期限邮件的金币、结晶、道具入库并标记；按主数据限额整批校验、防重领；限期、特殊奖励或超额整批保留 |
 | MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 |
 | MiniGameRequest | 未确认 | 未实现 | — |
-| MissionEndRequest | 未确认 | 未实现 | — |
-| MissionTopRequest | mission_top | 最小响应 | 空分类、未完成与已完成列表；不含奖励 |
+| MissionEndRequest | mission_end | 业务实现 | 单个或批量领取本地已完成任务，按主表发放固定金币/晶体/物品并保存领取记录；整批回滚，随机奖励、任务进度生成与周期重置未实现 |
+| MissionTopRequest | mission_top | 最小响应 | 返回本地未完成、待领取列表及对应分类，默认空；任务进度生成未实现 |
 | MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 最小响应 | 空周进度列表；不生成通关记录、奖励或排名 |
 | MusicLikeRequest | 未确认 | 未实现 | — |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 |

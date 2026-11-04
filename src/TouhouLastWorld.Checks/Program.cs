@@ -3047,3 +3047,33 @@ Check(recoveryNoFunds.Dispatch("tower_unit_recovery").Body!["result"]!.GetValue<
     && recoveryNoFunds.Dispatch("login").Body!["user"]!["unit"]!["tower_unit_list"]!.AsArray().Count == 1,
     "insufficient recovery funds preserve damage and allowance");
 Console.WriteLine("Passed 3 recovery checks.");
+var missionSeed = JsonNode.Parse(seed)!;
+missionSeed["_local_missions"] = new JsonObject { ["unlock_list"] = new JsonArray(), ["clear_list"] = new JsonArray(
+    new JsonObject { ["id"] = 10, ["type"] = 1, ["event_id"] = 0, ["chapter_id"] = 0, ["complete_value"] = 2, ["current_value"] = 2 },
+    new JsonObject { ["id"] = 11, ["type"] = 1, ["event_id"] = 0, ["chapter_id"] = 0, ["complete_value"] = 2, ["current_value"] = 2 }) };
+var missionDirectory = directory + "-mission-claims";
+var missionServer = new OfflineServer(missionDirectory, missionSeed.ToJsonString(), "offline://resources/");
+missionServer.Dispatch("game_init");
+missionServer.Dispatch("login");
+var missionRules = new[] { new LocalMissionRule(10, 1, 0, 2, true, new[] { new LocalInventoryReward(3, 0, 100, 10000) }),
+    new LocalMissionRule(11, 1, 0, 2, true, new[] { new LocalInventoryReward(12, 99990, 3, 2) }) };
+var missionClaim = new LocalMissionClaim(0, 1, 0, 0, 0, missionRules);
+Check(missionServer.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim)).Status == 409
+    && missionServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000
+    && missionServer.Dispatch("mission_top").Body!["mission"]!["clear_list"]!.AsArray().Count == 2,
+    "batch mission claims roll back rewards and claim records on capacity failure");
+var missionSingle = missionServer.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim with { Id = 10, All = 0 })).Body!;
+Check(missionSingle["reward_list"]!.AsArray().Count == 1
+    && missionSingle["receive_mission_list"]![0]!["mission_id"]!.GetValue<int>() == 10
+    && missionSingle["mission"]!["clear_list"]!.AsArray().Count == 1
+    && missionSingle["user_update"]!["gold"]!.GetValue<int>() == 5100,
+    "single mission claims grant rewards and remove only the claimed entry");
+var missionReload = new OfflineServer(missionDirectory, seed, "offline://resources/");
+missionReload.Dispatch("game_init");
+missionReload.Dispatch("login");
+missionRules[1] = missionRules[1] with { Rewards = new[] { new LocalInventoryReward(12, 99990, 3, 100) } };
+Check(missionReload.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim with { Id = 10, All = 0 })).Status == 404
+    && missionReload.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim)).Body!["receive_mission_list"]!.AsArray().Count == 1
+    && missionReload.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim)).Body!["reward_list"]!.AsArray().Count == 0,
+    "mission receipts survive restart and repeated batch claims grant no duplicate reward");
+Console.WriteLine("Passed 3 mission claim checks.");

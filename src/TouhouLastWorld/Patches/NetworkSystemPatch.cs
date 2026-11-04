@@ -39,6 +39,7 @@ public partial class NetworkSystemPatch
         if (api == "get_clear_history_playerinfo") arguments = ReadHistoryPlayer(request.TryCast<ClearHistoryPlayerInfoRequest>()?.player_id);
         if (api == "friend_get_history") arguments = ReadHistoryPlayer(request.TryCast<FriendGetHistoryRequest>()?.player_id);
         if (api == "tower_unit_recovery") arguments = new(Text: request.TryCast<TowerUnitRecoveryRequest>()?.tower_unit_info);
+        if (api == "mission_end") arguments = ReadMissionClaim(request.TryCast<MissionEndRequest>());
         if (api == "dispatch_end") arguments = ReadDispatchSettlement(request.TryCast<DispatchEndRequest>());
         if (api == "retry_gacha_fix")
         {
@@ -698,6 +699,15 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
+            if (api == "mission_end")
+            {
+                var panel = UnityEngine.Object.FindObjectOfType<MissionBehavior>();
+                if (panel != null) panel.m_rcvflg = false;
+                SceneSystem.This()?.IndicatorActive(false);
+                PentopSystem.This()?.EnableEvent();
+                PopupSystem.This()?.CreateMessage(reply.Error);
+                yield break;
+            }
             if (api == "friend_get_history")
             {
                 var panel = UnityEngine.Object.FindObjectOfType<FriendPlayerDetailPanel>();
