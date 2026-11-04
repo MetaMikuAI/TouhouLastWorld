@@ -134,7 +134,7 @@
 | PaymentResumeRequest | 未确认 | 未实现 | — |
 | PaymentStartRequest | 未确认 | 未实现 | — |
 | PhantasmBoxRenovationEndRequest | phantasm_box_renovation_end | 业务实现 | 校验已保存升级时间及下一等级配置，到期升一级并清除计时，重复结算不升级；不调整时间产出 |
-| PhantasmBoxRenovationStartRequest | 未确认 | 未实现 | — |
+| PhantasmBoxRenovationStartRequest | phantasm_box_renovation_start | 业务实现 | 按下一等级配置校验等级、金币费用与时长，一次保存扣款及结束时间，拒绝重复开工；不调整时间产出 |
 | PhantasmPointBuyRequest | 未确认 | 未实现 | — |
 | PictureBookReciveRequest | 未确认 | 未实现 | — |
 | PictureBookRequest | picture_book/get_user_picture_book_list | 最小响应 | 空完成记录；不含进度与奖励 |

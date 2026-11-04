@@ -1799,3 +1799,24 @@ Check(pointRenovationReload.Dispatch("phantasm_box_renovation_end", arguments: n
     && pointRenovationReload.Dispatch("login").Body!["user"]!["phantasm_box"]!["level"]!.GetValue<int>() == 2,
     "point renovation cannot be completed twice after restart");
 Console.WriteLine("Passed 3 point renovation completion checks.");
+
+var pointStartDirectory = directory + "-point-start";
+var pointStartServer = new OfflineServer(pointStartDirectory, seed, "offline://resources/");
+pointStartServer.Dispatch("game_init");
+pointStartServer.Dispatch("login");
+Check(pointStartServer.Dispatch("phantasm_box_renovation_start", arguments: new(Renovation: new(1, 2, 2, 10, 60))).Status == 409
+    && pointStartServer.Dispatch("phantasm_box_renovation_start", arguments: new(Renovation: new(1, 2, 1, 6000, 60))).Status == 409,
+    "point renovation checks account level and gold cost");
+var pointStarted = pointStartServer.Dispatch("phantasm_box_renovation_start", arguments: new(Renovation: new(1, 2, 1, 100, 0))).Body!;
+Check(pointStarted["user_update"]!["gold"]!.GetValue<int>() == 4900
+    && pointStarted["user_update"]!["phantasm_box"]!["level"]!.GetValue<int>() == 1
+    && pointStartServer.Dispatch("login").Body!["user"]!["phantasm_point"]!["points"]!.GetValue<int>() == 100,
+    "point renovation consumes gold while preserving points and current level");
+var pointStartReload = new OfflineServer(pointStartDirectory, seed, "offline://resources/");
+pointStartReload.Dispatch("game_init");
+pointStartReload.Dispatch("login");
+Check(pointStartReload.Dispatch("phantasm_box_renovation_start", arguments: new(Renovation: new(1, 2, 1, 100, 0))).Status == 409
+    && pointStartReload.Dispatch("phantasm_box_renovation_end", arguments: new(2, 1)).Body!["user_update"]!["phantasm_box"]!["level"]!.GetValue<int>() == 2
+    && pointStartReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
+    "point renovation timer persists and completes with only one charge");
+Console.WriteLine("Passed 3 point renovation start checks.");

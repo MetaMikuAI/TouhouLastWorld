@@ -5,7 +5,7 @@ namespace TouhouLastWorld;
 public sealed partial class OfflineServer
 {
     private static bool SupportsAdditional(string api) => api is "gold_box_renovation_start" or "gold_box_renovation_end" or "gather_phantasm_point" or "gather_gold" or "friend/receive" or "friend/give" or "delete_account" or "get_tower_unit_info" or "tower_top" or "tutorial_update" or "logout" or "set_age"
-        or "phantasm_box_renovation_end" or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting"
+        or "phantasm_box_renovation_start" or "phantasm_box_renovation_end" or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting"
         or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
         or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
@@ -30,6 +30,7 @@ public sealed partial class OfflineServer
         "gather_gold" => GatherGold(arguments),
         "gold_box_renovation_end" => CompleteBoxRenovation("gold_box", arguments),
         "phantasm_box_renovation_end" => CompleteBoxRenovation("phantasm_box", arguments),
+        "phantasm_box_renovation_start" => StartBoxRenovation("phantasm_box", arguments?.Renovation),
         "gold_box_renovation_start" => StartBoxRenovation("gold_box", arguments?.Renovation),
         "gather_phantasm_point" => GatherPoints(arguments),
         "friend/receive" => ReceiveContactGift(arguments),
