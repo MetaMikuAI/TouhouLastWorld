@@ -28,7 +28,7 @@ public sealed class Plugin : BasePlugin
         using var reader = new StreamReader(stream);
         Server = new OfflineServer(Path.Combine(Paths.BepInExRootPath, "offline-data"), reader.ReadToEnd(), resourceRoot);
         PatchRegistry.ApplyAll(harmony);
-        Log.LogInfo("Embedded server ready: game_init, version_get, user_create, login, check_user, home, check_conditional_pack, afk_top, battle_start, battle_end, gacha_top, gacha_do. SDK unchanged; no HTTP transport.");
+        Log.LogInfo("Embedded server ready. SDK unchanged; no HTTP transport.");
     }
 
     public override bool Unload()

@@ -108,3 +108,33 @@ var single = gachaServer.Dispatch("gacha_do", 0, gachaId: 10, gachaButtonId: 102
 Check(single["gacha_drop_list"]!.AsArray().Count == 1 && single["gacha_drop_list"]![0]!["object_type"]!.GetValue<int>() == 9, "native default count resolves to unit drop");
 Check(single["user_update"]!["gold"]!.GetValue<int>() == 18500 && single["user_update"]!["crystal"]!.GetValue<int>() == 45, "native button costs applied once");
 Console.WriteLine("Passed 4 native gacha request checks.");
+
+var flagSeed = JsonNode.Parse(seed)!;
+flagSeed["picture"]!["picture_list"]!.AsArray().Add(new JsonObject
+{
+    ["user_picture_id"] = 7L, ["picture_id"] = 1001, ["is_protection"] = 0, ["is_new"] = 1
+});
+var flagDirectory = directory + "-flags";
+var flags = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+flags.Dispatch("game_init");
+Check(flags.Dispatch("unit_protection", arguments: new(1, 1)).Status == 401, "flag update requires identity");
+flags.Dispatch("login");
+var unitKey = flagSeed["unit"]!["unit_list"]![0]!["user_unit_id"]!.GetValue<long>();
+foreach (var (section, id) in new[] { ("unit", unitKey), ("picture", 7L) })
+{
+    Check(flags.Dispatch(section + "_protection", arguments: new(id, 2)).Status == 400, "invalid flag rejected");
+    Check(flags.Dispatch(section + "_protection", arguments: new(long.MaxValue, 1)).Status == 404, "missing entity rejected");
+    Check(flags.Dispatch(section + "_protection", arguments: new(id, 1)).Status == 0, "protection update");
+    Check(flags.Dispatch(section + "_new_update", arguments: new(Ids: [id, long.MaxValue])).Status == 404, "mixed batch rejected");
+    var unchanged = flags.Dispatch("login").Body!["user"]![section]![section + "_list"]![0]!;
+    Check(unchanged["is_new"]!.GetValue<int>() == 1, "mixed batch has no partial write");
+    Check(flags.Dispatch(section + "_new_update", arguments: new(Ids: [id, id])).Status == 0, "duplicate IDs are idempotent");
+    var reload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+    reload.Dispatch("game_init");
+    var entry = reload.Dispatch("login").Body!["user"]![section]![section + "_list"]![0]!;
+    Check(entry["is_protection"]!.GetValue<int>() == 1 && entry["is_new"]!.GetValue<int>() == 0, "flags persist across restart");
+}
+Check(flags.Dispatch("mail_top").Body!["mail"]!.AsArray().Count == 0, "empty mail list contract");
+var friends = flags.Dispatch("friend/list").Body!;
+Check(friends["data"]!.AsArray().Count == 0 && friends["request_tips"]!.GetValue<int>() == 0, "empty friend list contract");
+Console.WriteLine("Passed 17 entity flag and minimal response checks.");
