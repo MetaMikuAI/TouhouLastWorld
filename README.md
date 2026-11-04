@@ -64,7 +64,7 @@
 | FriendGetRequest | 未确认 | 未实现 | — |
 | FriendGiveRequest | 未确认 | 未实现 | — |
 | FriendInfoRequest | 未确认 | 未实现 | — |
-| FriendListRequest | friend_list | 最小响应 | 空列表与无申请提示；不含关系变更 |
+| FriendListRequest | friend/list | 最小响应 | 空列表与无申请提示；不含关系变更 |
 | FriendPlayerSearchRequest | 未确认 | 未实现 | — |
 | FriendRecommendRequest | 未确认 | 未实现 | — |
 | FriendRefuseRequest | 未确认 | 未实现 | — |
