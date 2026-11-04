@@ -138,3 +138,14 @@ Check(flags.Dispatch("mail_top").Body!["mail"]!.AsArray().Count == 0, "empty mai
 var friends = flags.Dispatch("friend/list").Body!;
 Check(friends["data"]!.AsArray().Count == 0 && friends["request_tips"]!.GetValue<int>() == 0, "empty friend list contract");
 Console.WriteLine("Passed 17 entity flag and minimal response checks.");
+Check(flags.Dispatch("unit_voice_autoset_update", arguments: new(Value: -1)).Status == 400, "invalid preference rejected");
+Check(flags.Dispatch("unit_voice_autoset_update", arguments: new(Value: 1)).Status == 0, "preference enabled");
+var preferenceReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+preferenceReload.Dispatch("game_init");
+Check(preferenceReload.Dispatch("login").Body!["user"]!["unit_voice_autoset"]!.GetValue<int>() == 1, "preference persists");
+Check(preferenceReload.Dispatch("unit_voice_autoset_update", arguments: new(Value: 0)).Body!["user_update"]!["unit_voice_autoset"]!.GetValue<int>() == 0, "preference disabled");
+foreach (var route in new[] { "friend/apply_list", "friend/recommend" })
+    Check(flags.Dispatch(route).Body!["data"]!.AsArray().Count == 0, "empty list contract: " + route);
+var catalog = flags.Dispatch("get_shop_list").Body!;
+Check(catalog["shop_list"]!.AsArray().Count == 0 && catalog["feature_product_shop_list"]!.AsArray().Count == 0, "empty catalog contract");
+Console.WriteLine("Passed 7 preference and list response checks.");

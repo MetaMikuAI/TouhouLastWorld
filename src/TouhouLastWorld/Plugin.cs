@@ -8,7 +8,7 @@ using TouhouLastWorld.Patches;
 
 namespace TouhouLastWorld;
 
-[BepInPlugin(Id, "TouhouLastWorld", "0.5.7")]
+[BepInPlugin(Id, "TouhouLastWorld", "0.6.0")]
 public sealed class Plugin : BasePlugin
 {
     public const string Id = "local.touhoulastworld";
