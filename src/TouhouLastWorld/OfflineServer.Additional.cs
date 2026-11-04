@@ -4,11 +4,13 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
-    private static bool SupportsAdditional(string api) => api is "tutorial_update" || QueryTemplates.ContainsKey(api);
+    private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "logout" => arguments?.Text == account!.UserId
+            ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
 

@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "logout")
+            arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "tutorial_update")
             arguments = new LocalArguments(Value: request.TryCast<TutorialUpdateRequest>()?.progress_value);
         if (api == "unit_voice_autoset_update")
@@ -104,5 +106,13 @@ public partial class NetworkSystemPatch
 
     [HarmonyPatch(nameof(NetworkSystem.TransmitForget), typeof(RequestPacket))]
     [HarmonyPrefix]
-    public static bool TransmitForget_Prefix() => SkipOriginal;
+    public static bool TransmitForget_Prefix(RequestPacket __0)
+    {
+        if (__0.GetAPIName() == "logout")
+        {
+            var reply = Plugin.Server.Dispatch("logout", arguments: new(Text: __0.TryCast<LogoutRequest>()?.user_id));
+            Log.Info($"Offline logout: status={reply.Status}");
+        }
+        return SkipOriginal;
+    }
 }

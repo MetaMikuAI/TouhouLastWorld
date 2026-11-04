@@ -117,7 +117,7 @@
 | LectureRoomUpdateRequest | 未确认 | 未实现 | — |
 | LevelGiftRequest | 未确认 | 未实现 | — |
 | LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 |
-| LogoutRequest | 未确认 | 未实现 | — |
+| LogoutRequest | logout | 业务实现 | 校验本地身份并结束会话；保留身份与存档 |
 | MailDeleteRequest | 未确认 | 未实现 | — |
 | MailReceiveRequest | 未确认 | 未实现 | — |
 | MailTopRequest | mail_top | 最小响应 | 空列表；不含领取与删除 |

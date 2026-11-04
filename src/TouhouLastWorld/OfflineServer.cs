@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 namespace TouhouLastWorld;
 
 public sealed record LocalReply(int Status, JsonObject? Body, string Error = "");
-public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null);
+public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null);
 
 public sealed partial class OfflineServer
 {
@@ -143,6 +143,7 @@ public sealed partial class OfflineServer
         body["session_id"] = session;
         body["encryption_key"] = InitialKey;
         body["response_time"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        if (api == "logout") session = null;
         return new(0, body);
     }
 
