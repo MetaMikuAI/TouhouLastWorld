@@ -736,3 +736,29 @@ Check(deckOverview["progress"]!.GetValue<int>() == 0 && deckOverview["map_id"]!.
 Check(deckReload.Dispatch("roguelite_deck_call", arguments: new(Value: 3)).Status == 0,
     "initialized empty preset can be activated");
 Console.WriteLine("Passed 4 deck overview checks.");
+var pageSeed = JsonNode.Parse(seed)!.AsObject();
+pageSeed["comic_point"] = 100;
+var pageDirectory = directory + "-pages";
+var pages = new OfflineServer(pageDirectory, pageSeed.ToJsonString(), "offline://resources/");
+pages.Dispatch("game_init");
+pages.Dispatch("login");
+Check(pages.Dispatch("comic_get_pages").Status == 503, "page acquisition needs master definition");
+Check(pages.Dispatch("comic_get_pages", arguments: new(Pages: new(1, 11, 10, 5))).Status == 409
+    && pages.Dispatch("comic_get_pages", arguments: new(Pages: new(1, 10, 10, 20))).Status == 409,
+    "page limit and insufficient balance rejected");
+Check(pages.Dispatch("comic_read_end", arguments: new(1, 1)).Status == 404, "unacquired collection cannot be marked read");
+var acquiredPages = pages.Dispatch("comic_get_pages", arguments: new(Pages: new(1, 3, 10, 5))).Body!["user_update"]!;
+Check(acquiredPages["comic_point"]!.GetValue<int>() == 85
+    && acquiredPages["comic_data"]![0]!["received_page_count"]!.GetValue<int>() == 3, "page acquisition deducts matching point cost");
+Check(pages.Dispatch("comic_read_end", arguments: new(1, 4)).Status == 403, "unacquired page cannot be marked read");
+pages.Dispatch("comic_read_end", arguments: new(1, 3));
+pages.Dispatch("comic_read_end", arguments: new(1, 1));
+pages.Dispatch("comic_get_pages", arguments: new(Pages: new(1, 2, 10, 5)));
+var pageReload = new OfflineServer(pageDirectory, pageSeed.ToJsonString(), "offline://resources/");
+pageReload.Dispatch("game_init");
+var pageUser = pageReload.Dispatch("login").Body!["user"]!;
+Check(pageUser["comic_point"]!.GetValue<int>() == 75 && pageUser["comic_data"]![0]!["received_page_count"]!.GetValue<int>() == 5
+    && pageUser["comic_data"]![0]!["rad_page_count"]!.GetValue<int>() == 3, "page balance and monotonic reading progress survive reload");
+Check(pageReload.Dispatch("comic_get_pages", arguments: new(Pages: new(1, int.MaxValue, int.MaxValue, int.MaxValue))).Status == 409
+    && pageReload.Dispatch("login").Body!["user"]!["comic_point"]!.GetValue<int>() == 75, "overflow-sized request preserves balance");
+Console.WriteLine("Passed 7 page checks.");

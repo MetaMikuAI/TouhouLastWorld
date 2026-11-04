@@ -35,6 +35,14 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "comic_get_pages")
+        {
+            var pages = request.TryCast<ComicGetPagesRequest>();
+            var definition = pages == null ? null : MasterDB.This()?.Comic?.Find(pages.comic_id);
+            var price = MasterDB.This()?.Setting?.GET_COMIC_PAGE_USED_POINT;
+            arguments = pages == null || definition == null || price == null ? null
+                : new LocalArguments(Pages: new(pages.comic_id, pages.page_count, definition.max_page_num, price.Value));
+        }
         if (api == "comic_read_end")
         {
             var pages = request.TryCast<ComicReadEndRequest>();
