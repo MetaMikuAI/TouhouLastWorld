@@ -225,3 +225,18 @@ Check(persistedProfile["player_name"]!.GetValue<string>() == "Local"
     && persistedProfile["comment"]!.GetValue<string>() == ""
     && persistedProfile["age_limit_type"]!.GetValue<int>() == 2, "profile and category survive restart");
 Console.WriteLine("Passed 11 profile and search checks.");
+Check(flags.Dispatch("get_profile_setting").Body!["profile_setting"]!.GetValue<string>() == "", "new layout uses client defaults");
+var layoutText = "{\"characterId\":1001,\"comment\":\"Layout\",\"playerInfoPos\":true,\"efudaScale\":{\"x\":1,\"y\":1,\"z\":1}}";
+Check(flags.Dispatch("update_profile_setting", arguments: new(Text: layoutText)).Status == 0, "valid layout saved");
+foreach (var invalidLayout in new[] { "{", "[]", "{\"characterId\":-1}", "{\"comment\":1}", "{\"playerInfoPos\":1}", "{\"efudaScale\":{\"x\":1}}" })
+    Check(flags.Dispatch("update_profile_setting", arguments: new(Text: invalidLayout)).Status == 400, "invalid layout rejected");
+var layoutReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+layoutReload.Dispatch("game_init");
+layoutReload.Dispatch("login");
+Check(layoutReload.Dispatch("get_profile_setting").Body!["profile_setting"]!.GetValue<string>() == layoutText,
+    "layout survives restart and rejected writes");
+Check(flags.Dispatch("update_profile_setting2", arguments: new(Text: "")).Body!["text_value"]!.GetValue<int>() == 0, "layout comment may be empty");
+Check(flags.Dispatch("update_profile_setting2", arguments: new(Text: "bad\ntext")).Body!["text_value"]!.GetValue<int>() != 0, "layout comment rejects controls");
+Check(flags.Dispatch("update_profile_setting2").Body!["text_value"]!.GetValue<int>() != 0, "layout comment requires input");
+Check(flags.Dispatch("get_profile_setting").Body!["profile_setting"]!.GetValue<string>() == layoutText, "text check does not save layout");
+Console.WriteLine("Passed 13 layout checks.");
