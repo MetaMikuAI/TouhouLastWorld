@@ -597,3 +597,26 @@ Check(equippedUser["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"
     && equippedUser["unit"]!["unit_list"]![0]!["equip_spellcard2_user_picture_id"]!.GetValue<long>() == 11,
     "equipment slot move persists");
 Console.WriteLine("Passed 8 equipment assignment checks.");
+var costumeSeed = JsonNode.Parse(seed)!.AsObject();
+costumeSeed["costume"]!["costume_id_list"]!.AsArray().Add(100102);
+var costumeDirectory = directory + "-costume";
+var costumes = new OfflineServer(costumeDirectory, costumeSeed.ToJsonString(), "offline://resources/");
+costumes.Dispatch("game_init");
+costumes.Dispatch("login");
+Check(costumes.Dispatch("unit_equip_costume", arguments: new(Costumes: [new(1, 100102, 999, false)])).Status == 400,
+    "costume definition must match unit");
+Check(costumes.Dispatch("unit_equip_costume", arguments: new(Costumes: [new(1, 100103, 1001, false)])).Status == 403,
+    "unowned costume rejected");
+Check(costumes.Dispatch("unit_equip_costume", arguments: new(Costumes: [new(1, 100102, 1001, false), new(999, 100102, 1001, false)])).Status == 404
+    && costumes.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["equip_costume_id"]!.GetValue<int>() == 100101,
+    "costume batch failure preserves earlier assignments");
+Check(costumes.Dispatch("unit_equip_costume", arguments: new(Costumes: [new(1, 100102, 1001, false)])).Status == 0,
+    "owned costume accepted");
+var costumeReload = new OfflineServer(costumeDirectory, costumeSeed.ToJsonString(), "offline://resources/");
+costumeReload.Dispatch("game_init");
+var costumeUser = costumeReload.Dispatch("login").Body!["user"]!;
+Check(costumeUser["unit"]!["unit_list"]![0]!["equip_costume_id"]!.GetValue<int>() == 100102
+    && costumeUser["costume"]!["costume_id_list"]!.AsArray().Count == 1, "costume persists without unlocking new entries");
+Check(costumeReload.Dispatch("unit_equip_costume", arguments: new(Costumes: [new(1, 100101, 1001, true)])).Status == 0,
+    "default costume can be restored");
+Console.WriteLine("Passed 6 costume checks.");

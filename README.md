@@ -206,7 +206,7 @@
 | UnitAllocatePointsRequest | 未确认 | 未实现 | — |
 | UnitBGMUpdateRequest | unit_bgm_update | 业务实现 | 校验成员归属，保存非负音乐编号；不校验资源可用性，不解锁音乐 |
 | UnitDestinyValueUpRequest | 未确认 | 未实现 | — |
-| UnitEquipCostumeRequest | 未确认 | 未实现 | — |
+| UnitEquipCostumeRequest | unit_equip_costume | 业务实现 | 批量切换默认、已持有或当前外观，校验主数据归属；不新增持有，未接入特殊进阶解锁 |
 | UnitEquipPictureRequest | unit_equip_picture | 业务实现 | 局部更新 1–5 槽位与反向引用；校验持有、重复和占用，0 表示卸下；未校验槽位解锁 |
 | UnitEquipPictureResetRequest | unit_equip_picture_reset | 业务实现 | 清空持有实例的 5 个装备槽与装备反向引用；保留装备、保护状态及其他实例配置 |
 | UnitExtraSpecActualizeRequest | 未确认 | 未实现 | — |

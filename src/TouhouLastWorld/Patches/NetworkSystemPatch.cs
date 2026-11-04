@@ -45,6 +45,18 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<TrainingRoomCancelRequest>()?.slot_number);
         if (api == "unit_equip_picture_reset")
             arguments = new LocalArguments(EntityId: request.TryCast<UnitEquipPictureResetRequest>()?.user_unit_id);
+        if (api == "unit_equip_costume")
+        {
+            var update = request.TryCast<UnitEquipCostumeRequest>();
+            arguments = new LocalArguments(Costumes: update?.costume_list?.ToArray().Select(entry =>
+            {
+                if (entry == null) return new LocalCostumeEntry(0, 0, 0, false);
+                var definition = MasterDB.This()?.Costume?.Find(entry.costume_id);
+                var unit = definition == null ? null : MasterDB.This()?.Unit?.Find(definition.unit_id);
+                return new LocalCostumeEntry(entry.user_unit_id, entry.costume_id, definition?.unit_id ?? 0,
+                    unit?.default_costume_id == entry.costume_id);
+            }).ToArray());
+        }
         if (api == "unit_equip_picture")
         {
             var update = request.TryCast<UnitEquipPictureRequest>();

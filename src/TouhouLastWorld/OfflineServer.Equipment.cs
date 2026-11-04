@@ -4,6 +4,29 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply SetCostumes(LocalCostumeEntry[]? changes)
+    {
+        if (changes is null || changes.Any(entry => entry.UserUnitId <= 0 || entry.CostumeId <= 0)
+            || changes.Select(entry => entry.UserUnitId).Distinct().Count() != changes.Length)
+            return new(400, null, "Invalid costume assignments.");
+        var updated = user.DeepClone().AsObject();
+        var owned = updated["costume"]!["costume_id_list"]!.AsArray().Select(id => id!.GetValue<int>()).ToHashSet();
+        var units = updated["unit"]!["unit_list"]!.AsArray();
+        foreach (var change in changes)
+        {
+            if (change.UnitId <= 0) return new(503, null, "Costume definition unavailable.");
+            var unit = units.FirstOrDefault(entry => entry!["user_unit_id"]!.GetValue<long>() == change.UserUnitId);
+            if (unit is null) return new(404, null, "Owned unit not found.");
+            if (unit["unit_id"]!.GetValue<int>() != change.UnitId) return new(400, null, "Costume does not match unit.");
+            if (!change.IsDefault && !owned.Contains(change.CostumeId)
+                && unit["equip_costume_id"]!.GetValue<int>() != change.CostumeId)
+                return new(403, null, "Costume not owned.");
+            unit["equip_costume_id"] = change.CostumeId;
+        }
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["unit"] = updated["unit"]!.DeepClone() } });
+    }
+
     private LocalReply SetEquipment(LocalArguments? request)
     {
         if (request?.EntityId is null or <= 0 || request.Equipment is null || request.Equipment.Length > 5
