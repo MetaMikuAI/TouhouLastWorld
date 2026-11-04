@@ -111,7 +111,7 @@
 | LectureRoomFoodDistributionRequest | 未确认 | 未实现 | — |
 | LectureRoomFoodExpansionRequest | 未确认 | 未实现 | — |
 | LectureRoomUnitExpansionRequest | 未确认 | 未实现 | — |
-| LectureRoomUnitRemoveRequest | 未确认 | 未实现 | — |
+| LectureRoomUnitRemoveRequest | lecture_room_unit_remove | 业务实现 | 移出本地成员并清除占用标记；重复移出幂等，不结算计时收益 |
 | LectureRoomUnitSetRequest | 未确认 | 未实现 | — |
 | LectureRoomUnitTrustUpRequest | 未确认 | 未实现 | — |
 | LectureRoomUpdateRequest | 未确认 | 未实现 | — |
