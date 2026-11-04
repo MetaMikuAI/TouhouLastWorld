@@ -3221,3 +3221,29 @@ Check(relationUpdateReload.Dispatch("login").Body!["user"]!["_local_twitter_user
     && relationUpdateReload.Dispatch("user_twitter_info_delete", arguments: new(Text: "local-updated")).Status == 0,
     "updated local relation survives restart and can be cleared");
 Console.WriteLine("Passed 3 local relation update checks.");
+var seriesStartSeed = JsonNode.Parse(seed)!;
+var seriesStartId = seriesStartSeed["unit"]!["unit_list"]![0]!["user_unit_id"]!.GetValue<long>();
+seriesStartSeed["team"]!["team_list"]!.AsArray().Add(new JsonObject { ["number"] = 80,
+    ["user_unit_id_list"] = new JsonArray(seriesStartId, 0L, 0L, 0L, 0L, 0L) });
+var seriesStartServer = new OfflineServer(directory + "-series-start", seriesStartSeed.ToJsonString(), "offline://resources/");
+seriesStartServer.Dispatch("game_init");
+seriesStartServer.Dispatch("login");
+var seriesStartRule = new LocalSeriesStart(901, 0, 70, 71, 1, true, new[] { 0 });
+Check(seriesStartServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule with { Active = false })).Status == 1008
+    && seriesStartServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule with { Replays = new[] { 1 } })).Status == 409
+    && seriesStartServer.Dispatch("login").Body!["user"]!["series_battle_status"]!["progress"]!.GetValue<int>() == 0,
+    "series start rejects closed entries and missing replay without starting progress");
+var seriesStartResponse = seriesStartServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule)).Body!;
+Check(seriesStartResponse["user_update"]!["series_battle_status"]!["progress"]!.GetValue<int>() == 1
+    && seriesStartServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule with { EpisodeId = 902 })).Status == 409
+    && seriesStartServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule with { Replays = new[] { 1 } })).Status == 409,
+    "series start persists initial progress and protects active selection");
+var seriesStartReload = new OfflineServer(directory + "-series-start", seed, "offline://resources/");
+seriesStartReload.Dispatch("game_init");
+seriesStartReload.Dispatch("login");
+Check(seriesStartReload.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule with { Replays = null }))
+        .Body!["user_update"]!["series_battle_status"]!["progress"]!.GetValue<int>() == 1
+    && seriesStartReload.Dispatch("series_battle_reset").Status == 0
+    && seriesStartReload.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule)).Status == 0,
+    "series retry survives restart without advancing and reset permits a new start");
+Console.WriteLine("Passed 3 series start checks.");
