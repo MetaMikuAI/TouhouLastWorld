@@ -3563,3 +3563,36 @@ Check(versusRulesServer.Dispatch("multiple_spirits_weekly_battle_start", argumen
     && versusRulesServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusRulesEntry)).Status == 0,
     "unlocked additional rules require the exact summed challenge level");
 Console.WriteLine("Passed 5 versus admission checks.");
+
+var versusEndRule = new LocalVersusEnd(7, 60, 60, 1, [], [], false, [new(60, new(3, 0, 5, 100000), false)]);
+Check(versusEntryReload.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusEndRule with { Rules = [1] })).Status == 409
+    && versusEntryReload.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusEndRule with { Ranking = true })).Status == 503
+    && versusEntryReload.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusEndRule with { Rewards = [new(60, null, true)] })).Status == 503,
+    "changed rules, ranking and random drops retain the pending challenge");
+var versusEndReply = versusEntryReload.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusEndRule));
+Check(versusEndReply.Status == 0 && versusEndReply.Body!["user_update"]!["gold"]!.GetValue<int>() == versusEntrySeed["gold"]!.GetValue<int>() + 5
+    && versusEntryReload.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusEndRule)).Status == 409,
+    "initial fixed reward is granted once and consumes the pending challenge");
+var versusEndReload = new OfflineServer(versusEntryDirectory, seed, "offline://resources/");
+versusEndReload.Dispatch("game_init");
+versusEndReload.Dispatch("login");
+Check(versusEndReload.Dispatch("multiple_spirits_weekly_top", arguments: new(Ids: [7])).Body!["clear_info"]![0]!["cleared_level"]!.GetValue<int>() == 60
+    && versusEndReload.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusEntryRule)).Status == 0
+    && versusEndReload.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusEndRule)).Body!["drop_list"]!.AsArray().Count == 0,
+    "clear progress survives restart and repeating the level grants no first reward");
+var versusExtraRewards = Enumerable.Range(101, 10).Select(level => new LocalVersusReward(level, new(3, 0, 1, 100000), false)).ToArray();
+var versusExtraEnd = new LocalVersusEnd(7, 100, 110, 1, [2, 1], [], false, versusExtraRewards);
+Check(versusRulesServer.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusExtraEnd with { Rewards = versusExtraRewards.Skip(1).ToArray() })).Status == 503
+    && versusRulesServer.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusExtraEnd with {
+        Rewards = versusExtraRewards.Take(9).Append(new(110, new(6, 0, 1, 1), false)).ToArray() })).Status == 409,
+    "missing intermediate rewards and later capacity failure leave all progress unchanged");
+var versusExtraReply = versusRulesServer.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusExtraEnd));
+var versusExtraInfo = versusRulesServer.Dispatch("multiple_spirits_weekly_top", arguments: new(Ids: [7])).Body!["clear_info"]![0]!;
+Check(versusExtraReply.Status == 0 && versusExtraReply.Body!["user_update"]!["gold"]!.GetValue<int>() == versusEntrySeed["gold"]!.GetValue<int>() + 10
+    && versusExtraInfo["cleared_level"]!.GetValue<int>() == 100 && versusExtraInfo["add_rules_cleared_level"]![0]!.GetValue<int>() == 110,
+    "additional rules grant newly crossed levels atomically and preserve the base level");
+versusRulesServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusRulesEntry));
+Check(versusRulesServer.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusExtraEnd with { Result = 0, Rewards = null })).Status == 0
+    && versusRulesServer.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusExtraEnd)).Status == 409,
+    "defeat consumes the challenge without requiring rewards or granting progress");
+Console.WriteLine("Passed 6 versus settlement checks.");

@@ -46,6 +46,7 @@ public partial class NetworkSystemPatch
         if (api == "mini_game_top") arguments = new(Ids: MasterDB.This()?.MiniGame?.GetAll()?.ToArray().Select(row => (long)row.id).ToArray());
         if (api == "multiple_spirits_weekly_top") arguments = ReadVersusOverview();
         if (api == "multiple_spirits_weekly_battle_start") arguments = ReadVersusStart(request.TryCast<VersusBattleStartRequest>());
+        if (api == "multiple_spirits_weekly_battle_end") arguments = ReadVersusEnd(request.TryCast<VersusBattleEndRequest>());
         if (api == "arena_battle_end") arguments = ReadArenaEnd(request.TryCast<ArenaBattleEndRequest>());
         if (api == "arena_battle_start") arguments = ReadArenaStart(request.TryCast<ArenaBattleStartRequest>());
         if (api == "tower_battle_end") arguments = ReadTowerEnd(request.TryCast<TowerBattleEndRequest>());
@@ -741,7 +742,7 @@ public partial class NetworkSystemPatch
                 PopupSystem.This()?.CreateMessage(reply.Error);
                 yield break;
             }
-            if (api is "multiple_spirits_weekly_battle_start" or "arena_battle_end" or "arena_battle_start" or "event_point_gacha_do" or "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
+            if (api is "multiple_spirits_weekly_battle_end" or "multiple_spirits_weekly_battle_start" or "arena_battle_end" or "arena_battle_start" or "event_point_gacha_do" or "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
             {
                 if (api is "arena_battle_start" or "multiple_spirits_weekly_battle_start")
                 {
