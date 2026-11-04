@@ -2553,6 +2553,7 @@ Check(passShopReload.Dispatch("pass_card/buy_goods", arguments: new(Value: 8, Pa
 Console.WriteLine("Passed 3 pass shop checks.");
 
 var passGiftSeed = passSeed.DeepClone();
+passGiftSeed["_local_pass_card"]!["is_vip"] = 1;
 passGiftSeed["_local_pass_card"]!["level"] = 70;
 passGiftSeed["_local_pass_card"]!["is_had_gift"] = 0;
 passGiftSeed["orb"]!["free"] = 100L;
@@ -2577,3 +2578,5 @@ Check(passGiftReload.Dispatch("pass_card/get_level_gift", arguments: new(PassRew
     && passGiftReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 50,
     "level gift purchase persists and cannot charge twice");
 Console.WriteLine("Passed 3 level gift checks.");
+Check(passBuyReload.Dispatch("pass_card/get_level_gift", arguments: new(PassRewards: passRewardRules)).Status == 409,
+    "level gift requires local VIP entitlement");

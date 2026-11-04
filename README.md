@@ -115,7 +115,7 @@
 | LectureRoomUnitSetRequest | lecture_room_unit_set | 业务实现 | 校验持有与主数据容量，保存成员和占用标记；不推进计时收益 |
 | LectureRoomUnitTrustUpRequest | lecture_room_unit_trust_up | 业务实现 | 结算已保存的待领取信赖值并清除领取标记；校验归属、入驻和上限；尚不自动生成待领取值 |
 | LectureRoomUpdateRequest | lecture_room_update | 最小响应 | 返回已保存设施状态及零结算；未实现时间推进、食物消耗与经验增长 |
-| LevelGiftRequest | pass_card/get_level_gift | 业务实现 | 固定扣除 150，增加 20 级且不超过 80；保存购买标记，禁止重复购买；需已有本地进度 |
+| LevelGiftRequest | pass_card/get_level_gift | 业务实现 | 固定扣除 150，增加 20 级且不超过 80；保存购买标记，禁止重复购买；需已有本地进度及 VIP 资格 |
 | LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 |
 | LogoutRequest | logout | 业务实现 | 校验本地身份并结束会话；保留身份与存档 |
 | MailDeleteRequest | mail_delete | 业务实现 | 删除本地 open_type > 0 的已读邮件并持久化；保留未读邮件，不发放附件 |

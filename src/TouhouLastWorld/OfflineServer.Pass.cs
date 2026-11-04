@@ -49,7 +49,7 @@ public sealed partial class OfflineServer
             || pass["had_got_vip_reward_level"] is not JsonArray vipReceived)
             return new(409, null, "Local pass progress unavailable.");
         var current = pass["level"]?.GetValue<int>() ?? 0;
-        if (gift && pass["is_had_gift"]?.GetValue<int>() != 0)
+        if (gift && (pass["is_vip"]?.GetValue<int>() != 1 || pass["is_had_gift"]?.GetValue<int>() != 0))
             return new(409, null, "Level gift unavailable or already purchased.");
         var cost = gift ? 150 : request!.Value!.Value;
         var levels = gift ? Math.Min(20, 80 - current) : cost / 20;
