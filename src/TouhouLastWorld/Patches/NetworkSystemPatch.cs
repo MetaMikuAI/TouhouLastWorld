@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "unit_new_update")
+        {
+            var update = request.TryCast<UnitNewUpdateRequest>();
+            arguments = new LocalArguments(Ids: update?.user_unit_id_list?.ToArray());
+        }
         var reply = Plugin.Server.Dispatch(api, gacha?.count, battle?.battle_end?.result, gacha?.gacha_id, gacha?.gacha_button_id, arguments);
         Log.Info($"Offline API: {api}; status={reply.Status}");
         network.m_recv.status = reply.Status;

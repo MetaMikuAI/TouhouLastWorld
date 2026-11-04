@@ -42,7 +42,7 @@ public sealed class OfflineServer
 
     public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
     {
-        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection"))
+        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection" or "unit_new_update"))
             return new(501, null, $"Offline API not implemented: {api}");
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
@@ -63,7 +63,12 @@ public sealed class OfflineServer
             return new(400, null, "Not enough gold.");
         if (api == "battle_end" && battleResult is null) return new(400, null, "Battle result required.");
         if (api is "user_create" or "login") EnsureAccount();
-        var operation = api == "unit_protection" ? SetProtection(arguments) : null;
+        var operation = api switch
+        {
+            "unit_protection" => SetProtection(arguments),
+            "unit_new_update" => ClearNewFlags(arguments),
+            _ => null
+        };
         if (operation is { Status: not 0 }) return operation;
         JsonObject body = operation?.Body ?? (api switch
         {
@@ -139,6 +144,20 @@ public sealed class OfflineServer
         if (unit is null) return new(404, null, "Entity not found.");
         unit["is_protection"] = arguments.Value.Value;
         Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["unit"] = user["unit"]!.DeepClone() } });
+    }
+
+    private LocalReply ClearNewFlags(LocalArguments? arguments)
+    {
+        if (arguments?.Ids is null || arguments.Ids.Any(id => id <= 0))
+            return new(400, null, "Positive entity IDs required.");
+        var updated = user.DeepClone().AsObject();
+        var units = updated["unit"]!["unit_list"]!.AsArray();
+        var selected = arguments.Ids.Distinct().Select(id => units
+            .FirstOrDefault(item => item!["user_unit_id"]!.GetValue<long>() == id)).ToArray();
+        if (selected.Any(item => item is null)) return new(404, null, "Entity not found.");
+        foreach (var unit in selected) unit!["is_new"] = 0;
+        if (selected.Length > 0) Save(updated);
         return new(0, new() { ["user_update"] = new JsonObject { ["unit"] = user["unit"]!.DeepClone() } });
     }
 

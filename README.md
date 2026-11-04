@@ -212,7 +212,7 @@
 | UnitExtraSpecActualizeRequest | 未确认 | 未实现 | — |
 | UnitLevelLimitbreakRequest | 未确认 | 未实现 | — |
 | UnitLimitbreakStrongFragrantWoodRequest | 未确认 | 未实现 | — |
-| UnitNewUpdateRequest | 未确认 | 未实现 | — |
+| UnitNewUpdateRequest | unit_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 |
 | UnitRankPromoteItemSetRequest | 未确认 | 未实现 | — |
 | UnitRankPromoteRequest | 未确认 | 未实现 | — |
