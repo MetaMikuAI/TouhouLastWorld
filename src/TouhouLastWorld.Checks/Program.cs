@@ -685,3 +685,23 @@ Check(savedScores.Count == 2 && savedScores[0]!["highest_score"]!.GetValue<int>(
 Check(JsonNode.DeepEquals(rhythmUser["phantasm_point"], JsonNode.Parse(seed)!["phantasm_point"]),
     "rhythm completion preserves held points");
 Console.WriteLine("Passed 8 rhythm checks.");
+var achievementSeed = JsonNode.Parse(seed)!.AsObject();
+achievementSeed["_local_achievements"] = new JsonArray(
+    new JsonObject { ["achievement_id"] = 10, ["current_value"] = 1, ["is_new"] = 0, ["is_acquired"] = 1 },
+    new JsonObject { ["achievement_id"] = 20, ["current_value"] = 0, ["is_new"] = 0, ["is_acquired"] = 0 });
+var achievementDirectory = directory + "-achievement";
+var achievements = new OfflineServer(achievementDirectory, achievementSeed.ToJsonString(), "offline://resources/");
+achievements.Dispatch("game_init");
+achievements.Dispatch("login");
+Check(achievements.Dispatch("achievement_select", arguments: new(Value: 20)).Status == 403
+    && achievements.Dispatch("achievement_select", arguments: new(Value: 99)).Status == 403, "unacquired selections rejected");
+Check(achievements.Dispatch("achievement_select", arguments: new(Value: 10)).Body!["user_update"]!["achievement"]!["selected_achievement_id"]!.GetValue<int>() == 10,
+    "selection returns native user update");
+var achievementReload = new OfflineServer(achievementDirectory, achievementSeed.ToJsonString(), "offline://resources/");
+achievementReload.Dispatch("game_init");
+Check(achievementReload.Dispatch("login").Body!["user"]!["achievement"]!["selected_achievement_id"]!.GetValue<int>() == 10,
+    "selection survives reload");
+Check(achievementReload.Dispatch("achievement_select", arguments: new(Value: 0)).Status == 0
+    && achievementReload.Dispatch("achievement_top").Body!["achievement_list"]!.AsArray().Count == 2, "clearing selection preserves collection");
+Check(achievementReload.Dispatch("update_voice_version").Status == 0, "voice notification receives minimal response");
+Console.WriteLine("Passed 5 selection and notification checks.");

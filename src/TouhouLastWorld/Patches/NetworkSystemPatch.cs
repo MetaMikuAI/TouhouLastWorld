@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "achievement_select")
+            arguments = new LocalArguments(Value: request.TryCast<AchievementSelectRequest>()?.achievement_id);
         if (api == "rhythm_game_start")
         {
             var id = request.TryCast<RhythmGameStartRequest>()?.rhythm_game_music_master_id;

@@ -16,11 +16,14 @@ public sealed partial class OfflineServer
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
         or "lecture_room_food_expansion" or "training_room_expansion" or "training_room_update"
         or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture"
-        or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end" || QueryTemplates.ContainsKey(api);
+        or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end"
+        or "achievement_select" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "rhythm_game_start" => StartRhythm(arguments),
+        "achievement_select" => SelectAchievement(arguments?.Value),
+        "achievement_top" => AchievementOverview(),
         "rhythm_game_end" => EndRhythm(arguments?.Rhythm),
         "rhythm_game_top" => new(0, new() { ["clear_info"] = user["_local_rhythm_scores"]?.DeepClone() ?? new JsonArray() }),
         "tutorial_update" => UpdateProgress(arguments?.Value),
@@ -85,6 +88,25 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply AchievementOverview()
+    {
+        var body = QueryTemplates["achievement_top"].DeepClone().AsObject();
+        body["achievement_list"] = user["_local_achievements"]?.DeepClone() ?? new JsonArray();
+        return new(0, body);
+    }
+
+    private LocalReply SelectAchievement(int? id)
+    {
+        if (id is null or < 0) return new(400, null, "Nonnegative achievement ID required.");
+        if (id != 0 && !(user["_local_achievements"] as JsonArray ?? new JsonArray()).Any(entry =>
+                entry?["achievement_id"]?.GetValue<int>() == id && entry["is_acquired"]?.GetValue<int>() == 1))
+            return new(403, null, "Achievement not acquired.");
+        var updated = user.DeepClone().AsObject();
+        updated["achievement"]!["selected_achievement_id"] = id.Value;
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["achievement"] = updated["achievement"]!.DeepClone() } });
+    }
 
     private LocalReply SetVoice(LocalArguments? request)
     {

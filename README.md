@@ -7,8 +7,8 @@
 | 请求类型 | 接口 | 实现 | 范围 |
 | --- | --- | --- | --- |
 | AchievementNewUpdateRequest | achievement_new_update | 业务实现 | 批量清除指定新标记并保存；重复提交幂等，不授予成就 |
-| AchievementSelectRequest | 未确认 | 未实现 | — |
-| AchievementTopRequest | achievement_top | 最小响应 | 空列表与零计数；不含条件判定或授予 |
+| AchievementSelectRequest | achievement_select | 业务实现 | 选择本地已获得条目，零值取消；持久化并返回状态更新，不授予条目 |
+| AchievementTopRequest | achievement_top | 最小响应 | 返回本地条目，初始为空；计数为零，不含条件判定或授予 |
 | AddLevelRequest | 未确认 | 未实现 | — |
 | AppleSwitchDoRequest | 未确认 | 未实现 | — |
 | AppleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
