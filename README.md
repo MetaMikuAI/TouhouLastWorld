@@ -196,7 +196,7 @@
 | TrainingRoomExpansionRequest | training_room_expansion | 业务实现 | 按下一级主数据费用扣款并保存训练容量等级；本地优先扣免费余额，不改变训练任务 |
 | TrainingRoomShortenedFinishTimeRequest | 未确认 | 未实现 | — |
 | TrainingRoomStartRequest | 未确认 | 未实现 | — |
-| TrainingRoomUpdateRequest | 未确认 | 未实现 | — |
+| TrainingRoomUpdateRequest | training_room_update | 最小响应 | 返回已保存训练任务与等级；不推进训练时间或结算技能成长 |
 | TranscribeKpiRequest | transcribe_kpi | 最小响应 | 接受类型 1、2 的统计事件；不上传、不记录、不变更资产 |
 | TreasureGachaRequest | 未确认 | 未实现 | — |
 | TreasureInfoRequest | 未确认 | 未实现 | — |
