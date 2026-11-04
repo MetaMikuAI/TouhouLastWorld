@@ -192,7 +192,7 @@
 | TowerTopRequest | 未确认 | 未实现 | — |
 | TowerUnitInfoRequest | 未确认 | 未实现 | — |
 | TowerUnitRecoveryRequest | 未确认 | 未实现 | — |
-| TrainingRoomCancelRequest | 未确认 | 未实现 | — |
+| TrainingRoomCancelRequest | training_room_cancel | 业务实现 | 按槽位删除并保存训练任务；本地不退款、不发放技能收益，空槽位返回未找到 |
 | TrainingRoomExpansionRequest | training_room_expansion | 业务实现 | 按下一级主数据费用扣款并保存训练容量等级；本地优先扣免费余额，不改变训练任务 |
 | TrainingRoomShortenedFinishTimeRequest | 未确认 | 未实现 | — |
 | TrainingRoomStartRequest | 未确认 | 未实现 | — |

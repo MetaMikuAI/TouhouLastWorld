@@ -8,6 +8,19 @@ public sealed partial class OfflineServer
     public int LectureFoodExpansionRank => user["lecture_room"]!["food"]!["expansion_rank"]!.GetValue<int>();
     public int TrainingExpansionRank => user["training_room"]!["expansion_rank"]!.GetValue<int>();
 
+    private LocalReply CancelTraining(int? slot)
+    {
+        if (slot is null or <= 0) return new(400, null, "Positive training slot required.");
+        var updated = user.DeepClone().AsObject();
+        var room = updated["training_room"]!.AsObject();
+        var entries = room["unit_list"]!.AsArray();
+        var entry = entries.FirstOrDefault(value => value!["slot_number"]!.GetValue<int>() == slot);
+        if (entry is null) return new(404, null, "Training task not found.");
+        entries.Remove(entry);
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["training_room"] = room.DeepClone() } });
+    }
+
     private LocalReply ExpandFacility(LocalArguments? request, string field, string? section = null)
     {
         if (request?.EntityId is null or <= 0 or > int.MaxValue || request.Value is null or < 0)

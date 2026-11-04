@@ -526,3 +526,24 @@ trainingReload.Dispatch("game_init");
 Check(trainingReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 1
     && trainingReload.TrainingExpansionRank == 1, "training expansion and payment persist");
 Console.WriteLine("Passed 5 training facility checks.");
+var cancelSeed = JsonNode.Parse(seed)!.AsObject();
+cancelSeed["training_room"]!["unit_list"] = new JsonArray(
+    new JsonObject { ["slot_number"] = 1, ["user_unit_id"] = 1L, ["skill_number"] = 1 },
+    new JsonObject { ["slot_number"] = 2, ["user_unit_id"] = 2L, ["skill_number"] = 2 });
+var cancelDirectory = directory + "-cancel";
+var cancel = new OfflineServer(cancelDirectory, cancelSeed.ToJsonString(), "offline://resources/");
+cancel.Dispatch("game_init");
+cancel.Dispatch("login");
+Check(cancel.Dispatch("training_room_cancel", arguments: new(Value: 0)).Status == 400, "zero training slot rejected");
+Check(cancel.Dispatch("training_room_cancel", arguments: new(Value: 3)).Status == 404, "missing training task rejected");
+var remainingTraining = cancel.Dispatch("training_room_cancel", arguments: new(Value: 1)).Body!["user_update"]!["training_room"]!["unit_list"]!.AsArray();
+Check(remainingTraining.Count == 1 && remainingTraining[0]!["slot_number"]!.GetValue<int>() == 2,
+    "cancellation removes only requested task");
+Check(cancel.Dispatch("training_room_cancel", arguments: new(Value: 1)).Status == 404, "cancelled slot is empty");
+var cancelReload = new OfflineServer(cancelDirectory, cancelSeed.ToJsonString(), "offline://resources/");
+cancelReload.Dispatch("game_init");
+var cancelledUser = cancelReload.Dispatch("login").Body!["user"]!;
+Check(cancelledUser["training_room"]!["unit_list"]!.AsArray().Count == 1, "cancellation persists");
+Check(JsonNode.DeepEquals(cancelSeed["unit"], cancelledUser["unit"])
+    && JsonNode.DeepEquals(cancelSeed["orb"], cancelledUser["orb"]), "cancellation does not grant growth or currency");
+Console.WriteLine("Passed 6 training cancellation checks.");
