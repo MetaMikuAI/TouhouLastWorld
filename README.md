@@ -153,7 +153,7 @@
 | ReincarnationReleaseRequest | 未确认 | 未实现 | — |
 | replaceAvatarRequest | 未确认 | 未实现 | — |
 | RhythmGameEndRequest | 未确认 | 未实现 | — |
-| RhythmGameStartRequest | 未确认 | 未实现 | — |
+| RhythmGameStartRequest | rhythm_game_start | 业务实现 | 校验曲目主数据并保存当前曲目；再次开始替换上次记录，不扣除资源 |
 | RhythmGameTopRequest | rhythm_game_top | 最小响应 | 空成绩列表；曲目由客户端主数据加载，不生成分数或奖励 |
 | RogueLiteBattleEndRequest | 未确认 | 未实现 | — |
 | RogueLiteBattleStartRequest | 未确认 | 未实现 | — |

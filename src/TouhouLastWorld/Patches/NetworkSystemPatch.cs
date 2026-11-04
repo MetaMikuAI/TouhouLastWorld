@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "rhythm_game_start")
+        {
+            var id = request.TryCast<RhythmGameStartRequest>()?.rhythm_game_music_master_id;
+            arguments = new LocalArguments(id, id is > 0 && MasterDB.This()?.RhythmGameMusic?.Find(id.Value) != null ? 1 : 0);
+        }
         if (api == "logout")
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
