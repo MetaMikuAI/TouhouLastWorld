@@ -149,3 +149,26 @@ foreach (var route in new[] { "friend/apply_list", "friend/recommend" })
 var catalog = flags.Dispatch("get_shop_list").Body!;
 Check(catalog["shop_list"]!.AsArray().Count == 0 && catalog["feature_product_shop_list"]!.AsArray().Count == 0, "empty catalog contract");
 Console.WriteLine("Passed 7 preference and list response checks.");
+
+foreach (var (route, field) in new[]
+{
+    ("get_history", "bronze_trophy_count"), ("achievement_top", "achievement_list"),
+    ("get_dispatch_list", "dispatch_list"), ("mission_top", "mission"),
+    ("friend_get_candidate_list", "helper_list"), ("get_auto_replay_info", "win_rate"),
+    ("picture_book/get_user_picture_book_list", "user_completed_info"),
+    ("avatar/list", "avatar_list"), ("get_shrine_office_shop_list", "shop_list")
+})
+{
+    var query = flags.Dispatch(route);
+    Check(query.Status == 0 && query.Body![field] is not null, "query contract: " + route);
+    query.Body![field] = null;
+    Check(flags.Dispatch(route).Body![field] is not null, "query response isolation: " + route);
+}
+Check(flags.Dispatch("mission_top").Body!["mission"]!["clear_list"]!.AsArray().Count == 0, "nested mission lists");
+Check(flags.Dispatch("tutorial_update", arguments: new(Value: -1)).Status == 400, "negative progress rejected");
+Check(flags.Dispatch("tutorial_update", arguments: new(Value: 10000)).Body!["user_update"]!["progress_value"]!.GetValue<int>() == 10000, "progress advances");
+Check(flags.Dispatch("tutorial_update", arguments: new(Value: 1)).Body!["user_update"]!["progress_value"]!.GetValue<int>() == 10000, "progress does not regress");
+var progressReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+progressReload.Dispatch("game_init");
+Check(progressReload.Dispatch("login").Body!["user"]!["progress_value"]!.GetValue<int>() == 10000, "progress persists");
+Console.WriteLine("Passed 23 query and progress checks.");
