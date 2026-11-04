@@ -1877,3 +1877,35 @@ Check(rankMaterialReload.Dispatch("unit_rank_promote_item_set", arguments: new(r
     && rankMaterialReload.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2,
     "material slots persist and prevent duplicate charges while allowing another slot");
 Console.WriteLine("Passed 4 rank material checks.");
+
+var rankPromotionSeed = JsonNode.Parse(seed)!;
+rankPromotionSeed["item"]!["item_list"]!.AsArray().Add(new JsonObject { ["item_id"] = 71, ["num"] = 12 });
+rankPromotionSeed["unit"]!["unit_list"]![0]!["is_set_rank_promote_slot1"] = 1;
+var rankPromotionMaterials = Enumerable.Range(1, 6).Select(_ => rankMaterialDefinition).ToArray();
+rankPromotionMaterials[5] = rankMaterialDefinition with { ObjectType = 3, Count = 50 };
+var rankPromotionRule = new LocalRankPromotion(rankMaterialDefinition.UnitId, 1, 2, 1, 100, rankPromotionMaterials);
+var rankPromotionDirectory = directory + "-rank-promotion";
+var rankPromotionServer = new OfflineServer(rankPromotionDirectory, rankPromotionSeed.ToJsonString(), "offline://resources/");
+rankPromotionServer.Dispatch("game_init");
+rankPromotionServer.Dispatch("login");
+Check(rankPromotionServer.Dispatch("unit_rank_promote", arguments: new(rankMaterialId, RankPromotion: rankPromotionRule with { RequiredLevel = 999 })).Status == 409
+    && rankPromotionServer.Dispatch("unit_rank_promote", arguments: new(rankMaterialId, RankPromotion: rankPromotionRule with { GoldCost = 5000 })).Status == 409
+    && rankPromotionServer.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 12,
+    "promotion validates level and combined gold cost without partial material consumption");
+var rankPromotionTooMany = rankPromotionMaterials.ToArray();
+rankPromotionTooMany[4] = rankMaterialDefinition with { Count = 4 };
+Check(rankPromotionServer.Dispatch("unit_rank_promote", arguments: new(rankMaterialId, RankPromotion: rankPromotionRule with { Materials = rankPromotionTooMany })).Status == 409
+    && rankPromotionServer.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["rank"]!.GetValue<int>() == 1,
+    "duplicate material requirements are accumulated before saving");
+var rankPromoted = rankPromotionServer.Dispatch("unit_rank_promote", arguments: new(rankMaterialId, RankPromotion: rankPromotionRule)).Body!["user_update"]!;
+Check(rankPromoted["gold"]!.GetValue<int>() == 4850 && rankPromoted["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 0
+    && rankPromoted["unit"]!["unit_list"]![0]!["rank"]!.GetValue<int>() == 2
+    && Enumerable.Range(1, 6).All(slot => rankPromoted["unit"]!["unit_list"]![0]![$"is_set_rank_promote_slot{slot}"]!.GetValue<int>() == 0),
+    "promotion skips paid slots, consumes remaining materials and resets slots for the next rank");
+var rankPromotionReload = new OfflineServer(rankPromotionDirectory, seed, "offline://resources/");
+rankPromotionReload.Dispatch("game_init");
+rankPromotionReload.Dispatch("login");
+Check(rankPromotionReload.Dispatch("unit_rank_promote", arguments: new(rankMaterialId, RankPromotion: rankPromotionRule)).Status == 409
+    && rankPromotionReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4850,
+    "promotion survives restart and rejects stale rank without charging again");
+Console.WriteLine("Passed 4 rank promotion checks.");

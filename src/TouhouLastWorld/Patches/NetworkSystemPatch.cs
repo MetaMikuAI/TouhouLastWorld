@@ -37,6 +37,8 @@ public partial class NetworkSystemPatch
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
         if (api == "unit_rank_promote_item_set")
             arguments = ReadRankMaterial(request.TryCast<UnitRankPromoteItemSetRequest>());
+        if (api == "unit_rank_promote")
+            arguments = ReadRankPromotion(request.TryCast<UnitRankPromoteRequest>());
         if (api == "mail_receive")
         {
             var setting = MasterDB.This()?.Setting;
