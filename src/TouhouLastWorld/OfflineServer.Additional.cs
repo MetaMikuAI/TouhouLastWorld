@@ -18,7 +18,7 @@ public sealed partial class OfflineServer
         or "training_room_cancel" or "training_room_start" or "unit_equip_picture_reset" or "unit_equip_picture"
         or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end"
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
-        or "series_battle_start" or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
+        or "series_battle_end" or "series_battle_start" or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply" or "friend/apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_request" or "friend_approve" or "reset_point_allocation" or "allocate_points"
@@ -139,6 +139,7 @@ public sealed partial class OfflineServer
         "series_battle_team_update" => UpdateSeriesTeams(arguments?.SeriesTeams),
         "series_battle_reset" => ResetSeries(),
         "series_battle_start" => StartSeries(arguments?.SeriesStart),
+        "series_battle_end" => EndSeries(arguments?.SeriesEnd),
         "comic_get_pages" => AcquirePages(arguments?.Pages),
         "comic_read_end" => ReadPages(arguments),
         "roguelite_top" => DeckOverview(arguments?.Value),
@@ -503,6 +504,7 @@ public sealed partial class OfflineServer
         foreach (var field in new[] { "episode_id", "difficulty", "progress", "stage_group_master_id", "manage_id", "value1" })
             state[field] = 0;
         state["use_replays"] = new JsonArray();
+        updated.Remove("_local_series_pending");
         Save(updated);
         return new(0, new() { ["user_update"] = new JsonObject { ["series_battle_status"] = state.DeepClone() } });
     }

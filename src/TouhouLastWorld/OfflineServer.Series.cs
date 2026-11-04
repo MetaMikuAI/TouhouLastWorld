@@ -47,9 +47,9 @@ public sealed partial class OfflineServer
             if (positive.Length == 0 || ids.Any(id => id < 0) || positive.Distinct().Count() != positive.Length
                 || positive.Any(id => !owned.Contains(id))) return new(409, null, "Invalid series team members.");
         }
+        var updated = user.DeepClone().AsObject();
         if (progress == 0)
         {
-            var updated = user.DeepClone().AsObject();
             var next = updated["series_battle_status"]!.AsObject();
             next["episode_id"] = rule.EpisodeId;
             next["difficulty"] = rule.Difficulty;
@@ -58,8 +58,10 @@ public sealed partial class OfflineServer
             next["manage_id"] = 0;
             next["value1"] = 0;
             next["use_replays"] = new JsonArray(replays.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray());
-            Save(updated);
         }
+        updated["_local_series_pending"] = new JsonObject { ["episode_id"] = rule.EpisodeId,
+            ["difficulty"] = rule.Difficulty, ["progress"] = Math.Max(1, progress) };
+        Save(updated);
         return new(0, new() { ["user_update"] = new JsonObject { ["series_battle_status"] = user["series_battle_status"]!.DeepClone() } });
     }
 }

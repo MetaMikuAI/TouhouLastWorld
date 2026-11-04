@@ -3247,3 +3247,39 @@ Check(seriesStartReload.Dispatch("series_battle_start", arguments: new(SeriesSta
     && seriesStartReload.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesStartRule)).Status == 0,
     "series retry survives restart without advancing and reset permits a new start");
 Console.WriteLine("Passed 3 series start checks.");
+seriesStartSeed["team"]!["team_list"]!.AsArray().Add(new JsonObject { ["number"] = 81,
+    ["user_unit_id_list"] = new JsonArray(seriesStartId, 0L, 0L, 0L, 0L, 0L) });
+var seriesEndDirectory = directory + "-series-end";
+var seriesEndServer = new OfflineServer(seriesEndDirectory, seriesStartSeed.ToJsonString(), "offline://resources/");
+seriesEndServer.Dispatch("game_init");
+seriesEndServer.Dispatch("login");
+var seriesEndStart = seriesStartRule with { AreaCount = 2, Replays = new[] { 0, 0 } };
+seriesEndServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesEndStart));
+var seriesEndRule = new LocalSeriesEnd(901, 0, 1, 2, 1, new[] { new LocalInventoryReward(3, 0, 10, int.MaxValue) },
+    new[] { new LocalInventoryReward(6, 0, 5, int.MaxValue) });
+var seriesEndBefore = seriesEndServer.Dispatch("login").Body!["user"]!.ToJsonString();
+Check(seriesEndServer.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule with { Rewards = null })).Status == 503
+    && seriesEndServer.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule with { Rewards = new[] { new LocalInventoryReward(3, 0, 10, 1) } })).Status == 409
+    && seriesEndServer.Dispatch("login").Body!["user"]!.ToJsonString() == seriesEndBefore,
+    "series settlement preserves pending state and progress when reward definitions or capacity fail");
+Check(seriesEndServer.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule)).Body!["user_update"]!["series_battle_status"]!["progress"]!.GetValue<int>() == 2
+    && seriesEndServer.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule)).Status == 409,
+    "series settlement advances once and consumes the pending entry");
+seriesEndServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesEndStart with { Replays = null }));
+Check(seriesEndServer.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule with { Progress = 2, Result = 0, Rewards = null })).Body!["user_update"]!["series_battle_status"]!["progress"]!.GetValue<int>() == 2,
+    "series loss retains progress and grants no reward");
+seriesEndServer.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesEndStart with { Replays = null }));
+var seriesEndFinal = seriesEndServer.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule with { Progress = 2 })).Body!;
+var seriesEndReload = new OfflineServer(seriesEndDirectory, seed, "offline://resources/");
+seriesEndReload.Dispatch("game_init");
+seriesEndReload.Dispatch("login");
+seriesEndReload.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesEndStart));
+seriesEndReload.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule));
+seriesEndReload.Dispatch("series_battle_start", arguments: new(SeriesStart: seriesEndStart with { Replays = null }));
+var seriesEndRepeat = seriesEndReload.Dispatch("series_battle_end", arguments: new(SeriesEnd: seriesEndRule with { Progress = 2 })).Body!;
+Check(seriesEndFinal["user_update"]!["series_battle_status"]!["progress"]!.GetValue<int>() == 0
+    && seriesEndFinal["drop_list"]!.AsArray().Count == 2 && seriesEndRepeat["drop_list"]!.AsArray().Count == 1
+    && seriesEndRepeat["user_update"]!["quest_playdata"]!.AsArray().Single(row => row!["episode_id"]!.GetValue<int>() == 901)!["normal"]!["status"]!.GetValue<int>() == 2
+    && seriesEndRepeat["user_update"]!["crystal"]!.GetValue<int>() == seriesStartSeed["crystal"]!.GetValue<int>() + 5,
+    "series completion survives restart and first completion rewards are not repeated");
+Console.WriteLine("Passed 4 series settlement checks.");
