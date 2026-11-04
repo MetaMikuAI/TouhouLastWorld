@@ -15,7 +15,7 @@ public sealed partial class OfflineServer
         or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
         or "lecture_room_food_expansion" or "training_room_expansion" or "training_room_update"
-        or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture"
+        or "training_room_cancel" or "training_room_start" or "unit_equip_picture_reset" or "unit_equip_picture"
         or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end"
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
@@ -23,6 +23,7 @@ public sealed partial class OfflineServer
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "training_room_start" => StartTraining(arguments?.Training),
         "lecture_room_food_distribution" => DistributeFood(arguments?.FoodDistribution),
         "lecture_room_food_addition" => PurchaseFood(arguments?.FoodPurchase),
         "series_battle_team_update" => UpdateSeriesTeams(arguments?.SeriesTeams),

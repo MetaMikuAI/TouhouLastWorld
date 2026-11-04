@@ -8,6 +8,41 @@ public sealed partial class OfflineServer
     public int LectureFoodExpansionRank => user["lecture_room"]!["food"]!["expansion_rank"]!.GetValue<int>();
     public int TrainingExpansionRank => user["training_room"]!["expansion_rank"]!.GetValue<int>();
 
+    private LocalReply StartTraining(LocalTrainingStart? request)
+    {
+        if (request is null || request.Capacity <= 0 || request.Seconds <= 0)
+            return new(503, null, "Training definition unavailable.");
+        if (request.UnitId <= 0 || request.ItemId <= 0 || request.Skill is < 1 or > 3
+            || request.Slot < 1 || request.Slot > request.Capacity)
+            return new(400, null, "Invalid training selection.");
+        var updated = user.DeepClone().AsObject();
+        if (!updated["unit"]!["unit_list"]!.AsArray().Any(entry => entry!["user_unit_id"]!.GetValue<long>() == request.UnitId))
+            return new(404, null, "Owned unit not found.");
+        var room = updated["training_room"]!.AsObject();
+        var entries = room["unit_list"]!.AsArray();
+        if (entries.Any(entry => entry!["slot_number"]!.GetValue<int>() == request.Slot
+            || entry["user_unit_id"]!.GetValue<long>() == request.UnitId))
+            return new(409, null, "Training slot or unit already in use.");
+        var item = updated["item"]!["item_list"]!.AsArray()
+            .FirstOrDefault(entry => entry!["item_id"]!.GetValue<int>() == request.ItemId);
+        if (item is null || item["num"]!.GetValue<int>() <= 0)
+            return new(409, null, "Training material unavailable.");
+        var now = DateTime.UtcNow;
+        entries.Add(new JsonObject
+        {
+            ["slot_number"] = request.Slot, ["user_unit_id"] = request.UnitId,
+            ["skill_number"] = request.Skill, ["item_id"] = request.ItemId,
+            ["training_start_time"] = now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+            ["training_finish_time"] = now.AddSeconds(request.Seconds).ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
+        });
+        item["num"] = item["num"]!.GetValue<int>() - 1;
+        Save(updated);
+        return new(0, new()
+        {
+            ["user_update"] = new JsonObject { ["training_room"] = room.DeepClone(), ["item"] = updated["item"]!.DeepClone() }
+        });
+    }
+
     private LocalReply CancelDispatch(long? id)
     {
         if (id is null or <= 0) return new(400, null, "Positive dispatch ID required.");

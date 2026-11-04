@@ -859,3 +859,32 @@ Check(effectsAfter.Count == 1 && secondFinish - firstFinish == TimeSpan.FromMinu
 Check(fedUser["phantasm_point"]!["points"]!.GetValue<int>() == 70
     && JsonNode.DeepEquals(fedUser["unit"], foodSeed["unit"]), "distribution does not fabricate growth or charge purchase cost again");
 Console.WriteLine("Passed 5 food distribution checks.");
+var trainingSeed = JsonNode.Parse(seed)!.AsObject();
+trainingSeed["item"]!["item_list"] = new JsonArray(new JsonObject { ["item_id"] = 12, ["num"] = 2 });
+var startTrainingDirectory = directory + "-start-training";
+var startTraining = new OfflineServer(startTrainingDirectory, trainingSeed.ToJsonString(), "offline://resources/");
+startTraining.Dispatch("game_init");
+startTraining.Dispatch("login");
+Check(startTraining.Dispatch("training_room_start").Status == 503
+    && startTraining.Dispatch("training_room_start", arguments: new(Training: new(1, 1, 12, 3, 2, 600))).Status == 400,
+    "training requires definition and available slot number");
+Check(startTraining.Dispatch("training_room_start", arguments: new(Training: new(999, 1, 12, 1, 2, 600))).Status == 404
+    && startTraining.Dispatch("training_room_start", arguments: new(Training: new(1, 1, 99, 1, 2, 600))).Status == 409,
+    "training requires owned unit and material");
+var startedTraining = startTraining.Dispatch("training_room_start", arguments: new(Training: new(1, 2, 12, 1, 2, 600))).Body!["user_update"]!;
+var trainingTask = startedTraining["training_room"]!["unit_list"]![0]!;
+Check(startedTraining["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 1
+    && trainingTask["skill_number"]!.GetValue<int>() == 2
+    && DateTime.Parse(trainingTask["training_finish_time"]!.GetValue<string>())
+        - DateTime.Parse(trainingTask["training_start_time"]!.GetValue<string>()) == TimeSpan.FromSeconds(600),
+    "training consumes one material and stores duration in seconds");
+Check(startTraining.Dispatch("training_room_start", arguments: new(Training: new(1, 1, 12, 1, 2, 600))).Status == 409
+    && startTraining.Dispatch("training_room_start", arguments: new(Training: new(1, 1, 12, 2, 2, 600))).Status == 409,
+    "training rejects duplicate slot and unit without another charge");
+var startTrainingReload = new OfflineServer(startTrainingDirectory, trainingSeed.ToJsonString(), "offline://resources/");
+startTrainingReload.Dispatch("game_init");
+var trainingUser = startTrainingReload.Dispatch("login").Body!["user"]!;
+Check(trainingUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 1
+    && trainingUser["training_room"]!["unit_list"]!.AsArray().Count == 1
+    && JsonNode.DeepEquals(trainingUser["unit"], trainingSeed["unit"]), "training persists without fabricated skill growth");
+Console.WriteLine("Passed 5 training start checks.");

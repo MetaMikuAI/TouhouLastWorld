@@ -35,6 +35,15 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "training_room_start")
+        {
+            var training = request.TryCast<TrainingRoomStartRequest>();
+            var material = MasterDB.This()?.Textbook?.ToList()?.ToArray().FirstOrDefault(entry => entry.item_id == training?.material_item_id);
+            var capacity = MasterDB.This()?.TrainingRoomExpansion?.Find(Plugin.Server.TrainingExpansionRank)?.slot_count;
+            arguments = training == null || material == null || capacity == null ? null
+                : new LocalArguments(Training: new(training.user_unit_id, training.skill_number, training.material_item_id,
+                    training.slot_number, capacity.Value, material.need_time));
+        }
         if (api == "lecture_room_food_distribution")
         {
             var distribution = request.TryCast<LectureRoomFoodDistributionRequest>();
