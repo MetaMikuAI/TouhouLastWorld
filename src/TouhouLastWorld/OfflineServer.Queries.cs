@@ -6,6 +6,7 @@ public sealed partial class OfflineServer
 {
     private static readonly Dictionary<string, JsonObject> QueryTemplates = new()
     {
+        ["get_series_battle_ranking_list"] = new() { ["ranking"] = new JsonArray(), ["myrank"] = new JsonArray() },
         ["personal_info_get"] = new()
         {
             ["user_name"] = "", ["zip_code"] = "", ["address"] = "", ["phone_number"] = ""
