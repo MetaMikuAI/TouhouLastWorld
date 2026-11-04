@@ -83,7 +83,7 @@
 | GatherPhantasmPointRequest | gather_phantasm_point | 业务实现 | 收取本地已保存点数库存，按当前等级容量入账，超出部分保留；同步主页余量，不计算时间产出 |
 | GetAutoReplayInfoRequest | get_auto_replay_info | 业务实现 | 按目标读取已保存测量值；无记录返回零，不重算战斗 |
 | GetDispatchListRequest | get_dispatch_list | 业务实现 | 合并本地候选与已启动任务；未配置候选时为空，不生成候选 |
-| GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
+| GetEventTotalPointRewardAllRequest | get_event_total_point_reward_all | 业务实现 | 连续领取积分已达标的固定奖励，一次保存库存与进度；容量不足或含未支持奖励时整批不变，随机奖励未实现 |
 | GetEventTotalPointRewardRequest | get_event_total_point_reward | 业务实现 | 按本地累计积分领取当前档固定奖励并推进、保存进度；支持金币、晶体、物品，随机奖励和积分生成未实现 |
 | GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 |
 | GetProfileSettingAPIRequest | get_profile_setting | 业务实现 | 读取本地布局，首次返回空字符串使用客户端默认值；成就列表为空 |

@@ -2653,3 +2653,24 @@ Check(pointRewardReload.Dispatch("get_event_total_point_reward", arguments: new(
     && pointRewardReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
     "point reward progress survives restart and enforces the next threshold");
 Console.WriteLine("Passed 3 accumulated point reward checks.");
+pointRewardSeed["_local_event_overview"]!["event_total_point_reward"]![0]!["total_point"] = 250;
+var pointBatchDirectory = directory + "-point-batch";
+var pointBatchServer = new OfflineServer(pointBatchDirectory, pointRewardSeed.ToJsonString(), "offline://resources/");
+pointBatchServer.Dispatch("game_init");
+pointBatchServer.Dispatch("login");
+var pointBatchFailure = pointRewardRule with { Groups = new[] { pointRewardRule.Groups[0], pointRewardRule.Groups[1] with { IconType = 1 } } };
+Check(pointBatchServer.Dispatch("get_event_total_point_reward_all", arguments: new(Value: 7, EventRewards: pointBatchFailure)).Status == 503
+    && pointBatchServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000,
+    "point reward batch rolls back earlier rewards when a later group is unsupported");
+var pointBatchReply = pointBatchServer.Dispatch("get_event_total_point_reward_all", arguments: new(Value: 7, EventRewards: pointRewardRule)).Body!;
+Check(pointBatchReply["reward_list"]!.AsArray().Count == 2
+    && pointBatchReply["next_reward_group_id"]!.GetValue<int>() == 0
+    && pointBatchReply["step_number"]!.GetValue<int>() == 2
+    && pointBatchReply["user_update"]!["gold"]!.GetValue<int>() == 5100,
+    "point reward batch grants eligible groups and marks the last group complete");
+var pointBatchReload = new OfflineServer(pointBatchDirectory, seed, "offline://resources/");
+pointBatchReload.Dispatch("game_init");
+pointBatchReload.Dispatch("login");
+Check(pointBatchReload.Dispatch("get_event_total_point_reward_all", arguments: new(Value: 7, EventRewards: pointRewardRule)).Status == 409,
+    "completed point reward batches cannot grant again after restart");
+Console.WriteLine("Passed 3 accumulated reward batch checks.");

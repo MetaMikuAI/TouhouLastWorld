@@ -37,6 +37,8 @@ public partial class NetworkSystemPatch
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
         if (api == "get_event_total_point_reward")
             arguments = ReadEventRewards(request.TryCast<GetEventTotalPointRewardRequest>()?.event_id);
+        if (api == "get_event_total_point_reward_all")
+            arguments = ReadEventRewards(request.TryCast<GetEventTotalPointRewardAllRequest>()?.event_id);
         if (api == "gain_free_item" && request.TryCast<GainFreeItemRequest>() is not null)
         {
             var master = MasterDB.This();
@@ -602,7 +604,7 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api is "gain_free_item" or "get_event_total_point_reward")
+            if (api is "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
             {
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);
