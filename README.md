@@ -58,7 +58,7 @@
 | FriendApplyRequest | 未确认 | 未实现 | — |
 | FriendApproveRequest | 未确认 | 未实现 | — |
 | FriendDeleteRequest | 未确认 | 未实现 | — |
-| FriendGetCandidateListRequest | 未确认 | 未实现 | — |
+| FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 空候选列表；不含候选匹配 |
 | FriendGetHelperDetailRequest | 未确认 | 未实现 | — |
 | FriendGetHistoryRequest | 未确认 | 未实现 | — |
 | FriendGetRequest | 未确认 | 未实现 | — |
