@@ -3019,3 +3019,31 @@ Check(friendHistoryReply["unit_get_count"]!.GetValue<int>() == 5
     && historyPlayerServer.Dispatch("friend_get_history", arguments: new(Text: "missing", HistoryDefinitions: historyDefinitions)).Status == 404,
     "friend history returns only stored summary fields and rejects missing profiles");
 Console.WriteLine("Passed 1 friend history check.");
+var recoverySeed = JsonNode.Parse(seed)!;
+recoverySeed["_local_tower_recovery_count"] = 3;
+recoverySeed["crystal"] = 10;
+recoverySeed["unit"]!["tower_unit_list"] = new JsonArray(new JsonObject { ["user_unit_id"] = 1L });
+var recoveryDirectory = directory + "-tower-recovery";
+var recoveryServer = new OfflineServer(recoveryDirectory, recoverySeed.ToJsonString(), "offline://resources/");
+recoveryServer.Dispatch("game_init");
+recoveryServer.Dispatch("login");
+var recoveredUnits = recoveryServer.Dispatch("tower_unit_recovery").Body!;
+Check(recoveredUnits["result"]!.GetValue<int>() == 1 && recoveredUnits["remaining_recovery_count"]!.GetValue<int>() == 2
+    && recoveredUnits["user_update"]!["crystal"]!.GetValue<int>() == 5
+    && recoveredUnits["user_update"]!["unit"]!["tower_unit_list"]!.AsArray().Count == 0,
+    "recovery clears persisted damage and atomically consumes currency and allowance");
+var recoveryReload = new OfflineServer(recoveryDirectory, seed, "offline://resources/");
+recoveryReload.Dispatch("game_init");
+recoveryReload.Dispatch("login");
+Check(recoveryReload.Dispatch("tower_unit_recovery").Body!["result"]!.GetValue<int>() == 0
+    && recoveryReload.Dispatch("tower_top").Body!["remaining_recovery_count"]!.GetValue<int>() == 2
+    && recoveryReload.Dispatch("login").Body!["user"]!["crystal"]!.GetValue<int>() == 5,
+    "repeated recovery after restart cannot charge again for cleared damage");
+recoverySeed["crystal"] = 0;
+var recoveryNoFunds = new OfflineServer(directory + "-tower-no-funds", recoverySeed.ToJsonString(), "offline://resources/");
+recoveryNoFunds.Dispatch("game_init");
+recoveryNoFunds.Dispatch("login");
+Check(recoveryNoFunds.Dispatch("tower_unit_recovery").Body!["result"]!.GetValue<int>() == 0
+    && recoveryNoFunds.Dispatch("login").Body!["user"]!["unit"]!["tower_unit_list"]!.AsArray().Count == 1,
+    "insufficient recovery funds preserve damage and allowance");
+Console.WriteLine("Passed 3 recovery checks.");

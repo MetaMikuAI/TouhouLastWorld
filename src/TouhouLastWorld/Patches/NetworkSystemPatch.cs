@@ -38,6 +38,7 @@ public partial class NetworkSystemPatch
         if (api == "unit_recycle") arguments = ReadUnitRecycle(request.TryCast<UnitRecycleRequest>());
         if (api == "get_clear_history_playerinfo") arguments = ReadHistoryPlayer(request.TryCast<ClearHistoryPlayerInfoRequest>()?.player_id);
         if (api == "friend_get_history") arguments = ReadHistoryPlayer(request.TryCast<FriendGetHistoryRequest>()?.player_id);
+        if (api == "tower_unit_recovery") arguments = new(Text: request.TryCast<TowerUnitRecoveryRequest>()?.tower_unit_info);
         if (api == "dispatch_end") arguments = ReadDispatchSettlement(request.TryCast<DispatchEndRequest>());
         if (api == "retry_gacha_fix")
         {

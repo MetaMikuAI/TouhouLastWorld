@@ -191,7 +191,7 @@
 | TowerBattleStartRequest | 未确认 | 未实现 | — |
 | TowerTopRequest | tower_top | 最小响应 | 读取已保存楼层与进入标记；敌方续战信息为空、恢复次数为零，不推进楼层或生成战斗 |
 | TowerUnitInfoRequest | get_tower_unit_info | 最小响应 | 返回本地单位续战 CSV，校验列数、数值、归属及重复 ID；缺省为空，不生成或恢复状态 |
-| TowerUnitRecoveryRequest | 未确认 | 未实现 | — |
+| TowerUnitRecoveryRequest | tower_unit_recovery | 业务实现 | 按本地剩余次数扣费并清空累计损伤，一并保存；余额不足、次数耗尽或无损伤时不扣费，次数每日重置未实现 |
 | TrainingRoomCancelRequest | training_room_cancel | 业务实现 | 按槽位删除并保存训练任务；本地不退款、不发放技能收益，空槽位返回未找到 |
 | TrainingRoomExpansionRequest | training_room_expansion | 业务实现 | 按下一级主数据费用扣款并保存训练容量等级；本地优先扣免费余额，不改变训练任务 |
 | TrainingRoomShortenedFinishTimeRequest | training_room_shortened_finish_time | 业务实现 | 按主数据秒数批量扣材料并缩短期限；本地最多缩至当前时间，超额不退，不结算成长；拒绝已到期任务 |

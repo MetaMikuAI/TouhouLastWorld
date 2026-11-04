@@ -4,6 +4,33 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private int RemainingTowerRecovery => user["_local_tower_recovery_count"]?.GetValue<int>() ?? 0;
+
+    private LocalReply RecoverTowerUnits(LocalArguments? arguments)
+    {
+        if (!string.IsNullOrEmpty(arguments?.Text))
+            return new(400, null, "Unexpected recovery payload.");
+        var remaining = RemainingTowerRecovery;
+        if (remaining is < 0 or > 4) return new(503, null, "Recovery allowance unavailable.");
+        var cost = remaining switch { 1 => 15, 2 => 10, 3 => 5, _ => 0 };
+        var balance = user["crystal"]?.GetValue<int>() ?? 0;
+        var snapshot = TowerUnits();
+        if (snapshot.Status != 0) return snapshot;
+        var hasDamage = !string.IsNullOrEmpty(snapshot.Body!["tower_unit_info"]!.GetValue<string>())
+            || user["unit"]?["tower_unit_list"] is JsonArray { Count: > 0 };
+        if (remaining == 0 || balance < cost || !hasDamage)
+            return new(0, new() { ["result"] = 0, ["remaining_recovery_count"] = remaining });
+        if (user["unit"] is not JsonObject) return new(503, null, "Unit state unavailable.");
+        var updated = user.DeepClone().AsObject();
+        updated["crystal"] = balance - cost;
+        updated["_local_tower_recovery_count"] = remaining - 1;
+        updated["_local_tower_unit_info"] = "";
+        updated["unit"]!["tower_unit_list"] = new JsonArray();
+        Save(updated);
+        return new(0, new() { ["result"] = 1, ["remaining_recovery_count"] = remaining - 1,
+            ["user_update"] = new JsonObject { ["crystal"] = updated["crystal"]!.DeepClone(), ["unit"] = updated["unit"]!.DeepClone() } });
+    }
+
     private LocalReply TowerUnits()
     {
         var snapshot = user["_local_tower_unit_info"];
@@ -36,7 +63,7 @@ public sealed partial class OfflineServer
         return new(0, new()
         {
             ["cleared_floor"] = floor, ["exist_data"] = exists,
-            ["remaining_recovery_count"] = 0, ["enemy_battle_info"] = ""
+            ["remaining_recovery_count"] = RemainingTowerRecovery, ["enemy_battle_info"] = ""
         });
     }
 }
