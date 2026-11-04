@@ -43,6 +43,11 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<HomeCustomSelectUnitUpdateRequest>()?.select_unit_index);
         if (api == "home_bgm_update")
             arguments = new LocalArguments(Value: request.TryCast<HomeBGMUpdateRequest>()?.select_bgm_id);
+        if (api == "unit_bgm_update")
+        {
+            var update = request.TryCast<UnitBGMUpdateRequest>();
+            arguments = update == null ? null : new LocalArguments(update.user_unit_id, update.select_bgm_id);
+        }
         if (api == "friend_setting_helper")
         {
             var update = request.TryCast<FriendSettingHelperRequest>();

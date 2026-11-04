@@ -204,7 +204,7 @@
 | TutorialFirstGachaDoRequest | 未确认 | 未实现 | — |
 | TutorialUpdateRequest | tutorial_update | 业务实现 | 校验并保存单调进度；不含阶段奖励 |
 | UnitAllocatePointsRequest | 未确认 | 未实现 | — |
-| UnitBGMUpdateRequest | 未确认 | 未实现 | — |
+| UnitBGMUpdateRequest | unit_bgm_update | 业务实现 | 校验成员归属，保存非负音乐编号；不校验资源可用性，不解锁音乐 |
 | UnitDestinyValueUpRequest | 未确认 | 未实现 | — |
 | UnitEquipCostumeRequest | 未确认 | 未实现 | — |
 | UnitEquipPictureRequest | 未确认 | 未实现 | — |
