@@ -41,6 +41,11 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
         if (api == "read_unit_talk")
             arguments = new LocalArguments(Value: request.TryCast<ReadUnitTalkRequest>()?.talk_id);
+        if (api == "unit_voice_update")
+        {
+            var update = request.TryCast<UnitVoiceUpdateRequest>();
+            arguments = update == null ? null : new LocalArguments(update.unit_id, update.voice_set_id);
+        }
         if (api == "home_select_unit_update")
             arguments = new LocalArguments(Value: request.TryCast<HomeCustomSelectUnitUpdateRequest>()?.select_unit_index);
         if (api == "favorite_unit_update")

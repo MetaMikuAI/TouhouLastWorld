@@ -11,13 +11,15 @@ public sealed partial class OfflineServer
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
-        or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete" || QueryTemplates.ContainsKey(api);
+        or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
+        or "unit_voice_update" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
         "read_unit_talk" => MarkTalkRead(arguments?.Value),
         "mail_delete" => DeleteReadMail(),
+        "unit_voice_update" => SetVoice(arguments),
         "favorite_unit_update" => UpdateHome(arguments?.Home),
         "home_select_unit_update" => SelectHomeUnit(arguments?.Value),
         "unit_bgm_update" => SetUnitPreference(arguments, "select_bgm"),
@@ -55,6 +57,30 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply SetVoice(LocalArguments? request)
+    {
+        if (request?.EntityId is null or <= 0 or > int.MaxValue || request.Value is null or < 0)
+            return new(400, null, "Positive unit ID and nonnegative voice selection required.");
+        var updated = user.DeepClone().AsObject();
+        var album = updated["album"]!.AsObject();
+        var entries = album["unit_list"]!.AsArray();
+        var entry = entries.FirstOrDefault(value => value!["unit_id"]!.GetValue<int>() == request.EntityId);
+        if (entry is null)
+        {
+            if (!updated["unit"]!["unit_list"]!.AsArray().Any(value => value!["unit_id"]!.GetValue<int>() == request.EntityId))
+                return new(404, null, "Unit not found in local collection.");
+            entry = new JsonObject
+            {
+                ["unit_id"] = (int)request.EntityId.Value, ["talk_rank"] = 0,
+                ["character_episode_ids"] = new JsonArray(), ["home_motion_ids"] = new JsonArray()
+            };
+            entries.Add(entry);
+        }
+        entry["voice_set_id"] = request.Value.Value;
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["album"] = album.DeepClone() } });
+    }
 
     private JsonObject MailOverview() => new()
     {

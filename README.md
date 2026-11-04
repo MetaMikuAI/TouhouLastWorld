@@ -221,7 +221,7 @@
 | UnitResetPointAllocationRequest | 未确认 | 未实现 | — |
 | UnitSpecActualizeRequest | 未确认 | 未实现 | — |
 | UnitVoiceAutosetUpdateRequest | unit_voice_autoset_update | 业务实现 | 开关校验与保存；不含自动分配内容 |
-| UnitVoiceUpdateRequest | 未确认 | 未实现 | — |
+| UnitVoiceUpdateRequest | unit_voice_update | 业务实现 | 保存已收录或持有条目的语音偏好；不校验语音资源与解锁条件 |
 | UpdateAutoReplayInfoRequest | update_auto_replay_info | 业务实现 | 按任务类型、目标及难度保存客户端测量值；非负校验，不重算战斗 |
 | UpdateGoldExchangeShopListRequest | 未确认 | 未实现 | — |
 | UpdateHomeMotionModeRequest | update_home_motion_mode | 业务实现 | 校验成员归属并保存非负动作模式；不校验动作资源或解锁条件 |
