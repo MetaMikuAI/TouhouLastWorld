@@ -274,3 +274,34 @@ clearedReplay.Dispatch("game_init");
 clearedReplay.Dispatch("login");
 Check(clearedReplay.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!["replay_info"]!.GetValue<string>() == "", "replay deletion persists");
 Console.WriteLine("Passed 14 replay checks.");
+const string readSeries = "get_series_battle_replay_info";
+const string writeSeries = "update_series_battle_replay_info";
+Check(flags.Dispatch(writeSeries, arguments: new(10, 0, Text: "invalid")).Status == 400, "series rejects zero area");
+Check(flags.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [6])).Status == 400, "series rejects out of range area");
+Check(flags.Dispatch(writeSeries, arguments: new(10, 1, Text: "area-one")).Status == 0
+    && flags.Dispatch(writeSeries, arguments: new(10, 5, Text: "area-five")).Status == 0, "series boundary areas saved");
+var seriesSubset = flags.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [5, 5])).Body!;
+Check(seriesSubset["replay_info1"]!.GetValue<string>() == "" && seriesSubset["replay_info5"]!.GetValue<string>() == "area-five",
+    "series query respects selected areas and duplicate indices");
+Check(flags.Dispatch(readSeries, arguments: new(EntityId: 11, Ids: [1])).Body!["replay_info1"]!.GetValue<string>() == "", "series stages are isolated");
+var ordinaryTarget = new LocalReplayMeasure(0, 10, 1);
+Check(flags.Dispatch("update_replay_info", arguments: new(ReplayMeasure: ordinaryTarget)).Status == 400, "ordinary replay requires content");
+Check(flags.Dispatch("update_replay_info", arguments: new(Text: "ordinary", ReplayMeasure: ordinaryTarget)).Status == 0,
+    "ordinary replay saved");
+Check(flags.Dispatch("get_replay_info", arguments: new(ReplayMeasure: new(1, 10, 1))).Body!["replay_info"]!.GetValue<string>() == "",
+    "ordinary replay task types are isolated");
+var allReplayReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+allReplayReload.Dispatch("game_init");
+allReplayReload.Dispatch("login");
+Check(allReplayReload.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [1, 5])).Body!["replay_info1"]!.GetValue<string>() == "area-one",
+    "series replay persists");
+Check(allReplayReload.Dispatch("get_replay_info", arguments: new(ReplayMeasure: ordinaryTarget)).Body!["replay_info"]!.GetValue<string>() == "ordinary",
+    "ordinary replay persists");
+allReplayReload.Dispatch(writeSeries, arguments: new(10, 1, Text: ""));
+var afterAreaClear = allReplayReload.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [1, 5])).Body!;
+Check(afterAreaClear["replay_info1"]!.GetValue<string>() == "" && afterAreaClear["replay_info5"]!.GetValue<string>() == "area-five",
+    "series deletion only clears selected area");
+allReplayReload.Dispatch("update_replay_info", arguments: new(Text: "", ReplayMeasure: ordinaryTarget));
+Check(allReplayReload.Dispatch("get_replay_info", arguments: new(ReplayMeasure: ordinaryTarget)).Body!["replay_info"]!.GetValue<string>() == "",
+    "ordinary replay cleared");
+Console.WriteLine("Passed 12 partitioned replay checks.");
