@@ -915,3 +915,23 @@ overTraining.Dispatch("training_room_shortened_finish_time", arguments: new(Enti
 Check(overTraining.Dispatch("training_room_shortened_finish_time", arguments: new(EntityId: 1,
     TrainingMaterials: [new(12, 1, 60)])).Status == 409, "elapsed training cannot consume more materials");
 Console.WriteLine("Passed 5 training reduction checks.");
+var avatarSeed = JsonNode.Parse(seed)!.AsObject();
+avatarSeed["HeadListItemList"] = new JsonArray(
+    new JsonObject { ["avatar_id"] = 1, ["is_preview"] = false, ["is_clear"] = true, ["filename"] = "IconA", ["title"] = "A", ["desc"] = "" },
+    new JsonObject { ["avatar_id"] = 2, ["is_preview"] = false, ["is_clear"] = true, ["filename"] = "IconB", ["title"] = "B", ["desc"] = "" },
+    new JsonObject { ["avatar_id"] = 3, ["is_preview"] = false, ["is_clear"] = false, ["filename"] = "IconC", ["title"] = "C", ["desc"] = "" });
+var avatarDirectory = directory + "-avatars";
+var avatars = new OfflineServer(avatarDirectory, avatarSeed.ToJsonString(), "offline://resources/");
+avatars.Dispatch("game_init");
+avatars.Dispatch("login");
+Check(avatars.Dispatch("avatar/preview", arguments: new(Value: 99)).Status == 404, "unknown avatar cannot be marked read");
+Check(avatars.Dispatch("avatar/preview", arguments: new(Value: 1)).Body!["avatar_tips"]!.GetValue<int>() == 1
+    && avatars.Dispatch("avatar/preview", arguments: new(Value: 2)).Body!["avatar_tips"]!.GetValue<int>() == 0,
+    "avatar unread indicator excludes locked entries");
+var avatarsReload = new OfflineServer(avatarDirectory, avatarSeed.ToJsonString(), "offline://resources/");
+avatarsReload.Dispatch("game_init");
+var avatarUser = avatarsReload.Dispatch("login").Body!["user"]!;
+Check(avatarsReload.Dispatch("avatar/list").Body!["avatar_list"]![0]!["is_preview"]!.GetValue<bool>()
+    && !avatarUser["isShowRedPoint"]!.GetValue<bool>() && avatarUser["avatar_id"]!.GetValue<int>() == 0,
+    "avatar read state persists without changing selection");
+Console.WriteLine("Passed 3 avatar preview checks.");

@@ -19,10 +19,13 @@ public sealed partial class OfflineServer
         or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end"
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
-        or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time" || QueryTemplates.ContainsKey(api);
+        or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
+        or "avatar/preview" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "avatar/list" => new(0, new() { ["avatar_list"] = user["HeadListItemList"]?.DeepClone() ?? new JsonArray() }),
+        "avatar/preview" => PreviewAvatar(arguments?.Value),
         "training_room_start" => StartTraining(arguments?.Training),
         "training_room_shortened_finish_time" => ShortenTraining(arguments),
         "lecture_room_food_distribution" => DistributeFood(arguments?.FoodDistribution),
@@ -101,6 +104,20 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply PreviewAvatar(int? id)
+    {
+        if (id is null or <= 0) return new(400, null, "Positive avatar ID required.");
+        var updated = user.DeepClone().AsObject();
+        var entries = updated["HeadListItemList"]!.AsArray();
+        var entry = entries.FirstOrDefault(value => value!["avatar_id"]!.GetValue<int>() == id);
+        if (entry is null) return new(404, null, "Avatar entry not found.");
+        entry["is_preview"] = true;
+        var unread = entries.Any(value => value!["is_clear"]!.GetValue<bool>() && !value["is_preview"]!.GetValue<bool>());
+        updated["isShowRedPoint"] = unread;
+        Save(updated);
+        return new(0, new() { ["avatar_tips"] = unread ? 1 : 0 });
+    }
 
     private LocalReply ResetSeries()
     {

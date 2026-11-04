@@ -138,7 +138,7 @@
 | PhantasmPointBuyRequest | 未确认 | 未实现 | — |
 | PictureBookReciveRequest | 未确认 | 未实现 | — |
 | PictureBookRequest | picture_book/get_user_picture_book_list | 最小响应 | 空完成记录；不含进度与奖励 |
-| PictureFrameRequest | avatar/list | 最小响应 | 空头像列表；不含解锁与更换 |
+| PictureFrameRequest | avatar/list | 业务实现 | 返回已保存条目及已读状态；无条目时返回空列表，不自动解锁 |
 | PictureNewUpdateRequest | picture_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
 | PictureProtectionRequest | picture_protection | 业务实现 | 保护标记校验、更新与保存 |
@@ -146,7 +146,7 @@
 | PictureSpecActualizeChemicalRequest | 未确认 | 未实现 | — |
 | PictureSpecActualizeRequest | 未确认 | 未实现 | — |
 | PopupAdWindowRequest | popup | 最小响应 | 确认弹窗打开通知，恢复调用方交互；不上传、不记录、不改变资产 |
-| previewAvatarAPIAsyncRequest | 未确认 | 未实现 | — |
+| previewAvatarAPIAsyncRequest | avatar/preview | 业务实现 | 保存指定条目的已读状态，按剩余未读且已解锁条目返回提示；列表读取本地条目，不自动解锁 |
 | ProfileUserInfoUpdateRequest | user_info_update | 业务实现 | 三种派生请求更新名称或简介，基础文本校验、原子保存；不含远端文本审核 |
 | QuestHelperSelectRequest | 未确认 | 未实现 | — |
 | ReadUnitTalkRequest | read_unit_talk | 业务实现 | 保存正数对话 ID 的已读标记，重复提交幂等；不校验内容存在性，不生成解锁或奖励 |
