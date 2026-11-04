@@ -59,7 +59,7 @@
 | FriendApproveRequest | friend_approve | 业务实现 | 按 player_id 接受本地申请并保存关系；校验容量、重复和申请存在性，失败 result=1；不校验远端状态 |
 | FriendDeleteRequest | friend_delete | 业务实现 | 按 player_id 删除旧版本地关系并返回剩余列表；不存在时 result=1，不同步远端或新版 public_id 关系 |
 | FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 读取本地候选列表，默认空；不含候选匹配或远端查询 |
-| FriendGetHelperDetailRequest | 未确认 | 未实现 | — |
+| FriendGetHelperDetailRequest | friend_get_helper_detail | 最小响应 | 无可用援助；返回零编号触发未选中分支，不生成对象或装备 |
 | FriendGetHistoryRequest | 未确认 | 未实现 | — |
 | FriendGetRequest | 未确认 | 未实现 | — |
 | FriendGiveRequest | 未确认 | 未实现 | — |

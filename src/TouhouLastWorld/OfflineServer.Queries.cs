@@ -59,6 +59,10 @@ public sealed partial class OfflineServer
         ["avatar/list"] = new() { ["avatar_list"] = new JsonArray() },
         ["picture_book/get_user_picture_book_list"] = new() { ["user_completed_info"] = new JsonArray() },
         ["friend_get_candidate_list"] = new() { ["helper_list"] = new JsonArray() },
+        ["friend_get_helper_detail"] = new()
+        {
+            ["helper_unit_info"] = new JsonObject { ["unit_info"] = new JsonObject { ["unit_id"] = 0 } }
+        },
         ["mission_top"] = new()
         {
             ["event_id_list"] = new JsonArray(), ["chapter_id_list"] = new JsonArray(),

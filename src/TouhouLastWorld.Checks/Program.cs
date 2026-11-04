@@ -1424,3 +1424,10 @@ Check(pendingDrop.Dispatch("afk_receive_drop").Status == 503
     && pendingDrop.Dispatch("login").Body!["user"]!["_local_idle"]!["drop_list"]!.AsArray().Count == 1,
     "unsupported idle rewards remain pending instead of being silently cleared");
 Console.WriteLine("Passed 2 idle drop boundary checks.");
+var unavailableHelper = idleReload.Dispatch("friend_get_helper_detail").Body!;
+Check(unavailableHelper["helper_unit_info"]!["unit_info"]!["unit_id"]!.GetValue<int>() == 0
+    && unavailableHelper["user_update"] is null, "missing helper has an explicit unavailable unit rather than null metadata");
+unavailableHelper["helper_unit_info"]!["unit_info"]!["unit_id"] = 1;
+Check(idleReload.Dispatch("friend_get_helper_detail").Body!["helper_unit_info"]!["unit_info"]!["unit_id"]!.GetValue<int>() == 0,
+    "helper response mutation cannot alter subsequent queries");
+Console.WriteLine("Passed 2 unavailable helper response checks.");
