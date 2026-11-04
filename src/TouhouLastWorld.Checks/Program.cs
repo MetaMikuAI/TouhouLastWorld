@@ -1697,3 +1697,28 @@ Check(gatherReload.Dispatch("gather_gold", arguments: new(9999, 1)).Body!["user_
     && gatherReload.Dispatch("gather_gold", arguments: new(9999, 1)).Body!["user_update"]!["gold"]!.GetValue<int>() == 5100,
     "saved stock survives restart and cannot be collected twice");
 Console.WriteLine("Passed 4 local gathering checks.");
+
+var gatherPointSeed = JsonNode.Parse(seed)!;
+gatherPointSeed["_local_gathering_phantasm_point"] = 50;
+gatherPointSeed["phantasm_point"]!["purchase_count"] = 7;
+var gatherPointDirectory = directory + "-gather-points";
+var gatherPointServer = new OfflineServer(gatherPointDirectory, gatherPointSeed.ToJsonString(), "offline://resources/");
+gatherPointServer.Dispatch("game_init");
+gatherPointServer.Dispatch("login");
+Check(gatherPointServer.Dispatch("gather_phantasm_point", arguments: new(120, 2)).Status == 503,
+    "point gathering requires current level capacity");
+var gatheredPoints = gatherPointServer.Dispatch("gather_phantasm_point", arguments: new(120, 1)).Body!;
+Check(gatheredPoints["gathering_phantasm_point"]!.GetValue<int>() == 30
+    && gatheredPoints["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 120
+    && gatheredPoints["user_update"]!["phantasm_point"]!["purchase_count"]!.GetValue<int>() == 7
+    && gatherPointServer.Dispatch("home").Body!["gathering_phantasm_point"]!.GetValue<int>() == 30,
+    "point gathering preserves excess stock and unrelated balance fields");
+Check(gatherPointServer.Dispatch("gather_phantasm_point", arguments: new(120, 1)).Body!["gathering_phantasm_point"]!.GetValue<int>() == 30,
+    "full point balance preserves remaining stock");
+var gatherPointReload = new OfflineServer(gatherPointDirectory, seed, "offline://resources/");
+gatherPointReload.Dispatch("game_init");
+gatherPointReload.Dispatch("login");
+gatherPointReload.Dispatch("gather_phantasm_point", arguments: new(9999, 1));
+Check(gatherPointReload.Dispatch("gather_phantasm_point", arguments: new(9999, 1)).Body!["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 150,
+    "point stock persists and repeated gathering does not duplicate credit");
+Console.WriteLine("Passed 4 point gathering checks.");

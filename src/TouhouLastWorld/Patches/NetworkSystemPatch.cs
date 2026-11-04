@@ -50,6 +50,12 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(EntityId: level.HasValue ? MasterDB.This()?.PlayerExp?.Find(level.Value)?.gold_max : null,
                 Value: level);
         }
+        if (api == "gather_phantasm_point")
+        {
+            var level = User.This()?.level;
+            arguments = new LocalArguments(EntityId: level.HasValue ? MasterDB.This()?.PlayerExp?.Find(level.Value)?.phantasm_point_max : null,
+                Value: level);
+        }
         if (api == "get_quest_cleared_team_info")
         {
             var query = request.TryCast<GetQuestClearedTeamInfoRequest>();
