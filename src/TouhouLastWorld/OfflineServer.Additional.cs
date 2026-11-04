@@ -21,10 +21,11 @@ public sealed partial class OfflineServer
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
-        or "friend/info" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
+        or "friend/info" or "friend_delete" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "friend_delete" => DeleteContact(arguments?.Text),
         "reset_point_allocation" => ResetPoints(arguments?.PointReset),
         "allocate_points" => AllocatePoints(arguments?.PointAllocation),
         "friend/info" => ContactInfo(arguments?.Text),
@@ -117,6 +118,18 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply DeleteContact(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return new(400, null, "Player ID required.");
+        var updated = user.DeepClone().AsObject();
+        var entries = updated["_local_friend_players"] as JsonArray ?? new JsonArray();
+        var entry = entries.FirstOrDefault(value => value?["player_id"]?.GetValue<string>() == id);
+        if (entry is null) return new(0, new() { ["result"] = 1, ["friend_list"] = entries.DeepClone() });
+        entries.Remove(entry);
+        Save(updated);
+        return new(0, new() { ["result"] = 0, ["friend_list"] = entries.DeepClone() });
+    }
 
     private LocalReply ContactInfo(string? id)
     {
@@ -296,6 +309,7 @@ public sealed partial class OfflineServer
     private LocalReply ContactOverview()
     {
         var body = QueryTemplates["friend_top"].DeepClone().AsObject();
+        body["friend_list"] = user["_local_friend_players"]?.DeepClone() ?? new JsonArray();
         body["helper_user_unit_id1"] = user["helper_user_unit_id1"]!.DeepClone();
         return new(0, body);
     }

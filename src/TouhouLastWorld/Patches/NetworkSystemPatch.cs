@@ -50,6 +50,8 @@ public partial class NetworkSystemPatch
             arguments = reset == null || setting == null ? null : new LocalArguments(PointReset:
                 new(reset.user_unit_id, setting.PA_RESET_CONSUME_OBJECT_VALUE, setting.PA_RESET_FREE_FLAG >= 1));
         }
+        if (api == "friend_delete")
+            arguments = new LocalArguments(Text: request.TryCast<FriendDeleteRequest>()?.delete_player_id);
         if (api == "friend/info")
             arguments = new LocalArguments(Text: request.TryCast<FriendInfoRequest>()?.public_id);
         if (api == "friend/accept_apply")

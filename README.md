@@ -57,7 +57,7 @@
 | FriendApplyListRequest | friend/apply_list | 业务实现 | 返回已保存的本地申请；不从远端获取 |
 | FriendApplyRequest | 未确认 | 未实现 | — |
 | FriendApproveRequest | 未确认 | 未实现 | — |
-| FriendDeleteRequest | 未确认 | 未实现 | — |
+| FriendDeleteRequest | friend_delete | 业务实现 | 按 player_id 删除旧版本地关系并返回剩余列表；不存在时 result=1，不同步远端或新版 public_id 关系 |
 | FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 空候选列表；不含候选匹配 |
 | FriendGetHelperDetailRequest | 未确认 | 未实现 | — |
 | FriendGetHistoryRequest | 未确认 | 未实现 | — |
@@ -72,7 +72,7 @@
 | FriendRequestRequest | 未确认 | 未实现 | — |
 | FriendSearchRequest | friend/search | 最小响应 | 本地无远端用户目录，返回客户端无匹配状态 2000 |
 | FriendSettingHelperRequest | friend_setting_helper | 业务实现 | 校验助战成员归属，保存选择及上报战力，总览同步回读；不重新计算战力 |
-| FriendTopRequest | friend_top | 最小响应 | 联系人、申请和待确认列表为空；助战编号读取本地选择 |
+| FriendTopRequest | friend_top | 最小响应 | 读取旧版本地关系与助战编号；申请和待确认列表为空，不同步远端 |
 | GachaDoRequest | gacha_do | 业务实现 | 仅固定本地池：扣费、入库、保存 |
 | GachaPointExchangeRequest | 未确认 | 未实现 | — |
 | GachaRetryFixRequest | 未确认 | 未实现 | — |

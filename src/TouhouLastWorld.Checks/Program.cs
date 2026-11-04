@@ -1075,3 +1075,26 @@ var resetAllocation = allocationReload.Dispatch("reset_point_allocation", argume
 Check(resetAllocation["pa_points"]!.GetValue<int>() == 20 && resetAllocation["pa_total_used_points"]!.GetValue<int>() == 0,
     "allocation and reset preserve total point balance");
 Console.WriteLine("Passed 6 point allocation checks.");
+var deleteContactSeed = JsonNode.Parse(seed)!.AsObject();
+deleteContactSeed["_local_friend_players"] = new JsonArray(
+    new JsonObject { ["player_id"] = "old-a" }, new JsonObject { ["player_id"] = "old-b" });
+deleteContactSeed["_local_friends"] = new JsonArray(new JsonObject { ["public_id"] = "old-a" });
+var deleteContactDirectory = directory + "-delete-contact";
+var deleteContact = new OfflineServer(deleteContactDirectory, deleteContactSeed.ToJsonString(), "offline://resources/");
+deleteContact.Dispatch("game_init");
+deleteContact.Dispatch("login");
+Check(deleteContact.Dispatch("friend_delete").Status == 400
+    && deleteContact.Dispatch("friend_delete", arguments: new(Text: "missing")).Body!["result"]!.GetValue<int>() == 1,
+    "contact deletion validates ID and reports missing target in result");
+var deletedContact = deleteContact.Dispatch("friend_delete", arguments: new(Text: "old-a")).Body!;
+Check(deletedContact["result"]!.GetValue<int>() == 0 && deletedContact["friend_list"]!.AsArray().Count == 1
+    && deletedContact["friend_list"]![0]!["player_id"]!.GetValue<string>() == "old-b", "contact deletion returns remaining old-schema entries");
+var deleteContactReload = new OfflineServer(deleteContactDirectory, deleteContactSeed.ToJsonString(), "offline://resources/");
+deleteContactReload.Dispatch("game_init");
+deleteContactReload.Dispatch("login");
+Check(deleteContactReload.Dispatch("friend_top").Body!["friend_list"]!.AsArray().Count == 1
+    && deleteContactReload.Dispatch("friend_delete", arguments: new(Text: "old-a")).Body!["result"]!.GetValue<int>() == 1,
+    "deleted contact remains absent after reload");
+Check(deleteContactReload.Dispatch("friend/list").Body!["data"]!.AsArray().Count == 1,
+    "old-schema deletion does not guess public ID equivalence");
+Console.WriteLine("Passed 4 contact deletion checks.");
