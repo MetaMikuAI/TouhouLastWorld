@@ -34,7 +34,6 @@ public sealed partial class OfflineServer
             ["normal_received_reward_level"] = 0, ["premium_received_reward_level_1"] = 0,
             ["premium_received_reward_level_2"] = 0
         },
-        ["multiple_spirits_weekly_top"] = new() { ["clear_info"] = new JsonArray() },
         ["get_raid_gauge"] = new() { ["raid_gauge_list"] = new JsonArray() },
         ["get_series_battle_ranking_list"] = new() { ["ranking"] = new JsonArray(), ["myrank"] = new JsonArray() },
         ["personal_info_get"] = new()

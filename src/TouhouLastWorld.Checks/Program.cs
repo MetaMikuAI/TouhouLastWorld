@@ -642,10 +642,10 @@ Check(dispatchUser["dispatch"]!["dispatch_list"]![0]!["user_dispatch_id"]!.GetVa
 Check(JsonNode.DeepEquals(dispatchSeed["unit"], dispatchUser["unit"])
     && JsonNode.DeepEquals(dispatchSeed["orb"], dispatchUser["orb"]), "dispatch cancellation does not fabricate rewards");
 Console.WriteLine("Passed 5 dispatch cancellation checks.");
-var weeklyInfo = dispatchReload.Dispatch("multiple_spirits_weekly_top").Body!;
+var weeklyInfo = dispatchReload.Dispatch("multiple_spirits_weekly_top", arguments: new(Ids: [])).Body!;
 Check(weeklyInfo["clear_info"]!.AsArray().Count == 0, "weekly progress starts empty");
 weeklyInfo["clear_info"]!.AsArray().Add(new JsonObject());
-Check(dispatchReload.Dispatch("multiple_spirits_weekly_top").Body!["clear_info"]!.AsArray().Count == 0,
+Check(dispatchReload.Dispatch("multiple_spirits_weekly_top", arguments: new(Ids: [])).Body!["clear_info"]!.AsArray().Count == 0,
     "weekly response template remains isolated");
 Console.WriteLine("Passed 2 weekly query checks.");
 var passOverview = dispatchReload.Dispatch("battle_pass_top").Body!;
@@ -3526,3 +3526,40 @@ Check(dailyEndRepeat.Status == 0 && dailyEndRepeat.Body!["first_cleared_reward_l
     && dailyEndReload.Dispatch("arena_battle_end", arguments: new(ArenaEnd: dailyEndRule)).Status == 409,
     "repeated daily victories do not grant cleared stages again");
 Console.WriteLine("Passed 4 daily settlement checks.");
+
+var versusEntrySeed = JsonNode.Parse(seed)!;
+versusEntrySeed["quest_playdata"] = new JsonArray(new JsonObject { ["episode_id"] = 901,
+    ["normal"] = new JsonObject { ["status"] = 2 } });
+versusEntrySeed["_local_versus_entry_costs"] = new JsonObject { ["7"] = 10 };
+var versusEntryDirectory = directory + "-versus-entry";
+var versusEntryServer = new OfflineServer(versusEntryDirectory, versusEntrySeed.ToJsonString(), "offline://resources/");
+versusEntryServer.Dispatch("game_init");
+versusEntryServer.Dispatch("login");
+var versusEntryRule = new LocalVersusStart(7, 60, 60, 1, true, 901, false, []);
+Check(versusEntryServer.Dispatch("multiple_spirits_weekly_top").Status == 503
+    && versusEntryServer.Dispatch("multiple_spirits_weekly_top", arguments: new(Ids: [7])).Body!["clear_info"]![0]!["cleared_level"]!.GetValue<int>() == 0,
+    "entry overview requires definitions and supplies initial progress for active entries");
+Check(versusEntryServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusEntryRule with { ReleaseEpisode = 902 })).Status == 409
+    && versusEntryServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusEntryRule with { Helper = true })).Status == 503
+    && versusEntryServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusEntryRule with { FinalLevel = 65, Rules = [new(1, 5)] })).Status == 409,
+    "locked episode, helper use and locked extra rules do not admit a battle");
+var versusEntryReply = versusEntryServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusEntryRule));
+var versusEntryRetry = versusEntryServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusEntryRule));
+Check(versusEntryReply.Status == 0 && versusEntryRetry.Status == 0
+    && versusEntryRetry.Body!["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 90
+    && versusEntryServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusEntryRule with { BaseLevel = 61, FinalLevel = 61 })).Status == 409,
+    "entry payment is idempotent and a different challenge cannot replace the pending battle");
+var versusEntryReload = new OfflineServer(versusEntryDirectory, seed, "offline://resources/");
+versusEntryReload.Dispatch("game_init");
+Check(versusEntryReload.Dispatch("login").Body!["user"]!["_local_versus_pending"]!["base_level"]!.GetValue<int>() == 60,
+    "pending challenge survives restart without granting progress");
+versusEntrySeed["_local_versus_clear_info"] = new JsonArray(new JsonObject { ["multiple_spirits_weekly_master_id"] = 7,
+    ["cleared_level"] = 100, ["add_rules_cleared_level"] = new JsonArray() });
+var versusRulesServer = new OfflineServer(directory + "-versus-rules", versusEntrySeed.ToJsonString(), "offline://resources/");
+versusRulesServer.Dispatch("game_init");
+versusRulesServer.Dispatch("login");
+var versusRulesEntry = versusEntryRule with { BaseLevel = 100, FinalLevel = 110, Rules = [new(1, 5), new(2, 5)] };
+Check(versusRulesServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusRulesEntry with { FinalLevel = 109 })).Status == 400
+    && versusRulesServer.Dispatch("multiple_spirits_weekly_battle_start", arguments: new(VersusStart: versusRulesEntry)).Status == 0,
+    "unlocked additional rules require the exact summed challenge level");
+Console.WriteLine("Passed 5 versus admission checks.");

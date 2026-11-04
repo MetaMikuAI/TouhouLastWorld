@@ -124,7 +124,7 @@
 | MiniGameRequest | mini_game_top | 最小响应 | 为全部主表项目返回本地首次奖励标记，默认未领取；剩余点数默认零，不生成进度或发放奖励 |
 | MissionEndRequest | mission_end | 业务实现 | 单个或批量领取本地已完成任务，按主表发放固定金币/晶体/物品并保存领取记录；整批回滚，随机奖励、任务进度生成与周期重置未实现 |
 | MissionTopRequest | mission_top | 最小响应 | 返回本地未完成、待领取列表及对应分类，默认空；任务进度生成未实现 |
-| MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 最小响应 | 空周进度列表；不生成通关记录、奖励或排名 |
+| MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 业务实现 | 按有效主表返回本地通关进度，未通关项返回初始记录；不生成奖励或排名 |
 | MusicLikeRequest | music_collect | 未实现 | 请求 bgm_id/status，响应 is_success；status 取值含义待调用逻辑确认 |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 |
 | NewsRequest | 未确认 | 未实现 | — |
@@ -238,7 +238,7 @@
 | UserTwitterInfoUpdateRequest | user_twitter_info_update | 业务实现 | 保存当前存档的本地编号与关联标记；重复编号可重试，更换前须解除，不验证外部授权或迁移账号 |
 | VersionGetRequest | version_get | 最小响应 | 固定版本与资源路径 |
 | VersusBattleEndRequest | 未确认 | 未实现 | — |
-| VersusBattleStartRequest | 未确认 | 未实现 | — |
+| VersusBattleStartRequest | multiple_spirits_weekly_battle_start | 业务实现 | 校验开放条件、基础等级与主表追加规则、队伍，按本地配置扣点并保存待结算记录；重试不重复扣点，助战及消耗规则自动生成未实现 |
 | VotivePictureExchangeRequest | votive_picture_exchange | 业务实现 | 按配置消耗材料兑换装备，校验有效期与容量，创建独立对象并更新图鉴；角色等其他对象未实现 |
 | WeeklyArenaBattleScoreResetRequest | weekly_arena_battle_score_reset | 业务实现 | 清零本地场次总分与参战编号；保留累计最高分、难度、分项与敌方配置，缺少场次返回错误；不生成周配置 |
 | WeeklyArenaTopRequest | weekly_arena_top | 最小响应 | 读取本地四场配置与累计最高分；缺少配置返回 503，不生成敌方配置、不轮换周期、不验证资源完整性 |
