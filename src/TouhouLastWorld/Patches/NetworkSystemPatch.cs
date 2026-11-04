@@ -52,6 +52,13 @@ public partial class NetworkSystemPatch
         }
         if (api == "weekly_arena_battle_score_reset")
             arguments = new LocalArguments(Value: request.TryCast<WeeklyArenaBattleScoreResetRequest>()?.battle_number);
+        if (api == "episode_end")
+        {
+            var episode = request.TryCast<EpisodeEndRequest>();
+            var table = MasterDB.This()?.Episode;
+            arguments = episode == null ? null : new LocalArguments(EntityId: episode.episode_id,
+                Value: table == null ? null : table.Find(episode.episode_id)?.type ?? 0);
+        }
         if (api == "friend/apply")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX,
                 Text: request.TryCast<FriendApplyRequest>()?.public_id);

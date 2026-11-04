@@ -22,10 +22,11 @@ public sealed partial class OfflineServer
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply" or "friend/apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_request" or "friend_approve" or "reset_point_allocation" or "allocate_points"
-        or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
+        or "episode_end" or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "episode_end" => CompleteEpisode(arguments),
         "event_top" => EventOverview(),
         "daily_arena_top" => DailyOverview(),
         "weekly_arena_top" => WeeklyOverview(),
@@ -129,6 +130,28 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply CompleteEpisode(LocalArguments? request)
+    {
+        if (request?.EntityId is null or <= 0 or > int.MaxValue)
+            return new(400, null, "Positive episode ID required.");
+        if (request.Value is null) return new(503, null, "Episode master data unavailable.");
+        if (request.Value != 1) return new(404, null, "Story episode not found.");
+        var updated = user.DeepClone().AsObject();
+        var episodes = updated["quest_playdata"] as JsonArray ?? new JsonArray();
+        var episode = episodes.FirstOrDefault(entry => entry?["episode_id"]?.GetValue<int>() == request.EntityId) as JsonObject;
+        if (episode is null)
+        {
+            episode = new JsonObject { ["episode_id"] = (int)request.EntityId.Value };
+            foreach (var difficulty in new[] { "normal", "hard", "lunatic" })
+                episode[difficulty] = new JsonObject { ["status"] = -2, ["battle_challenge"] = new JsonArray() };
+            episodes.Add(episode);
+        }
+        episode["scenario_status"] = Math.Max(1, episode["scenario_status"]?.GetValue<int>() ?? 0);
+        if (episodes.Parent is null) updated["quest_playdata"] = episodes;
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["quest_playdata"] = episodes.DeepClone() } });
+    }
 
     private LocalReply EventOverview()
     {

@@ -1304,3 +1304,31 @@ Check(applyContactReload.Dispatch("friend/apply_list").Body!["data"]!.AsArray().
     && applyContactReload.Dispatch("friend/list").Body!["data"]!.AsArray().Count == 1,
     "outgoing application does not create an incoming request or accepted relation");
 Console.WriteLine("Passed 4 public contact application checks.");
+var episodeSeed = JsonNode.Parse(seed)!.AsObject();
+episodeSeed["quest_playdata"] = new JsonArray(new JsonObject
+{
+    ["episode_id"] = 1, ["scenario_status"] = 0,
+    ["normal"] = new JsonObject { ["status"] = 3, ["battle_challenge"] = new JsonArray(1, 2) }
+});
+var episodeDirectory = directory + "-episode";
+var episodeServer = new OfflineServer(episodeDirectory, episodeSeed.ToJsonString(), "offline://resources/");
+episodeServer.Dispatch("game_init");
+episodeServer.Dispatch("login");
+Check(episodeServer.Dispatch("episode_end", arguments: new(EntityId: 0, Value: 1)).Status == 400
+    && episodeServer.Dispatch("episode_end", arguments: new(EntityId: 1)).Status == 503
+    && episodeServer.Dispatch("episode_end", arguments: new(EntityId: 1, Value: 2)).Status == 404,
+    "episode completion validates ID and known story type");
+var completedEpisode = episodeServer.Dispatch("episode_end", arguments: new(EntityId: 1, Value: 1)).Body!["user_update"]!["quest_playdata"]![0]!;
+Check(completedEpisode["scenario_status"]!.GetValue<int>() == 1 && completedEpisode["normal"]!["status"]!.GetValue<int>() == 3
+    && completedEpisode["normal"]!["battle_challenge"]!.AsArray().Count == 2, "episode completion preserves existing battle progress");
+episodeServer.Dispatch("episode_end", arguments: new(EntityId: 2, Value: 1));
+episodeServer.Dispatch("episode_end", arguments: new(EntityId: 2, Value: 1));
+var episodeReload = new OfflineServer(episodeDirectory, episodeSeed.ToJsonString(), "offline://resources/");
+episodeReload.Dispatch("game_init");
+var episodeUser = episodeReload.Dispatch("login").Body!["user"]!;
+Check(episodeUser["quest_playdata"]!.AsArray().Count == 2
+    && episodeUser["quest_playdata"]![1]!["scenario_status"]!.GetValue<int>() == 1
+    && episodeUser["quest_playdata"]![1]!["normal"]!["status"]!.GetValue<int>() == -2,
+    "new episode completion persists once without clearing battles");
+Check(episodeUser["gold"]!.GetValue<int>() == episodeSeed["gold"]!.GetValue<int>(), "episode completion does not fabricate currency rewards");
+Console.WriteLine("Passed 4 episode completion checks.");

@@ -42,7 +42,7 @@
 | DispatchCancelRequest | dispatch_cancel | 业务实现 | 删除本地任务并返回客户端删除标记；不发放奖励，本地不退款；不存在的任务返回未找到 |
 | DispatchEndRequest | 未确认 | 未实现 | — |
 | DispatchStartRequest | 未确认 | 未实现 | — |
-| EpisodeEndRequest | 未确认 | 未实现 | — |
+| EpisodeEndRequest | episode_end | 业务实现 | 校验主数据剧情类型，持久化 scenario_status 并同步进度；重复完成不新增记录，保留战斗状态；不校验开放条件、不结算奖励或推进教程 |
 | EventAnniversaryInfoGetAPIRequest | anniversary_info_get | 最小响应 | 返回未填写邮箱；不提交报名或发放奖励 |
 | EventAnniversaryInfoUpdateAPIRequest | 未确认 | 未实现 | — |
 | EventPersonalInfoGetAPIRequest | personal_info_get | 最小响应 | 返回未填写联系信息；不提交报名或发放奖励 |
