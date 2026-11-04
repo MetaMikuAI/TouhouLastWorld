@@ -1007,3 +1007,42 @@ var knownContact = contactInfoServer.Dispatch("friend/info", arguments: new(Text
 Check(knownContact["unit_get_count"]!.GetValue<int>() == 7 && knownContact["quest_complete_count"]!.GetValue<int>() == 8
     && knownContact["dispatch_complete_count"]!.GetValue<int>() == 9, "contact details preserve stored counters");
 Console.WriteLine("Passed 3 contact detail checks.");
+var pointsSeed = JsonNode.Parse(seed)!.AsObject();
+pointsSeed["gold"] = 100;
+var pointsState = pointsSeed["unit"]!["unit_list"]![0]!["point_allocation_info"]!;
+pointsState["pa_type_1"] = 1;
+pointsState["pa_type_9"] = 2;
+pointsState["pa_points"] = 4;
+pointsState["pa_total_used_points"] = 12;
+var pointsDirectory = directory + "-points";
+var pointServer = new OfflineServer(pointsDirectory, pointsSeed.ToJsonString(), "offline://resources/");
+pointServer.Dispatch("game_init");
+pointServer.Dispatch("login");
+var resetPoints = pointServer.Dispatch("reset_point_allocation", arguments: new(PointReset: new(1, 200, false))).Body!["user_update"]!;
+Check(resetPoints["gold"]!.GetValue<int>() == 100
+    && resetPoints["unit"]!["unit_list"]![0]!["point_allocation_info"]!["pa_points"]!.GetValue<int>() == 16,
+    "first reset returns used points without charge");
+pointServer.Dispatch("reset_point_allocation", arguments: new(PointReset: new(1, 200, false)));
+var pointReload = new OfflineServer(pointsDirectory, pointsSeed.ToJsonString(), "offline://resources/");
+pointReload.Dispatch("game_init");
+var resetUser = pointReload.Dispatch("login").Body!["user"]!;
+var resetState = resetUser["unit"]!["unit_list"]![0]!["point_allocation_info"]!;
+Check(resetState["pa_points"]!.GetValue<int>() == 16 && resetState["pa_total_used_points"]!.GetValue<int>() == 0
+    && resetState["pa_type_9"]!.GetValue<int>() == 0 && resetState["is_pa_reset_not_free"]!.GetValue<int>() == 1
+    && resetUser["gold"]!.GetValue<int>() == 100, "reset persists and repeated empty reset does not refund again");
+pointsState["is_pa_reset_not_free"] = 1;
+var paidPoints = new OfflineServer(directory + "-paid-points", pointsSeed.ToJsonString(), "offline://resources/");
+paidPoints.Dispatch("game_init");
+paidPoints.Dispatch("login");
+Check(paidPoints.Dispatch("reset_point_allocation", arguments: new(PointReset: new(1, 101, false))).Status == 409,
+    "paid reset rejects insufficient balance");
+var paidReset = paidPoints.Dispatch("reset_point_allocation", arguments: new(PointReset: new(1, 30, false))).Body!["user_update"]!;
+Check(paidReset["gold"]!.GetValue<int>() == 70
+    && paidReset["unit"]!["unit_list"]![0]!["point_allocation_info"]!["pa_points"]!.GetValue<int>() == 16,
+    "paid reset changes points and gold together");
+var freePoints = new OfflineServer(directory + "-free-points", pointsSeed.ToJsonString(), "offline://resources/");
+freePoints.Dispatch("game_init");
+freePoints.Dispatch("login");
+Check(freePoints.Dispatch("reset_point_allocation", arguments: new(PointReset: new(1, 200, true))).Body!["user_update"]!["gold"]!.GetValue<int>() == 100,
+    "free reset setting overrides repeat cost");
+Console.WriteLine("Passed 5 point reset checks.");

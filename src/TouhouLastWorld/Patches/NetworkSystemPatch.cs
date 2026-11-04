@@ -35,6 +35,13 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "reset_point_allocation")
+        {
+            var reset = request.TryCast<UnitResetPointAllocationRequest>();
+            var setting = MasterDB.This()?.Setting;
+            arguments = reset == null || setting == null ? null : new LocalArguments(PointReset:
+                new(reset.user_unit_id, setting.PA_RESET_CONSUME_OBJECT_VALUE, setting.PA_RESET_FREE_FLAG >= 1));
+        }
         if (api == "friend/info")
             arguments = new LocalArguments(Text: request.TryCast<FriendInfoRequest>()?.public_id);
         if (api == "friend/accept_apply")

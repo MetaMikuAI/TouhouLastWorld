@@ -218,7 +218,7 @@
 | UnitRankPromoteRequest | 未确认 | 未实现 | — |
 | UnitRareAwakenRequest | 未确认 | 未实现 | — |
 | UnitRecycleRequest | 未确认 | 未实现 | — |
-| UnitResetPointAllocationRequest | 未确认 | 未实现 | — |
+| UnitResetPointAllocationRequest | reset_point_allocation | 业务实现 | 清空九类分配并返还已用点数；首次或主数据免费期不扣款，其余扣金币；本地无分配时不收费，不重算历史点数来源 |
 | UnitSpecActualizeRequest | 未确认 | 未实现 | — |
 | UnitVoiceAutosetUpdateRequest | unit_voice_autoset_update | 业务实现 | 开关校验与保存；不含自动分配内容 |
 | UnitVoiceUpdateRequest | unit_voice_update | 业务实现 | 保存已收录或持有条目的语音偏好；不校验语音资源与解锁条件 |
