@@ -138,7 +138,7 @@
 | PhantasmPointBuyRequest | 未确认 | 未实现 | — |
 | PictureBookReciveRequest | 未确认 | 未实现 | — |
 | PictureBookRequest | picture_book/get_user_picture_book_list | 最小响应 | 空完成记录；不含进度与奖励 |
-| PictureFrameRequest | 未确认 | 未实现 | — |
+| PictureFrameRequest | avatar/list | 最小响应 | 空头像列表；不含解锁与更换 |
 | PictureNewUpdateRequest | picture_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
 | PictureProtectionRequest | picture_protection | 业务实现 | 保护标记校验、更新与保存 |
