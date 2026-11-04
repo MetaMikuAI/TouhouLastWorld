@@ -1673,3 +1673,27 @@ Check(limitedGifts.Dispatch("friend/receive", arguments: new(99999, 1)).Body!["u
     && limitedGifts.Dispatch("friend/list").Body!["data"]![1]!["is_receive_gold"]!.GetValue<bool>(),
     "daily limit leaves unclaimed gifts pending");
 Console.WriteLine("Passed 5 gift receipt checks.");
+
+var gatherSeed = JsonNode.Parse(seed)!;
+gatherSeed["_local_gathering_gold"] = 100;
+var gatherDirectory = directory + "-gather-gold";
+var gatherServer = new OfflineServer(gatherDirectory, gatherSeed.ToJsonString(), "offline://resources/");
+gatherServer.Dispatch("game_init");
+gatherServer.Dispatch("login");
+Check(gatherServer.Dispatch("gather_gold", arguments: new(5050, 2)).Status == 503
+    && gatherServer.Dispatch("home").Body!["gathering_gold"]!.GetValue<int>() == 100,
+    "gathering rejects stale level capacity without consuming stock");
+var gatherReply = gatherServer.Dispatch("gather_gold", arguments: new(5050, 1)).Body!;
+Check(gatherReply["gathering_gold"]!.GetValue<int>() == 50
+    && gatherReply["user_update"]!["gold"]!.GetValue<int>() == 5050
+    && gatherServer.Dispatch("home").Body!["gathering_gold"]!.GetValue<int>() == 50,
+    "gathering fills available capacity and preserves excess stock");
+Check(gatherServer.Dispatch("gather_gold", arguments: new(5050, 1)).Body!["gathering_gold"]!.GetValue<int>() == 50,
+    "full balance does not discard stock");
+var gatherReload = new OfflineServer(gatherDirectory, seed, "offline://resources/");
+gatherReload.Dispatch("game_init");
+gatherReload.Dispatch("login");
+Check(gatherReload.Dispatch("gather_gold", arguments: new(9999, 1)).Body!["user_update"]!["gold"]!.GetValue<int>() == 5100
+    && gatherReload.Dispatch("gather_gold", arguments: new(9999, 1)).Body!["user_update"]!["gold"]!.GetValue<int>() == 5100,
+    "saved stock survives restart and cannot be collected twice");
+Console.WriteLine("Passed 4 local gathering checks.");

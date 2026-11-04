@@ -127,7 +127,7 @@ public sealed partial class OfflineServer
             "afk_top" => IdleOverview(),
             "home" => new()
             {
-                ["gathering_phantasm_point"] = 0, ["gathering_gold"] = 0, ["unread_mail_num"] = 0,
+                ["gathering_phantasm_point"] = 0, ["gathering_gold"] = user["_local_gathering_gold"]?.DeepClone() ?? JsonValue.Create(0), ["unread_mail_num"] = 0,
                 ["put_facility_badge"] = 0, ["put_mission_badge"] = 0, ["put_mission_id_list"] = new JsonArray(),
                 ["put_dispatch_popup"] = 0, ["unread_talk_id_list"] = new JsonArray(), ["friend_receive_tips"] = 0,
                 ["is_pass_card"] = 0, ["avatar_tips"] = 0, ["free_value_pack_tips"] = 0, ["pb_point"] = 0,

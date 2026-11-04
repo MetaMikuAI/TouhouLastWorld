@@ -79,7 +79,7 @@
 | GachaTopRequest | gacha_top | 最小响应 | 固定本地列表 |
 | GainFreeItemRequest | 未确认 | 未实现 | — |
 | GameInitRequest | game_init | 业务实现 | 本地会话与入口 |
-| GatherGoldRequest | 未确认 | 未实现 | — |
+| GatherGoldRequest | gather_gold | 业务实现 | 收取本地已保存库存，按当前等级容量入账，超出部分保留；主页同步余量，不计算时间产出 |
 | GatherPhantasmPointRequest | 未确认 | 未实现 | — |
 | GetAutoReplayInfoRequest | get_auto_replay_info | 业务实现 | 按目标读取已保存测量值；无记录返回零，不重算战斗 |
 | GetDispatchListRequest | get_dispatch_list | 最小响应 | 空派遣列表；不含派遣开始与结算 |

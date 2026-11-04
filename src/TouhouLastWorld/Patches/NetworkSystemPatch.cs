@@ -44,6 +44,12 @@ public partial class NetworkSystemPatch
         }
         if (api == "friend_helper_select")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX);
+        if (api == "gather_gold")
+        {
+            var level = User.This()?.level;
+            arguments = new LocalArguments(EntityId: level.HasValue ? MasterDB.This()?.PlayerExp?.Find(level.Value)?.gold_max : null,
+                Value: level);
+        }
         if (api == "get_quest_cleared_team_info")
         {
             var query = request.TryCast<GetQuestClearedTeamInfoRequest>();
