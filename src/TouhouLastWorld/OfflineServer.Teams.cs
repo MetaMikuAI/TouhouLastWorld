@@ -61,14 +61,30 @@ public sealed partial class OfflineServer
 
     private LocalReply UpdateTeam(LocalTeamUpdate? request)
     {
-        if (request is null || request.Number <= 0 || request.Cost < 0 || request.CostWithFriend < 0
+        if (request is null || request.Number < 0 || request.Cost < 0 || request.CostWithFriend < 0
             || (request.Name is not null && (string.IsNullOrWhiteSpace(request.Name) || request.Name.Any(char.IsControl)))
             || request.Units?.Length > 6 || request.EnhancedUnits?.Length > 6)
             return new(400, null, "Invalid team fields.");
+        // 零号剧情队伍由客户端管理，提交时已剔除临时角色。
+        if (request.Number == 0)
+            return request.Name is null && request.Units?.All(id => id == 0) == true
+                && request.EnhancedUnits?.Any(id => id != 0) != true
+                ? new(0, new()) : new(400, null, "Invalid story team fields.");
+
         var updated = user.DeepClone().AsObject();
         var section = updated["team"]!.AsObject();
-        var team = section["team_list"]!.AsArray().FirstOrDefault(entry => entry!["number"]!.GetValue<int>() == request.Number);
-        if (team is null) return new(404, null, "Team slot not found.");
+        var teams = section["team_list"]!.AsArray();
+        var team = teams.FirstOrDefault(entry => entry!["number"]!.GetValue<int>() == request.Number);
+        if (team is null)
+        {
+            if (request.Number > request.NormalSlotLimit) return new(404, null, "Team slot not found.");
+            team = new JsonObject
+            {
+                ["number"] = request.Number, ["name"] = "", ["use_cost"] = 0,
+                ["user_unit_id_list"] = TeamSlots([]), ["season_enhancement_user_unit_id_list"] = TeamSlots([])
+            };
+            teams.Add(team);
+        }
         var members = request.Units ?? team["user_unit_id_list"]!.AsArray().Select(id => id!.GetValue<long>()).ToArray();
         var positive = members.Where(id => id > 0).ToArray();
         if (members.Any(id => id < 0) || positive.Distinct().Count() != positive.Length)

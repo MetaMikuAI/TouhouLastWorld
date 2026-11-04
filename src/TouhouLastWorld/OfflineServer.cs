@@ -9,7 +9,8 @@ public sealed record LocalResourcePaths(string Resource, string Master, string A
 public sealed record LocalProfileUpdate(string? PlayerName = null, string? HeroName = null, string? Comment = null);
 public sealed record LocalReplayMeasure(int QuestType, int TargetId, int Difficulty, int? WinRate = null, int? ActionNum = null);
 public sealed record LocalReplayContent(int TargetId, int Level, string? Rules, string? Content);
-public sealed record LocalTeamUpdate(int Number, string? Name, long[]? Units, int Cost, long[]? EnhancedUnits, int CostWithFriend);
+public sealed record LocalTeamUpdate(int Number, string? Name, long[]? Units, int Cost, long[]? EnhancedUnits,
+    int CostWithFriend, int NormalSlotLimit = 0);
 public sealed record LocalHomeEntry(int UnitId, long UserUnitId, int CostumeId, int Motion, int Music);
 public sealed record LocalHomeUpdate(LocalHomeEntry[]? Units, int SelectedIndex, int RandomMode);
 public sealed record LocalEquipmentEntry(int Slot, long PictureId);

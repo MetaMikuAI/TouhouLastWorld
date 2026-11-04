@@ -371,6 +371,12 @@ var savedTeam = teams.Dispatch("team_update", arguments: new(Team: new(1, null, 
     .Body!["user_update"]!["team"]!["team_list"]![0]!;
 Check(savedTeam["user_unit_id_list"]!.AsArray().Count == 6 && savedTeam["use_cost"]!.GetValue<int>() == 5,
     "team slots normalized and cost stored");
+Check(teams.Dispatch("team_update", arguments: new(Team: new(0, null, new long[6], 0, new long[6], 0))).Status == 0
+    && teams.Dispatch("team_update", arguments: new(Team: new(0, null, [1], 5, null, 0))).Status == 400,
+    "story team submission accepts only temporary empty slots");
+Check(teams.Dispatch("team_update", arguments: new(Team: new(2, null, [1], 5, null, 0, 10))).Status == 0
+    && teams.Dispatch("team_update", arguments: new(Team: new(11, null, [1], 5, null, 0, 10))).Status == 404,
+    "new normal teams are created within the master slot limit");
 Check(teams.Dispatch("friend_setting_helper", arguments: new(999, 100)).Status == 404, "helper ownership required");
 Check(teams.Dispatch("friend_setting_helper", arguments: new(1, 100)).Body!["helper_user_unit_id1"]!.GetValue<long>() == 1,
     "helper selected");
@@ -380,8 +386,12 @@ var savedUser = teamReload.Dispatch("login").Body!["user"]!;
 Check(savedUser["team"]!["team_list"]![0]!["user_unit_id_list"]![1]!.GetValue<long>() == 1
     && savedUser["achievement"]!["recently_received_achievement_id_list"]!.AsArray().Count == 1,
     "team and markers persist");
+var persistedTeams = savedUser["team"]!["team_list"]!.AsArray();
+Check(persistedTeams.Count == 2 && persistedTeams[1]!["number"]!.GetValue<int>() == 2
+    && persistedTeams[1]!["user_unit_id_list"]![0]!.GetValue<long>() == 1,
+    "only normal team slot is persisted");
 Check(teamReload.Dispatch("friend_top").Body!["helper_user_unit_id1"]!.GetValue<long>() == 1, "helper persists and overview reads selection");
-Console.WriteLine("Passed 14 team, marker and helper checks.");
+Console.WriteLine("Passed 17 team, marker and helper checks.");
 Check(teams.Dispatch("home_select_unit_update", arguments: new(Value: 1)).Status == 400
     && teams.Dispatch("home_select_unit_update", arguments: new(Value: -1)).Status == 400, "home selection bounds");
 Check(teams.Dispatch("home_select_unit_update", arguments: new(Value: 0)).Body!["user_update"]!["home_unit_info"]!["select_unit_index"]!.GetValue<int>() == 0,

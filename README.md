@@ -190,7 +190,7 @@
 | SweepRequest | mop_up | 未实现 | 依赖上次战斗、队伍与分关卡次数；请求券数及可选挑战等级，响应按 round 分组掉落；券扣除顺序、成员消耗及结算记录待实现 | 未测 |
 | SwitchDoRequest | 未确认 | 未实现 | — | 未测 |
 | SwitchUserInfoGetRequest | 未确认 | 未实现 | — | 未测 |
-| TeamUpdateRequest | team_update | 业务实现 | 更新已有编队的名称、六个成员位及强化位，校验归属和重复；成本采用客户端值，不扩充槽位 | 未测 |
+| TeamUpdateRequest | team_update | 业务实现 | 更新队名、成员、强化位及灵点成本，首次保存时按主表创建普通编队槽；剧情临时队伍由客户端管理 | 通过（普通编队、剧情入场） |
 | TowerBattleEndRequest | tower_battle_end | 业务实现 | 保存双方损伤、胜利推进楼层并消费待结算记录；最高层使用重复奖励，支持单候选金币/晶体/物品组，经验、随机掉落和挑战条件未实现 | 未测 |
 | TowerBattleStartRequest | tower_battle_start | 业务实现 | 校验主表、已开放楼层和本地队伍，保存待结算记录；重复进入幂等，不改变通关层数或恢复损伤，活动开放条件未接入 | 未测 |
 | TowerTopRequest | tower_top | 最小响应 | 读取已保存楼层、进入标记、敌方快照和剩余恢复次数；不推进楼层或生成战斗 | 未测 |

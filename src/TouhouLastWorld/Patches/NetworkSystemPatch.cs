@@ -658,7 +658,7 @@ public partial class NetworkSystemPatch
             var update = request.TryCast<TeamUpdateRequest>();
             arguments = update == null ? null : new LocalArguments(Team: new(update.number, update.name,
                 update.user_unit_id_list?.ToArray(), update.use_cost, update.season_enhancement_user_unit_id_list?.ToArray(),
-                update.use_cost_with_friend));
+                update.use_cost_with_friend, MasterDB.This()?.Setting?.TEAM_MAX ?? 0));
         }
         if (api == "achievement_new_update")
             arguments = new LocalArguments(Ids: request.TryCast<AchievementNewUpdateRequest>()?.new_update_id_list?.ToArray()
