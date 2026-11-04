@@ -1536,3 +1536,24 @@ if (OperatingSystem.IsWindows())
         "save succeeds after the conflict is released");
     Console.WriteLine("Passed 3 Windows save conflict checks.");
 }
+
+var towerOverviewSeed = JsonNode.Parse(seed)!;
+towerOverviewSeed["tower"]!["cleared_floor"] = 7;
+towerOverviewSeed["tower"]!["exist_data"] = 1;
+var towerOverviewServer = new OfflineServer(directory + "-tower-overview", towerOverviewSeed.ToJsonString(), "offline://resources/");
+towerOverviewServer.Dispatch("game_init");
+towerOverviewServer.Dispatch("login");
+var towerOverviewReply = towerOverviewServer.Dispatch("tower_top").Body!;
+Check(towerOverviewReply["cleared_floor"]!.GetValue<int>() == 7 && towerOverviewReply["exist_data"]!.GetValue<uint>() == 1
+    && towerOverviewReply["remaining_recovery_count"]!.GetValue<int>() == 0 && towerOverviewReply["enemy_battle_info"]!.GetValue<string>() == "",
+    "floor overview preserves saved progress and supplies an empty continuation stream");
+towerOverviewReply["cleared_floor"] = 99;
+Check(towerOverviewServer.Dispatch("tower_top").Body!["cleared_floor"]!.GetValue<int>() == 7
+    && towerOverviewServer.Dispatch("login").Body!["user"]!["tower"]!["cleared_floor"]!.GetValue<int>() == 7,
+    "floor overview does not advance progress or expose mutable saved state");
+towerOverviewSeed["tower"]!["cleared_floor"] = -1;
+var invalidTowerOverview = new OfflineServer(directory + "-invalid-tower-overview", towerOverviewSeed.ToJsonString(), "offline://resources/");
+invalidTowerOverview.Dispatch("game_init");
+invalidTowerOverview.Dispatch("login");
+Check(invalidTowerOverview.Dispatch("tower_top").Status == 503, "invalid floor state is not presented as a successful overview");
+Console.WriteLine("Passed 3 floor overview checks.");

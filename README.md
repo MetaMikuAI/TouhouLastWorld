@@ -189,7 +189,7 @@
 | TeamUpdateRequest | team_update | 业务实现 | 更新已有编队的名称、六个成员位及强化位，校验归属和重复；成本采用客户端值，不扩充槽位 |
 | TowerBattleEndRequest | 未确认 | 未实现 | — |
 | TowerBattleStartRequest | 未确认 | 未实现 | — |
-| TowerTopRequest | 未确认 | 未实现 | — |
+| TowerTopRequest | tower_top | 最小响应 | 读取已保存楼层与进入标记；敌方续战信息为空、恢复次数为零，不推进楼层或生成战斗 |
 | TowerUnitInfoRequest | 未确认 | 未实现 | — |
 | TowerUnitRecoveryRequest | 未确认 | 未实现 | — |
 | TrainingRoomCancelRequest | training_room_cancel | 业务实现 | 按槽位删除并保存训练任务；本地不退款、不发放技能收益，空槽位返回未找到 |

@@ -4,7 +4,7 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
-    private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" or "set_age"
+    private static bool SupportsAdditional(string api) => api is "tower_top" or "tutorial_update" or "logout" or "set_age"
         or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting"
         or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
         or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
@@ -26,6 +26,7 @@ public sealed partial class OfflineServer
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "tower_top" => TowerOverview(),
         "mail_receive" => ReceiveMail(arguments),
         "friend_helper_select" => HelperCandidates(arguments?.Value),
         "get_quest_cleared_team_info" => ClearedTeam(arguments?.ReplayMeasure),
