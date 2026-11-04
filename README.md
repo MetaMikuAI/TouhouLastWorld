@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | AchievementNewUpdateRequest | 未确认 | 未实现 | — |
 | AchievementSelectRequest | 未确认 | 未实现 | — |
-| AchievementTopRequest | 未确认 | 未实现 | — |
+| AchievementTopRequest | achievement_top | 最小响应 | 空列表与零计数；不含条件判定或授予 |
 | AddLevelRequest | 未确认 | 未实现 | — |
 | AppleSwitchDoRequest | 未确认 | 未实现 | — |
 | AppleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
