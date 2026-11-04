@@ -392,3 +392,25 @@ Check(gauge["raid_gauge_list"]!.AsArray().Count == 0, "empty shared progress lis
 gauge["raid_gauge_list"]!.AsArray().Add(new JsonObject());
 Check(flags.Dispatch("get_raid_gauge").Body!["raid_gauge_list"]!.AsArray().Count == 0, "query templates remain isolated");
 Console.WriteLine("Passed 5 contact and progress query checks.");
+var mailSeed = JsonNode.Parse(seed)!.AsObject();
+mailSeed["_local_mail"] = new JsonArray(
+    new JsonObject { ["id"] = 1, ["open_type"] = 0 },
+    new JsonObject { ["id"] = 2, ["open_type"] = 1 });
+var mailDirectory = directory + "-mail";
+var mailbox = new OfflineServer(mailDirectory, mailSeed.ToJsonString(), "offline://resources/");
+mailbox.Dispatch("game_init");
+mailbox.Dispatch("login");
+Check(mailbox.Dispatch("mail_top").Body!["mail"]!.AsArray().Count == 2, "mail overview reads local records");
+var remainingMail = mailbox.Dispatch("mail_delete").Body!["mail"]!.AsArray();
+Check(remainingMail.Count == 1 && remainingMail[0]!["id"]!.GetValue<int>() == 1, "deletion preserves unread mail");
+Check(mailbox.Dispatch("mail_delete").Body!["mail"]!.AsArray().Count == 1, "mail deletion is idempotent");
+Check(mailbox.Dispatch("read_unit_talk", arguments: new(Value: -1)).Status == 400, "invalid talk ID rejected");
+Check(mailbox.Dispatch("read_unit_talk", arguments: new(Value: 12)).Status == 0
+    && mailbox.Dispatch("read_unit_talk", arguments: new(Value: 12)).Status == 0, "talk read is idempotent");
+var mailReload = new OfflineServer(mailDirectory, mailSeed.ToJsonString(), "offline://resources/");
+mailReload.Dispatch("game_init");
+var mailUser = mailReload.Dispatch("login").Body!["user"]!;
+Check(mailReload.Dispatch("mail_top").Body!["mail"]!.AsArray().Count == 1, "mail deletion persists");
+Check(mailUser["_local_read_talk_ids"]!.AsArray().Count == 1
+    && mailUser["_local_read_talk_ids"]![0]!.GetValue<int>() == 12, "read marker persists without duplicates");
+Console.WriteLine("Passed 7 mail and talk checks.");

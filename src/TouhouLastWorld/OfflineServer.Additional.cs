@@ -11,12 +11,13 @@ public sealed partial class OfflineServer
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
-        or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" || QueryTemplates.ContainsKey(api);
+        or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
         "read_unit_talk" => MarkTalkRead(arguments?.Value),
+        "mail_delete" => DeleteReadMail(),
         "favorite_unit_update" => UpdateHome(arguments?.Home),
         "home_select_unit_update" => SelectHomeUnit(arguments?.Value),
         "unit_bgm_update" => SetUnitPreference(arguments, "select_bgm"),
@@ -54,6 +55,23 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private JsonObject MailOverview() => new()
+    {
+        ["mail"] = user["_local_mail"]?.DeepClone() ?? new JsonArray()
+    };
+
+    private LocalReply DeleteReadMail()
+    {
+        var updated = user.DeepClone().AsObject();
+        if (updated["_local_mail"] is JsonArray mail)
+        {
+            for (var index = mail.Count - 1; index >= 0; index--)
+                if (mail[index]?["open_type"]?.GetValue<int>() > 0) mail.RemoveAt(index);
+            Save(updated);
+        }
+        return new(0, MailOverview());
+    }
 
     private LocalReply MarkTalkRead(int? id)
     {

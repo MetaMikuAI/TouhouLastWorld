@@ -95,7 +95,7 @@ public sealed partial class OfflineServer
             },
             "user_create" => new() { ["device_id"] = account!.DeviceId },
             "check_user" => new(),
-            "mail_top" => new() { ["mail"] = new JsonArray() },
+            "mail_top" => MailOverview(),
             "friend/list" => new() { ["data"] = new JsonArray(), ["request_tips"] = 0 },
             "friend/apply_list" => new() { ["data"] = new JsonArray() },
             "friend/recommend" => new() { ["data"] = new JsonArray() },
