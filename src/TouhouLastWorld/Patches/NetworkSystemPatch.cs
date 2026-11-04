@@ -37,6 +37,8 @@ public partial class NetworkSystemPatch
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
         if (api == "logout")
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
+        if (api == "set_age")
+            arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
         if (api == "tutorial_update")
             arguments = new LocalArguments(Value: request.TryCast<TutorialUpdateRequest>()?.progress_value);
         if (api == "unit_voice_autoset_update")
