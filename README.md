@@ -180,7 +180,7 @@
 | SetAgeRequest | set_age | 业务实现 | 校验并保存 1–3 档位；不涉及支付流程 |
 | ShopListRequest | get_shop_list | 最小响应 | 空目录与空推荐列表；不含订单处理 |
 | ShopOrderRequest | 未确认 | 未实现 | — |
-| ShowRewardRequest | 未确认 | 未实现 | — |
+| ShowRewardRequest | pass_card/show_reward | 业务实现 | 查询已保存的等级、资格及领奖记录；校验当前等级和下一档奖励配置，不创建进度或发奖 |
 | ShowShopRequest | pass_card/show_shop | 业务实现 | 读取本地摘要与目录，未配置时为空；不含订单处理 |
 | ShowTaskRequest | pass_card/show_task | 业务实现 | 读取本地任务和领取状态，未配置时为空；不生成进度 |
 | SweepRequest | 未确认 | 未实现 | — |

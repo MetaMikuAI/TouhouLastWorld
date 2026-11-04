@@ -57,6 +57,8 @@ public partial class NetworkSystemPatch
             arguments = ReadPassRewardDefinitions(new LocalArguments(Value: request.TryCast<AddLevelRequest>()?.orb));
         if (api == "pass_card/get_level_gift" && request.TryCast<LevelGiftRequest>() is not null)
             arguments = ReadPassRewardDefinitions(new LocalArguments());
+        if (api == "pass_card/show_reward" && request.TryCast<ShowRewardRequest>() is not null)
+            arguments = ReadPassRewardDefinitions(new LocalArguments());
         if (api == "pass_card/collect_reward") arguments = ReadPassRewards(request.TryCast<CollectRewardRequest>());
         if (api == "pass_card/collect_exp")
         {

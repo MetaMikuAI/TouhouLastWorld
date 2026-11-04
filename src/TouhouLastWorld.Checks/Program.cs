@@ -2580,3 +2580,15 @@ Check(passGiftReload.Dispatch("pass_card/get_level_gift", arguments: new(PassRew
 Console.WriteLine("Passed 3 level gift checks.");
 Check(passBuyReload.Dispatch("pass_card/get_level_gift", arguments: new(PassRewards: passRewardRules)).Status == 409,
     "level gift requires local VIP entitlement");
+Check(passRewardsReload.Dispatch("pass_card/show_reward", arguments: new(PassRewards: passRewardRules)).Status == 503,
+    "reward overview rejects missing next bonus definition");
+var passViewRules = passRewardRules.Append(new LocalPassReward(10, Array.Empty<LocalInventoryReward>(), Array.Empty<LocalInventoryReward>())).ToArray();
+var passView = passRewardsReload.Dispatch("pass_card/show_reward", arguments: new(PassRewards: passViewRules)).Body!["user_pass_card"]!;
+Check(passView["level"]!.GetValue<int>() == 2
+    && passView["had_got_free_reward_level"]!.AsArray().Any(id => id!.GetValue<int>() == 2)
+    && passView["free_rewards"]!.AsArray().Count == 0,
+    "reward overview returns saved claims without reporting new grants");
+passView["level"] = 80;
+Check(passRewardsReload.Dispatch("pass_card/show_reward", arguments: new(PassRewards: passViewRules)).Body!["user_pass_card"]!["level"]!.GetValue<int>() == 2,
+    "reward overview returns an independent snapshot");
+Console.WriteLine("Passed 3 reward overview checks.");

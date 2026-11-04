@@ -8,6 +8,23 @@ public sealed record LocalPassGoods(int Id, int Cost, int Limit, LocalInventoryR
 
 public sealed partial class OfflineServer
 {
+    private LocalReply ShowPassRewards(LocalArguments? request)
+    {
+        if (user["_local_pass_card"] is not JsonObject pass || pass["level"]?.GetValue<int>() is not (>= 1 and <= 80))
+            return new(409, null, "Local pass progress unavailable.");
+        var level = pass["level"]!.GetValue<int>();
+        var rules = request?.PassRewards;
+        if (rules is null || !rules.Any(row => row.Level == level) || !rules.Any(row => row.Level == (level + 9) / 10 * 10))
+            return new(503, null, "Pass level definitions unavailable.");
+        if (pass["had_got_free_reward_level"] is not JsonArray || pass["had_got_vip_reward_level"] is not JsonArray)
+            return new(409, null, "Local reward records unavailable.");
+        var response = EmptyPassCard();
+        foreach (var field in pass) response[field.Key] = field.Value?.DeepClone();
+        response["free_rewards"] = new JsonArray();
+        response["vip_rewards"] = new JsonArray();
+        return new(0, new() { ["user_pass_card"] = response });
+    }
+
     private LocalReply BuyPassGoods(LocalArguments? request)
     {
         if (request?.Value is null or <= 0) return new(400, null, "Positive goods ID required.");
