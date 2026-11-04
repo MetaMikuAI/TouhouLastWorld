@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.local/
+*.local.*
+.vs/
+.idea/
+__pycache__/
+offline-data/
+UnityRuntimeDebugger.cfg
+*.apk
+*.log

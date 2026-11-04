@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <BepInExCore Condition="'$(BepInExCore)' == ''">$(MSBuildProjectDirectory)/../../.local/core</BepInExCore>
+    <InteropDir Condition="'$(InteropDir)' == ''">$(MSBuildProjectDirectory)/../../.local/interop</InteropDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="user-seed.json" />
+    <ProjectReference Include="../TouhouLastWorld.Generators/TouhouLastWorld.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <Reference Include="$(InteropDir)/*.dll" Private="false" />
+    <Reference Include="$(BepInExCore)/BepInEx.Unity.Common.dll" Private="false" />
+    <Reference Include="$(BepInExCore)/Il2CppInterop.Runtime.dll" Private="false" />
+    <Reference Include="$(BepInExCore)/BepInEx.Core.dll" Private="false" />
+    <Reference Include="$(BepInExCore)/BepInEx.Unity.IL2CPP.dll" Private="false" />
+    <Reference Include="$(BepInExCore)/0Harmony.dll" Private="false" />
+  </ItemGroup>
+</Project>

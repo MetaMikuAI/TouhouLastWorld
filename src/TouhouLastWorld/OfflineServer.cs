@@ -1,0 +1,244 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
+namespace TouhouLastWorld;
+
+public sealed record LocalReply(int Status, JsonObject? Body, string Error = "");
+
+public sealed class OfflineServer
+{
+    private readonly string resourceRoot;
+    private string? session;
+    private JsonObject user;
+    private readonly string userPath;
+    private readonly JsonObject unitTemplate;
+    private readonly string accountPath;
+    private LocalAccount? account;
+    private sealed record LocalAccount(string DeviceId, string UserId, string PublicId);
+    public const string InitialKey = "fwkGnVPHkjpPdC78dYrQM2pRZMYEFEha";
+
+    public OfflineServer(string directory, string seed, string resourceRoot)
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "user.json");
+        userPath = path;
+        unitTemplate = JsonNode.Parse(seed)!["unit"]!["unit_list"]![0]!.AsObject();
+        accountPath = Path.Combine(directory, "account.json");
+        if (File.Exists(accountPath))
+            account = JsonSerializer.Deserialize<LocalAccount>(File.ReadAllText(accountPath))
+                ?? throw new InvalidDataException("Invalid local account.");
+        this.resourceRoot = resourceRoot;
+        user = JsonNode.Parse(File.Exists(path) ? File.ReadAllText(path) : seed) as JsonObject
+            ?? throw new InvalidDataException("Local user must be a JSON object.");
+        if (!File.Exists(path))
+        {
+            File.WriteAllText(path + ".tmp", user.ToJsonString());
+            File.Move(path + ".tmp", path);
+        }
+        MigrateInitialData();
+    }
+
+    public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null)
+    {
+        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top"))
+            return new(501, null, $"Offline API not implemented: {api}");
+        if (api == "game_init") session = Guid.NewGuid().ToString("N");
+        if (session is null) return new(401, null, "Offline game_init required.");
+        if (api == "check_user" && account is null) return new(401, null, "Offline account required.");
+        if (api is "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" && account is null)
+            return new(401, null, "Offline account required.");
+        if (api == "gacha_do" && gachaId is not null)
+        {
+            if (gachaId != 10 || gachaButtonId is not (102 or 103)) return new(501, null, "Only the local validation pool is supported.");
+            var expectedCount = gachaButtonId == 102 ? 1 : 10;
+            if (count is not (null or 0) && count != expectedCount) return new(400, null, "Gacha count does not match button.");
+            count = expectedCount;
+        }
+        if (api == "gacha_do" && count is not (1 or 10)) return new(400, null, "Local gacha requires count=1 or count=10.");
+        if (api == "gacha_do" && user["crystal"]!.GetValue<int>() < count!.Value * 5)
+            return new(400, null, "Not enough crystal.");
+        if (api == "gacha_do" && user["gold"]!.GetValue<int>() < count!.Value * 1500)
+            return new(400, null, "Not enough gold.");
+        if (api == "battle_end" && battleResult is null) return new(400, null, "Battle result required.");
+        if (api is "user_create" or "login") EnsureAccount();
+        JsonObject body = api switch
+        {
+            // IDA: 两个 Set*Server 方法均先执行 Base64 解码再按 UTF-8 读取地址。
+            "game_init" => new()
+            {
+                ["api_server"] = Convert.ToBase64String(Encoding.UTF8.GetBytes("offline://api/")),
+                ["resource_server"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(resourceRoot))
+            },
+            "user_create" => new() { ["device_id"] = account!.DeviceId },
+            "check_user" => new(),
+            "check_conditional_pack" => new()
+            {
+                ["conditional_pack"] = new JsonArray(), ["is_ignore_check"] = 0
+            },
+            "afk_top" => new()
+            {
+                // 本地未开始探索；上限仅用于空进度条，不产出离线奖励。
+                ["content_stage_list"] = new JsonArray(), ["before_content_stage_list"] = new JsonArray(),
+                ["unit_slot_list"] = new JsonArray(), ["picture_slot_list"] = new JsonArray(),
+                ["drop_list"] = new JsonArray(), ["search_elapsed_time"] = 0, ["search_max_time"] = 43200
+            },
+            "home" => new()
+            {
+                ["gathering_phantasm_point"] = 0, ["gathering_gold"] = 0, ["unread_mail_num"] = 0,
+                ["put_facility_badge"] = 0, ["put_mission_badge"] = 0, ["put_mission_id_list"] = new JsonArray(),
+                ["put_dispatch_popup"] = 0, ["unread_talk_id_list"] = new JsonArray(), ["friend_receive_tips"] = 0,
+                ["is_pass_card"] = 0, ["avatar_tips"] = 0, ["free_value_pack_tips"] = 0, ["pb_point"] = 0,
+                ["put_multiple_spirits_weekly_badge"] = 0, ["put_mini_game_badge"] = 0,
+                ["put_beginner_mission_id_list"] = new JsonArray(), ["put_friend_badge"] = 0,
+                ["friend_count"] = 0, ["friend_request_count"] = 0, ["put_battle_pass_badge"] = 0,
+                ["is_ranking_maintenance"] = 0, ["is_roguelite_free"] = 0
+            },
+            "battle_start" => new(),
+            "gacha_top" => new()
+            {
+                ["gacha_list"] = GachaButtons(), ["gacha_point_exchange_count_list"] = new JsonArray(),
+                ["gacha_point_list"] = new JsonArray(), ["special_gacha_list"] = new JsonArray()
+            },
+            "battle_end" => FinishBattle(battleResult!.Value),
+            "gacha_do" => DrawGacha(count!.Value),
+            "version_get" => new()
+            {
+                ["version"] = 92, ["resource_version"] = 5019,
+                ["resource_path"] = resourceRoot.TrimEnd('/') + "/resource",
+                ["master_path"] = resourceRoot.TrimEnd('/') + "/master",
+                ["assetbundle_path"] = resourceRoot.TrimEnd('/') + "/assetbundle/android"
+            },
+            _ => new()
+            {
+                ["user"] = user.DeepClone(), ["device_id"] = account!.DeviceId,
+                ["is_first_login"] = false, ["is_first_share"] = false,
+                ["public_id"] = account.PublicId, ["openid"] = account.UserId, ["user_id"] = account.UserId,
+                ["loading_info"] = new JsonArray(), ["retrygacha_loginevent"] = new JsonArray(),
+                ["loginbonus"] = null, ["event_loginbonus"] = new JsonArray(),
+                ["random_loginbonus"] = new JsonArray(), ["slot_loginbonus"] = new JsonArray(),
+                ["information_update_time"] = DateTimeOffset.UtcNow.ToString("O"), ["is_FdOpen"] = 0
+            }
+        };
+        body["session_id"] = session;
+        body["encryption_key"] = InitialKey;
+        body["response_time"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        return new(0, body);
+    }
+
+    private JsonObject FinishBattle(int result)
+    {
+        var updated = user.DeepClone().AsObject();
+        var gold = updated["gold"]!.GetValue<int>() + (result == 1 ? 100 : 0);
+        var exp = updated["exp"]!.GetValue<int>() + (result == 1 ? 10 : 0);
+        updated["gold"] = gold;
+        updated["exp"] = exp;
+        Save(updated);
+        return new()
+        {
+            ["drop_list"] = new JsonArray(), ["destiny_drop_list"] = new JsonArray(),
+            ["battle_challenge_result"] = result == 1 ? 3 : 0,
+            ["user_update"] = new JsonObject { ["gold"] = gold, ["exp"] = exp }
+        };
+    }
+
+    private JsonObject DrawGacha(int count)
+    {
+        // 本地单角色池；消耗对应实机主表常驻按钮 102、103。
+        var updated = user.DeepClone().AsObject();
+        var units = updated["unit"]!["unit_list"]!.AsArray();
+        var unitId = unitTemplate["unit_id"]!.GetValue<int>();
+        var nextId = units.Select(unit => unit!["user_unit_id"]!.GetValue<long>()).DefaultIfEmpty().Max() + 1;
+        var drops = new JsonArray();
+        for (var index = 0; index < count; index++)
+        {
+            var isNew = units.All(unit => unit!["unit_id"]!.GetValue<int>() != unitId) ? 1 : 0;
+            var unit = unitTemplate.DeepClone().AsObject();
+            unit["user_unit_id"] = nextId + index;
+            unit["is_new"] = isNew;
+            units.Add(unit);
+            drops.Add(new JsonObject
+            {
+                ["object_type"] = 9, ["object_id"] = unitId,
+                ["is_new"] = isNew, ["unique_id"] = nextId + index
+            });
+        }
+        var beforeCrystal = updated["crystal"]!.GetValue<int>();
+        updated["crystal"] = beforeCrystal - count * 5;
+        updated["gold"] = updated["gold"]!.GetValue<int>() - count * 1500;
+        Save(updated);
+        return new()
+        {
+            ["gacha_drop_list"] = drops, ["gacha_list"] = GachaButtons(),
+            ["gacha_point_list"] = new JsonArray(), ["gacha_directing_no"] = 1,
+            ["beforeUserPowder"] = user["fortune_powder"]!.DeepClone(), ["beforeUserOrb"] = beforeCrystal,
+            ["user_update"] = new JsonObject { ["gold"] = user["gold"]!.DeepClone(), ["crystal"] = user["crystal"]!.DeepClone(), ["unit"] = user["unit"]!.DeepClone() }
+        };
+    }
+
+    private static JsonArray GachaButtons() => new(
+        new JsonObject { ["gacha_button_id"] = 102, ["count"] = 0 },
+        new JsonObject { ["gacha_button_id"] = 103, ["count"] = 0 });
+
+    private void Save(JsonObject updated)
+    {
+        File.WriteAllText(userPath + ".tmp", updated.ToJsonString());
+        File.Move(userPath + ".tmp", userPath, true);
+        user = updated;
+    }
+
+    private void MigrateInitialData()
+    {
+        // 旧存档的角色与服装 ID 错置；仅迁移这一已知组合。
+        var updated = user.DeepClone().AsObject();
+        var changed = false;
+        foreach (var unit in updated["unit"]!["unit_list"]!.AsArray())
+        {
+            if (unit!["unit_id"]!.GetValue<int>() != 100101 || unit["equip_costume_id"]!.GetValue<int>() != 1001) continue;
+            unit["unit_id"] = 1001;
+            unit["equip_costume_id"] = 100101;
+            changed = true;
+        }
+        foreach (var unit in updated["home_unit_info"]!["unit_param"]!.AsArray())
+        {
+            if (unit!["unit_id"]!.GetValue<int>() != 100101 || unit["costume_id"]!.GetValue<int>() != 1001) continue;
+            unit["unit_id"] = 1001;
+            unit["costume_id"] = 100101;
+            changed = true;
+        }
+        if (string.IsNullOrEmpty(updated["avatar_filename"]?.GetValue<string>()))
+        {
+            updated["avatar_filename"] = "Icon1001";
+            changed = true;
+        }
+        foreach (var field in new[] { "phantasm_box", "gold_box" })
+        {
+            if (updated[field]!["level"]!.GetValue<int>() != 0) continue;
+            updated[field]!["level"] = 1;
+            changed = true;
+        }
+        if (!changed) return;
+        var backup = userPath + ".before-seed-fix";
+        if (!File.Exists(backup)) File.Copy(userPath, backup);
+        Save(updated);
+    }
+
+    private void EnsureAccount()
+    {
+        if (account is not null) return;
+        var created = new LocalAccount(Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"),
+            "LOCAL" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant());
+        File.WriteAllText(accountPath + ".tmp", JsonSerializer.Serialize(created));
+        File.Move(accountPath + ".tmp", accountPath);
+        account = created;
+    }
+
+    public static string VersionManifest(int appVersion) => new JsonObject
+    {
+        ["datas"] = new JsonArray(new JsonObject
+        {
+            ["Channel"] = "", ["Platform"] = "Android", ["AppVersion"] = appVersion,
+            ["Url"] = "", ["Title"] = "", ["Msg"] = ""
+        })
+    }.ToJsonString();
+}
