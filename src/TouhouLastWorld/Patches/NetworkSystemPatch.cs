@@ -39,6 +39,21 @@ public partial class NetworkSystemPatch
             arguments = ReadRankMaterial(request.TryCast<UnitRankPromoteItemSetRequest>());
         if (api == "unit_rank_promote")
             arguments = ReadRankPromotion(request.TryCast<UnitRankPromoteRequest>());
+        if (api == "unit_level_limitbreak")
+        {
+            var change = request.TryCast<UnitLevelLimitbreakRequest>();
+            var unit = change == null ? null : User.This()?.unit?.Find(change.user_unit_id);
+            var master = MasterDB.This();
+            var next = unit == null || unit.is_limitbreak_max || unit.level_limitbreak == int.MaxValue
+                ? null : master?.UnitLevelLimitbreakGrowth?.Find(unit.level_limitbreak + 1);
+            var definition = unit == null ? null : master?.Unit?.Find(unit.unit_id);
+            var setting = master?.Setting;
+            arguments = new LocalArguments(change?.user_unit_id, change?.material_item_num, change?.material_user_unit_id_list?.ToArray(),
+                LimitBreak: unit == null || next == null || definition == null || setting == null ? null
+                    : new(unit.unit_id, unit.level_limitbreak, next.level_limitbreak, next.level_lower_limit,
+                        next.consume_gold, next.consume_same_unit_count, definition.limitbreak_item_id,
+                        setting.DESTINY_VALUE_ADD_FOR_PAPER_DOLL, setting.DESTINY_VALUE_MAX));
+        }
         if (api == "unit_rare_awaken")
         {
             var awakening = request.TryCast<UnitRareAwakenRequest>();

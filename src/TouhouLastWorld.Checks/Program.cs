@@ -1941,3 +1941,32 @@ Check(awakeningBusy.Dispatch("unit_rare_awaken", arguments: new(rankMaterialId, 
     && awakeningBusy.Dispatch("login").Body!["user"]!["piece"]!.GetValue<int>() == 100,
     "awakening cannot overlap pending idle growth of the same kind");
 Console.WriteLine("Passed 4 awakening checks.");
+
+var limitBreakSeed = JsonNode.Parse(seed)!;
+limitBreakSeed["item"]!["item_list"]!.AsArray().Add(new JsonObject { ["item_id"] = 71, ["num"] = 3 });
+limitBreakSeed["unit"]!["unit_list"]![0]!["destiny_value"] = 99;
+var limitBreakDirectory = directory + "-limit-break";
+var limitBreakServer = new OfflineServer(limitBreakDirectory, limitBreakSeed.ToJsonString(), "offline://resources/");
+limitBreakServer.Dispatch("game_init");
+limitBreakServer.Dispatch("login");
+var limitBreakRule = new LocalLimitBreak(rankMaterialDefinition.UnitId, 0, 1, 1, 100, 2, 71, 5, 100);
+Check(limitBreakServer.Dispatch("unit_level_limitbreak", arguments: new(rankMaterialId, 1, LimitBreak: limitBreakRule)).Status == 400
+    && limitBreakServer.Dispatch("unit_level_limitbreak", arguments: new(rankMaterialId, 2, LimitBreak: limitBreakRule with { RequiredLevel = 999 })).Status == 409
+    && limitBreakServer.Dispatch("unit_level_limitbreak", arguments: new(rankMaterialId, 2, Ids: new long[] { 999 }, LimitBreak: limitBreakRule)).Status == 503,
+    "limit break checks material count, level and unsupported unit materials");
+Check(limitBreakServer.Dispatch("unit_level_limitbreak", arguments: new(rankMaterialId, 2, LimitBreak: limitBreakRule with { GoldCost = 6000 })).Status == 409
+    && limitBreakServer.Dispatch("unit_level_limitbreak", arguments: new(rankMaterialId, 4, LimitBreak: limitBreakRule with { MaterialCount = 4 })).Status == 409
+    && limitBreakServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000,
+    "insufficient gold or items leaves balances unchanged");
+var limitBroken = limitBreakServer.Dispatch("unit_level_limitbreak", arguments: new(rankMaterialId, 2, LimitBreak: limitBreakRule)).Body!["user_update"]!;
+Check(limitBroken["gold"]!.GetValue<int>() == 4900 && limitBroken["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 1
+    && limitBroken["unit"]!["unit_list"]![0]!["level_limitbreak"]!.GetValue<int>() == 1
+    && limitBroken["unit"]!["unit_list"]![0]!["destiny_value"]!.GetValue<int>() == 100,
+    "limit break consumes configured costs and caps destiny growth");
+var limitBreakReload = new OfflineServer(limitBreakDirectory, seed, "offline://resources/");
+limitBreakReload.Dispatch("game_init");
+limitBreakReload.Dispatch("login");
+Check(limitBreakReload.Dispatch("unit_level_limitbreak", arguments: new(rankMaterialId, 2, LimitBreak: limitBreakRule)).Status == 409
+    && limitBreakReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
+    "limit break survives restart without accepting stale advancement");
+Console.WriteLine("Passed 4 limit break checks.");
