@@ -9,12 +9,15 @@ public sealed partial class OfflineServer
         or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
         or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
-        or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update" || QueryTemplates.ContainsKey(api);
+        or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
+        or "friend_setting_helper" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
         "team_update" => UpdateTeam(arguments?.Team),
+        "friend_setting_helper" => SetHelper(arguments),
+        "friend_top" => ContactOverview(),
         "achievement_new_update" => ClearAchievementMarkers(arguments?.Ids),
         "get_replay_info" => QuestReplay(arguments, false),
         "update_replay_info" => QuestReplay(arguments, true),
@@ -43,6 +46,30 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply ContactOverview()
+    {
+        var body = QueryTemplates["friend_top"].DeepClone().AsObject();
+        body["helper_user_unit_id1"] = user["helper_user_unit_id1"]!.DeepClone();
+        return new(0, body);
+    }
+
+    private LocalReply SetHelper(LocalArguments? request)
+    {
+        if (request?.EntityId is null or <= 0 || request.Value is null or < 0)
+            return new(400, null, "Positive helper ID and nonnegative power required.");
+        if (!user["unit"]!["unit_list"]!.AsArray().Any(unit => unit!["user_unit_id"]!.GetValue<long>() == request.EntityId))
+            return new(404, null, "Helper unit not found.");
+        var updated = user.DeepClone().AsObject();
+        updated["helper_user_unit_id1"] = request.EntityId.Value;
+        updated["_local_helper_power"] = request.Value.Value;
+        Save(updated);
+        return new(0, new()
+        {
+            ["helper_user_unit_id1"] = request.EntityId.Value,
+            ["user_update"] = new JsonObject { ["helper_user_unit_id1"] = request.EntityId.Value }
+        });
+    }
 
     private LocalReply ClearAchievementMarkers(long[]? ids)
     {
