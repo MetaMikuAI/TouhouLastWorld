@@ -2774,3 +2774,20 @@ Check(refreshReload.Dispatch("update_gold_exchange_shop_list", arguments: new(Sh
     && refreshReload.Dispatch("get_shop_list").Body!["shop_list"]![0]!["goods_list"]![0]!["shop_item_id"]!.GetValue<int>() == 100,
     "refreshed goods and the refresh limit survive restart");
 Console.WriteLine("Passed 3 shop refresh checks.");
+var goldExchangeRule = new LocalGoldExchange(100, 10, 2, 100, true, new(12, 99990, 3, 100));
+Check(refreshReload.Dispatch("exchange", arguments: new(GoldExchange: goldExchangeRule with { Active = false })).Status == 1005
+    && refreshReload.Dispatch("exchange", arguments: new(GoldExchange: goldExchangeRule with { Cost = 10000 })).Status == 409
+    && refreshReload.Dispatch("exchange", arguments: new(GoldExchange: goldExchangeRule with { Reward = new(12, 99990, 3, 5) })).Status == 409,
+    "gold exchange preserves gold and stock when closed, unaffordable or over capacity");
+var goldExchangeReply = refreshReload.Dispatch("exchange", arguments: new(GoldExchange: goldExchangeRule)).Body!;
+Check(goldExchangeReply["update_shop"]!["goods_list"]![0]!["stock"]!.GetValue<int>() == 0
+    && goldExchangeReply["user_update"]!["gold"]!.GetValue<int>() == 4800
+    && goldExchangeReply["user_update"]!["item"]!["item_list"]!.AsArray().Single(item => item!["item_id"]!.GetValue<int>() == 99990)!["num"]!.GetValue<int>() == 6,
+    "gold exchange charges per bundle and grants its configured quantity");
+var goldExchangeReload = new OfflineServer(refreshDirectory, seed, "offline://resources/");
+goldExchangeReload.Dispatch("game_init");
+goldExchangeReload.Dispatch("login");
+Check(goldExchangeReload.Dispatch("exchange", arguments: new(GoldExchange: goldExchangeRule with { Count = 1 })).Status == 409
+    && goldExchangeReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4800,
+    "gold exchange stock and balance survive restart");
+Console.WriteLine("Passed 3 gold exchange checks.");

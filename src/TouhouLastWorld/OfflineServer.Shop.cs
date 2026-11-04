@@ -5,9 +5,55 @@ namespace TouhouLastWorld;
 
 public sealed record LocalFreeItem(int Id, LocalInventoryReward Reward);
 public sealed record LocalShopRefresh(int[] Costs, int[] ActiveGoods);
+public sealed record LocalGoldExchange(int SlotId, int MasterId, int Count, int Cost, bool Active, LocalInventoryReward Reward);
 
 public sealed partial class OfflineServer
 {
+    public int GoldExchangeDefinitionId(int slotId)
+    {
+        var goods = (user["_local_shop_list"] as JsonArray)?
+            .Where(shop => shop?["type"]?.GetValue<int>() == 3)
+            .SelectMany(shop => shop?["goods_list"] as JsonArray ?? new JsonArray())
+            .Where(item => item?["shop_item_id"]?.GetValue<int>() == slotId).ToArray();
+        return goods is { Length: 1 } ? goods[0]?["master_id"]?.GetValue<int>() ?? 0 : 0;
+    }
+
+    private LocalReply ExchangeGoldGoods(LocalArguments? request)
+    {
+        var rule = request?.GoldExchange;
+        if (rule is null || rule.SlotId <= 0 || rule.MasterId <= 0 || rule.Cost < 0
+            || GoldExchangeDefinitionId(rule.SlotId) != rule.MasterId)
+            return new(503, null, "Exchange definition unavailable.");
+        if (rule.Count <= 0) return new(400, null, "Positive exchange quantity required.");
+        if (!rule.Active) return new(1005, null, "Exchange is closed.");
+        var updated = user.DeepClone().AsObject();
+        var shop = updated["_local_shop_list"]!.AsArray().First(entry => entry?["type"]?.GetValue<int>() == 3
+            && (entry["goods_list"] as JsonArray)?.Any(item => item?["shop_item_id"]?.GetValue<int>() == rule.SlotId) == true)!;
+        var goods = shop["goods_list"]!.AsArray().First(item => item?["shop_item_id"]?.GetValue<int>() == rule.SlotId)!;
+        var end = goods["end_at"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(end) && (!DateTimeOffset.TryParse(end, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal, out var expires) || expires <= DateTimeOffset.UtcNow))
+            return new(1005, null, "Exchange is closed.");
+        var stock = goods["stock"]?.GetValue<int>() ?? 0;
+        if (stock < rule.Count) return new(409, null, "Insufficient shop stock.");
+        var cost = (long)rule.Count * rule.Cost;
+        var gold = updated["gold"]!.GetValue<int>();
+        if (cost > gold) return new(409, null, "Insufficient gold.");
+        var amount = (long)rule.Reward.Count * rule.Count;
+        if (amount is <= 0 or > int.MaxValue) return new(409, null, "Invalid reward quantity.");
+        updated["gold"] = (int)(gold - cost);
+        var error = ApplyInventoryReward(updated, rule.Reward with { Count = (int)amount });
+        if (error is not null) return error;
+        goods["stock"] = stock - rule.Count;
+        Save(updated);
+        return new(0, new()
+        {
+            ["update_shop"] = shop.DeepClone(), ["feature_product_shop_list"] = new JsonArray(),
+            ["user_update"] = new JsonObject { ["gold"] = updated["gold"]!.DeepClone(),
+                ["crystal"] = updated["crystal"]!.DeepClone(), ["item"] = updated["item"]!.DeepClone() }
+        });
+    }
+
     private LocalReply RefreshExchangeShop(LocalArguments? request)
     {
         var rule = request?.ShopRefresh;

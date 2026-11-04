@@ -35,6 +35,25 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "exchange")
+        {
+            var change = request.TryCast<ExchangeRequest>();
+            var master = MasterDB.This();
+            var row = change?.type == 3 ? master?.GoldExchange?.Find(Plugin.Server.GoldExchangeDefinitionId(change.shop_item_id)) : null;
+            var setting = master?.Setting;
+            var time = GameSystem.This()?.Time;
+            if (change != null && row != null && setting != null && time != null)
+            {
+                var capacity = row.object_type switch
+                {
+                    3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
+                    12 when master?.Item?.Find(row.object_id) != null => setting.ITEM_MAX, _ => 0
+                };
+                arguments = new LocalArguments(GoldExchange: new(change.shop_item_id, row.id, change.count, row.consume_gold,
+                    string.IsNullOrWhiteSpace(row.end_at) || time.IsActiveDate(row.start_at, row.end_at),
+                    new(row.object_type, row.object_id, row.object_value, capacity)));
+            }
+        }
         if (api == "update_gold_exchange_shop_list" && request.TryCast<UpdateGoldExchangeShopListRequest>() is not null)
         {
             var master = MasterDB.This();
@@ -619,7 +638,7 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api is "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
+            if (api is "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
             {
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);

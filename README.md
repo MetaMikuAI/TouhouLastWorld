@@ -50,7 +50,7 @@
 | EventPointGachaDoAPIRequest | 未确认 | 未实现 | — |
 | EventTopRequest | event_top | 最小响应 | 读取本地抽取、任务、累计积分快照；缺失返回 503，不推进任务、不结算奖励、不验证当前主数据覆盖范围 |
 | ExchangeCodeRequest | get_exchange_code_reward | 业务实现 | 兑换本地配置的代码，校验账号、同组及重复领取，原子发放金币、晶体、物品；不识别外部代码 |
-| ExchangeRequest | 未确认 | 未实现 | — |
+| ExchangeRequest | exchange | 业务实现 | 仅金币商店：按商品配置扣费、发放金币/晶体/物品并扣库存，校验有效期与容量；其他商店及奖励类型未实现 |
 | FirstGachaDrawRequest | 未确认 | 未实现 | — |
 | FirstGachaSaveRequest | 未确认 | 未实现 | — |
 | FriendAcceptRequest | friend/accept_apply | 业务实现 | 按主数据容量将本地申请转为关系并保存；亲密度初始为零，不同步远端或校验对方容量 |
