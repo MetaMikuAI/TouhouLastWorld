@@ -11,6 +11,7 @@ public static class PatchRegistry
         harmony.PatchAll(typeof(AssetLoaderPatch));
         harmony.PatchAll(typeof(HomeBehaviourPatch));
         harmony.PatchAll(typeof(ItemHeaderBehaviourPatch));
+        harmony.PatchAll(typeof(MissionBehaviorPatch));
         harmony.PatchAll(typeof(GachaBehaviorPatch));
         harmony.PatchAll(typeof(GachaPanelPatch));
         harmony.PatchAll(typeof(RogueLiteMapDrawPanelPatch));
