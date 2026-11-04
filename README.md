@@ -102,7 +102,7 @@
 | HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 |
 | HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式；外观、动作及音乐仅保存编号，不校验素材可用性 |
 | HomeRequest | home | 最小响应 | 空摘要 |
-| IdleSearchCompleteUpgradeRequest | 未确认 | 未实现 | — |
+| IdleSearchCompleteUpgradeRequest | afk_complete_upgrade | 业务实现 | 到期后提升对应成长值一级并清槽；重验上限与开始快照，防重复领取；无附加奖励 |
 | IdleSearchReceiveDropRequest | 未确认 | 未实现 | — |
 | IdleSearchSetRequest | afk_set | 业务实现 | 按主数据时长和成长限制保存、取消槽位；校验归属与占用；不结算成长或奖励 |
 | IdleSearchTopRequest | afk_top | 最小响应 | 返回已存槽位与阶段；无阶段推进或奖励 |

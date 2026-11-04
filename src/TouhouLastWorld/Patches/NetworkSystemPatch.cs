@@ -37,6 +37,12 @@ public partial class NetworkSystemPatch
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
         if (api == "afk_set")
             arguments = new LocalArguments(Idle: ReadIdleSet(request.TryCast<IdleSearchSetRequest>()));
+        if (api == "afk_complete_upgrade")
+        {
+            var completion = request.TryCast<IdleSearchCompleteUpgradeRequest>();
+            arguments = completion == null ? null : new LocalArguments(EntityId: completion.slot_number, Value: completion.object_type,
+                Idle: ReadIdleDefinition(Plugin.Server.IdleSelection(completion.object_type, completion.slot_number)));
+        }
         if (api == "allocate_points")
         {
             var allocation = request.TryCast<UnitAllocatePointsRequest>();

@@ -8,6 +8,45 @@ public sealed record LocalIdleSet(long ObjectId, int ObjectType, int Slot, int C
 
 public sealed partial class OfflineServer
 {
+    public LocalIdleSet? IdleSelection(int type, int number)
+    {
+        if (type is not (9 or 10) || number is < 1 or > 5) return null;
+        var slots = user["_local_idle"]?[type == 9 ? "unit_slot_list" : "picture_slot_list"] as JsonArray;
+        var slot = slots?.FirstOrDefault(entry => entry?["slot_number"]?.GetValue<int>() == number);
+        return slot is null ? null : new(slot["user_object_id"]!.GetValue<long>(), type, number, slot["content"]!.GetValue<int>(), 0);
+    }
+
+    private LocalReply CompleteIdleSlot(LocalArguments? arguments)
+    {
+        if (arguments?.Value is not (9 or 10) || arguments.EntityId is null or < 1 or > 5)
+            return new(400, null, "Invalid idle completion selection.");
+        var selection = IdleSelection(arguments.Value.Value, (int)arguments.EntityId.Value);
+        if (selection is null) return new(404, null, "Idle slot not found.");
+        var request = arguments.Idle;
+        if (request is null || request.GrowthField is null) return new(503, null, "Idle growth definition unavailable.");
+        if (request.ObjectId != selection.ObjectId || request.Content != selection.Content || request.ObjectType != selection.ObjectType
+            || request.Slot != selection.Slot || !request.Eligible)
+            return new(409, null, "Idle completion state changed.");
+        var updated = user.DeepClone().AsObject();
+        var slots = updated["_local_idle"]![selection.ObjectType == 9 ? "unit_slot_list" : "picture_slot_list"]!.AsArray();
+        var slot = slots.First(entry => entry!["slot_number"]!.GetValue<int>() == selection.Slot)!;
+        if (!DateTimeOffset.TryParse(slot["end_at"]?.GetValue<string>(), CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal, out var end) || end > DateTimeOffset.UtcNow)
+            return new(409, null, "Idle growth has not finished.");
+        var key = selection.ObjectType == 9 ? "unit" : "picture";
+        var entry = updated[key]![key + "_list"]!.AsArray()
+            .FirstOrDefault(value => value?["user_" + key + "_id"]?.GetValue<long>() == selection.ObjectId);
+        if (entry is null) return new(404, null, "Owned idle object not found.");
+        if (request.CurrentValue is < 0 or int.MaxValue || entry[request.GrowthField]?.GetValue<int>() != request.CurrentValue
+            || slot["_local_growth_field"]?.GetValue<string>() != request.GrowthField
+            || slot["_local_growth_value"]?.GetValue<int>() != request.CurrentValue)
+            return new(409, null, "Idle growth snapshot changed or unavailable.");
+        entry[request.GrowthField] = request.CurrentValue + 1;
+        slots.Remove(slot);
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { [key] = updated[key]!.DeepClone() } });
+    }
+
     public int IdleStage(int content)
     {
         var stages = user["_local_idle"]?["content_stage_list"] as JsonArray;
@@ -66,7 +105,8 @@ public sealed partial class OfflineServer
         {
             ["slot_number"] = request.Slot, ["object_type"] = request.ObjectType,
             ["object_id"] = entry[request.ObjectType == 9 ? "unit_id" : "picture_id"]!.DeepClone(),
-            ["user_object_id"] = request.ObjectId, ["content"] = request.Content, ["start_at"] = start, ["end_at"] = end
+            ["user_object_id"] = request.ObjectId, ["content"] = request.Content, ["start_at"] = start, ["end_at"] = end,
+            ["_local_growth_field"] = request.GrowthField, ["_local_growth_value"] = request.CurrentValue
         });
         Save(updated);
         return new(0, new() { ["start_at"] = start, ["end_at"] = end });

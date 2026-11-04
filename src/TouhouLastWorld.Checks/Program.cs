@@ -1365,3 +1365,45 @@ Check(idleReload.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Can
     && idleReload.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Cancel = 1 })).Status == 404,
     "idle cancellation removes the stored slot without requiring growth definitions");
 Console.WriteLine("Passed 6 idle slot checks.");
+idleServer = new OfflineServer(idleDirectory, idleSeed.ToJsonString(), "offline://resources/");
+idleServer.Dispatch("game_init");
+idleServer.Dispatch("login");
+idleServer.Dispatch("afk_set", arguments: new(Idle: idleRequest));
+Check(idleServer.Dispatch("afk_complete_upgrade", arguments: new(EntityId: 1, Value: 9, Idle: idleRequest)).Status == 409,
+    "idle completion rejects tasks before their finish time");
+foreach (var (objectType, content, growthField) in new[] { (9, 4, "rare"), (9, 2, "destiny_value"), (10, 3, "potential_limitbreak"), (10, 7, "spec_actualize") })
+{
+    var completionSeed = JsonNode.Parse(seed)!.AsObject();
+    var objectKey = objectType == 9 ? "unit" : "picture";
+    completionSeed[objectKey]![objectKey + "_list"] = new JsonArray(new JsonObject
+    {
+        ["user_" + objectKey + "_id"] = 101L, [objectKey + "_id"] = 1, [growthField] = 1
+    });
+    completionSeed["_local_idle"] = new JsonObject
+    {
+        [objectKey + "_slot_list"] = new JsonArray(new JsonObject
+        {
+            ["slot_number"] = 1, ["object_type"] = objectType, ["object_id"] = 1, ["user_object_id"] = 101L,
+            ["content"] = content, ["start_at"] = "2000-01-01 00:00:00", ["end_at"] = "2000-01-01 00:01:00",
+            ["_local_growth_field"] = growthField, ["_local_growth_value"] = 1
+        })
+    };
+    var completionDirectory = directory + "-idle-completion-" + content;
+    var completionServer = new OfflineServer(completionDirectory, completionSeed.ToJsonString(), "offline://resources/");
+    completionServer.Dispatch("game_init");
+    completionServer.Dispatch("login");
+    var completion = new LocalIdleSet(101, objectType, 1, content, 0, GrowthField: growthField, CurrentValue: 1, Eligible: true);
+    Check(completionServer.Dispatch("afk_complete_upgrade", arguments: new(EntityId: 1, Value: objectType, Idle: completion with { CurrentValue = 2 })).Status == 409,
+        "idle completion checks the original growth snapshot");
+    var completed = completionServer.Dispatch("afk_complete_upgrade", arguments: new(EntityId: 1, Value: objectType, Idle: completion));
+    Check(completed.Status == 0 && completed.Body!["user_update"]![objectKey]![objectKey + "_list"]![0]![growthField]!.GetValue<int>() == 2
+        && completionServer.Dispatch("afk_complete_upgrade", arguments: new(EntityId: 1, Value: objectType, Idle: completion)).Status == 404,
+        "idle completion grows once and removes the task");
+    var completedReload = new OfflineServer(completionDirectory, completionSeed.ToJsonString(), "offline://resources/");
+    completedReload.Dispatch("game_init");
+    var completedUser = completedReload.Dispatch("login").Body!["user"]!;
+    Check(completedUser[objectKey]![objectKey + "_list"]![0]![growthField]!.GetValue<int>() == 2
+        && completedReload.Dispatch("afk_top").Body![objectKey + "_slot_list"]!.AsArray().Count == 0,
+        "growth and task removal persist together");
+}
+Console.WriteLine("Passed 13 idle completion checks.");
