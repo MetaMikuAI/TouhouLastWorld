@@ -139,7 +139,7 @@
 | PictureBookReciveRequest | 未确认 | 未实现 | — |
 | PictureBookRequest | 未确认 | 未实现 | — |
 | PictureFrameRequest | 未确认 | 未实现 | — |
-| PictureNewUpdateRequest | 未确认 | 未实现 | — |
+| PictureNewUpdateRequest | picture_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
 | PictureProtectionRequest | picture_protection | 业务实现 | 保护标记校验、更新与保存 |
 | PictureRecycleRequest | 未确认 | 未实现 | — |
