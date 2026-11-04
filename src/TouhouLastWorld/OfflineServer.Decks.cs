@@ -4,6 +4,20 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply CallDeck(int? number)
+    {
+        if (number is null or < 0) return new(400, null, "Nonnegative deck number required.");
+        var key = number.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (user["_local_saved_decks"]?[key] is not JsonObject saved)
+            return new(404, null, "Deck not saved.");
+        var updated = user.DeepClone().AsObject();
+        var active = saved.DeepClone();
+        active["deck_no"] = 0;
+        updated["_local_saved_decks"]!["0"] = active;
+        Save(updated);
+        return new(0, new());
+    }
+
     private LocalReply SaveDeck(LocalArguments? request)
     {
         if (request?.Value is null or < 0 || request.Ids is null || request.Ids.Any(id => id <= 0 || id > int.MaxValue)
