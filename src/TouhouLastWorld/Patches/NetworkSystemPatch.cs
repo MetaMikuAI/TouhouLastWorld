@@ -35,6 +35,13 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "lecture_room_food_addition")
+        {
+            var purchase = request.TryCast<LectureRoomFoodAdditionRequest>();
+            var food = MasterDB.This()?.Food?.ToList()?.ToArray().FirstOrDefault(entry => entry.item_id == purchase?.item_id);
+            arguments = purchase == null || food == null ? null
+                : new LocalArguments(FoodPurchase: new(purchase.item_id, purchase.num, food.consume_phantasm_point, food.consume_orb));
+        }
         if (api == "series_battle_team_update")
             arguments = new LocalArguments(SeriesTeams: request.TryCast<SeriesBattleTeamUpdateRequest>()?.team_update_list?.ToArray()
                 .Select(team => new LocalSeriesTeam(team.team_no, team.user_unit_id_list?.ToArray())).ToArray());

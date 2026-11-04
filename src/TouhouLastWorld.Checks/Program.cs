@@ -812,3 +812,28 @@ activeSeriesTeams.Dispatch("login");
 Check(activeSeriesTeams.Dispatch("series_battle_team_update", arguments: new(SeriesTeams: [new(80, [1])])).Status == 409,
     "active series roster cannot be replaced");
 Console.WriteLine("Passed 5 series team checks.");
+var foodSeed = JsonNode.Parse(seed)!.AsObject();
+foodSeed["orb"]!["free"] = 3;
+foodSeed["orb"]!["purchased"] = 20;
+var foodDirectory = directory + "-food";
+var food = new OfflineServer(foodDirectory, foodSeed.ToJsonString(), "offline://resources/");
+food.Dispatch("game_init");
+food.Dispatch("login");
+Check(food.Dispatch("lecture_room_food_addition").Status == 503, "food purchase requires master price");
+Check(food.Dispatch("lecture_room_food_addition", arguments: new(FoodPurchase: new(10, 2, 60, 1))).Status == 409
+    && food.Dispatch("lecture_room_food_addition", arguments: new(FoodPurchase: new(10, 2, 10, 20))).Status == 409,
+    "both food balances checked before spending");
+var purchasedFood = food.Dispatch("lecture_room_food_addition", arguments: new(FoodPurchase: new(10, 2, 10, 5))).Body!["user_update"]!;
+Check(purchasedFood["phantasm_point"]!["points"]!.GetValue<int>() == 80
+    && purchasedFood["orb"]!["free"]!.GetValue<long>() == 0 && purchasedFood["orb"]!["purchased"]!.GetValue<long>() == 13
+    && purchasedFood["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2, "food costs and inventory update together");
+food.Dispatch("lecture_room_food_addition", arguments: new(FoodPurchase: new(10, 1, 10, 5)));
+var foodReload = new OfflineServer(foodDirectory, foodSeed.ToJsonString(), "offline://resources/");
+foodReload.Dispatch("game_init");
+var foodUser = foodReload.Dispatch("login").Body!["user"]!;
+Check(foodUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 3
+    && foodUser["phantasm_point"]!["points"]!.GetValue<int>() == 70
+    && JsonNode.DeepEquals(foodUser["lecture_room"], foodSeed["lecture_room"]), "food inventory persists without automatic distribution");
+Check(foodReload.Dispatch("lecture_room_food_addition", arguments: new(FoodPurchase: new(10, int.MaxValue, 0, 0))).Status == 409,
+    "inventory overflow rejected");
+Console.WriteLine("Passed 5 food purchase checks.");

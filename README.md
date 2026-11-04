@@ -107,7 +107,7 @@
 | IdleSearchSetRequest | 未确认 | 未实现 | — |
 | IdleSearchTopRequest | afk_top | 最小响应 | 未启动摘要，无奖励 |
 | ItemExchangeRequest | 未确认 | 未实现 | — |
-| LectureRoomFoodAdditionRequest | 未确认 | 未实现 | — |
+| LectureRoomFoodAdditionRequest | lecture_room_food_addition | 业务实现 | 按主数据价格扣除体力与货币，增加物品库存并统一保存；货币优先使用免费余额，不自动投放或结算成长 |
 | LectureRoomFoodDistributionRequest | 未确认 | 未实现 | — |
 | LectureRoomFoodExpansionRequest | lecture_room_food_expansion | 业务实现 | 按下一级主数据费用更新食物容量等级；优先扣免费余额，不赠送或消耗食物 |
 | LectureRoomUnitExpansionRequest | lecture_room_unit_expansion | 业务实现 | 按下一级主数据费用扣款并保存等级；本地规则优先扣免费余额，余额不足不变更 |

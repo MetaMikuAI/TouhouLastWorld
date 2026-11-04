@@ -18,10 +18,12 @@ public sealed partial class OfflineServer
         or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture"
         or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end"
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
-        or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update" || QueryTemplates.ContainsKey(api);
+        or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
+        or "lecture_room_food_addition" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "lecture_room_food_addition" => PurchaseFood(arguments?.FoodPurchase),
         "series_battle_team_update" => UpdateSeriesTeams(arguments?.SeriesTeams),
         "series_battle_reset" => ResetSeries(),
         "comic_get_pages" => AcquirePages(arguments?.Pages),
