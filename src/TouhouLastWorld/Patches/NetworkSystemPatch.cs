@@ -50,6 +50,8 @@ public partial class NetworkSystemPatch
             arguments = reset == null || setting == null ? null : new LocalArguments(PointReset:
                 new(reset.user_unit_id, setting.PA_RESET_CONSUME_OBJECT_VALUE, setting.PA_RESET_FREE_FLAG >= 1));
         }
+        if (api == "weekly_arena_battle_score_reset")
+            arguments = new LocalArguments(Value: request.TryCast<WeeklyArenaBattleScoreResetRequest>()?.battle_number);
         if (api == "friend_approve")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX,
                 Text: request.TryCast<FriendApproveRequest>()?.approve_player_id);

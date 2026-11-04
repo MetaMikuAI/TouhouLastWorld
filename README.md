@@ -240,5 +240,5 @@
 | VersusBattleEndRequest | 未确认 | 未实现 | — |
 | VersusBattleStartRequest | 未确认 | 未实现 | — |
 | VotivePictureExchangeRequest | 未确认 | 未实现 | — |
-| WeeklyArenaBattleScoreResetRequest | 未确认 | 未实现 | — |
+| WeeklyArenaBattleScoreResetRequest | weekly_arena_battle_score_reset | 业务实现 | 清零本地场次总分与参战编号并重算总分；保留难度、分项与敌方配置，缺少场次返回错误；不生成周配置 |
 | WeeklyArenaTopRequest | 未确认 | 未实现 | — |

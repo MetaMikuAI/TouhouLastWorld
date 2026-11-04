@@ -21,10 +21,12 @@ public sealed partial class OfflineServer
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
-        or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_approve" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
+        or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_approve" or "reset_point_allocation" or "allocate_points"
+        or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "weekly_arena_battle_score_reset" => ResetWeeklyScore(arguments?.Value),
         "friend_approve" => ApproveContactRequest(arguments),
         "friend_request_cancel" => CancelContactRequest(arguments),
         "friend_delete" => DeleteContact(arguments?.Text),
@@ -120,6 +122,24 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply ResetWeeklyScore(int? number)
+    {
+        if (number is null or < 1 or > 4) return new(400, null, "Weekly battle number must be 1 to 4.");
+        var updated = user.DeepClone().AsObject();
+        var overview = updated["_local_weekly_arena"] as JsonObject;
+        var battles = overview?["weekly_battle_data"] as JsonObject;
+        if (battles?[$"battle_number{number}"] is not JsonObject battle)
+            return new(404, null, "Local weekly battle not found.");
+        battle["total_score"] = 0;
+        battle["unit_list"] = new JsonArray();
+        battle["user_unit_list"] = new JsonArray();
+        var total = battles.Sum(entry => (long)(entry.Value?["total_score"]?.GetValue<int>() ?? 0));
+        if (total is < 0 or > int.MaxValue) return new(409, null, "Invalid local weekly score total.");
+        overview!["total_battle_score"] = (int)total;
+        Save(updated);
+        return new(0, new());
+    }
 
     private LocalReply ApproveContactRequest(LocalArguments? request)
     {

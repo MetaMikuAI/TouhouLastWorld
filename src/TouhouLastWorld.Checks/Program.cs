@@ -1143,3 +1143,36 @@ Check(approvedOverview["friend_approval_pending_list"]!.AsArray().Count == 0
     && approvedOverview["friend_request_list"]!.AsArray().Count == 1,
     "approval persists incoming removal and preserves outgoing requests");
 Console.WriteLine("Passed 4 contact approval checks.");
+var weeklyResetSeed = JsonNode.Parse(seed)!.AsObject();
+weeklyResetSeed["_local_weekly_arena"] = new JsonObject
+{
+    ["total_battle_score"] = 30,
+    ["weekly_battle_data"] = new JsonObject
+    {
+        ["battle_number1"] = new JsonObject
+        {
+            ["total_score"] = 10, ["difficulty"] = 3, ["attack_count_score"] = 5,
+            ["unit_list"] = new JsonArray(101), ["user_unit_list"] = new JsonArray(1L)
+        },
+        ["battle_number2"] = new JsonObject { ["total_score"] = 20 }
+    }
+};
+var weeklyResetDirectory = directory + "-weekly-reset";
+var weeklyReset = new OfflineServer(weeklyResetDirectory, weeklyResetSeed.ToJsonString(), "offline://resources/");
+weeklyReset.Dispatch("game_init");
+weeklyReset.Dispatch("login");
+Check(weeklyReset.Dispatch("weekly_arena_battle_score_reset", arguments: new(Value: 0)).Status == 400
+    && weeklyReset.Dispatch("weekly_arena_battle_score_reset", arguments: new(Value: 4)).Status == 404,
+    "weekly reset rejects invalid and absent battle numbers");
+Check(weeklyReset.Dispatch("weekly_arena_battle_score_reset", arguments: new(Value: 1)).Status == 0,
+    "weekly score reset accepts a stored battle");
+var weeklyResetReload = new OfflineServer(weeklyResetDirectory, weeklyResetSeed.ToJsonString(), "offline://resources/");
+weeklyResetReload.Dispatch("game_init");
+var resetWeekly = weeklyResetReload.Dispatch("login").Body!["user"]!["_local_weekly_arena"]!;
+var resetWeeklyBattle = resetWeekly["weekly_battle_data"]!["battle_number1"]!;
+Check(resetWeekly["total_battle_score"]!.GetValue<int>() == 20 && resetWeeklyBattle["total_score"]!.GetValue<int>() == 0
+    && resetWeeklyBattle["unit_list"]!.AsArray().Count == 0 && resetWeeklyBattle["user_unit_list"]!.AsArray().Count == 0,
+    "weekly reset persists cleared score and roster with other scores retained");
+Check(resetWeeklyBattle["difficulty"]!.GetValue<int>() == 3 && resetWeeklyBattle["attack_count_score"]!.GetValue<int>() == 5,
+    "weekly reset preserves difficulty and component scores");
+Console.WriteLine("Passed 4 weekly score reset checks.");
