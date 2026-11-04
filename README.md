@@ -186,7 +186,7 @@
 | SweepRequest | 未确认 | 未实现 | — |
 | SwitchDoRequest | 未确认 | 未实现 | — |
 | SwitchUserInfoGetRequest | 未确认 | 未实现 | — |
-| TeamUpdateRequest | 未确认 | 未实现 | — |
+| TeamUpdateRequest | team_update | 业务实现 | 更新已有编队的名称、六个成员位及强化位，校验归属和重复；成本采用客户端值，不扩充槽位 |
 | TowerBattleEndRequest | 未确认 | 未实现 | — |
 | TowerBattleStartRequest | 未确认 | 未实现 | — |
 | TowerTopRequest | 未确认 | 未实现 | — |

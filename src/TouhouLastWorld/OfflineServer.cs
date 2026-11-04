@@ -8,8 +8,10 @@ public sealed record LocalReply(int Status, JsonObject? Body, string Error = "")
 public sealed record LocalProfileUpdate(string? PlayerName = null, string? HeroName = null, string? Comment = null);
 public sealed record LocalReplayMeasure(int QuestType, int TargetId, int Difficulty, int? WinRate = null, int? ActionNum = null);
 public sealed record LocalReplayContent(int TargetId, int Level, string? Rules, string? Content);
+public sealed record LocalTeamUpdate(int Number, string? Name, long[]? Units, int Cost, long[]? EnhancedUnits, int CostWithFriend);
 public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null,
-    LocalProfileUpdate? Profile = null, LocalReplayMeasure? ReplayMeasure = null, LocalReplayContent? ReplayContent = null);
+    LocalProfileUpdate? Profile = null, LocalReplayMeasure? ReplayMeasure = null, LocalReplayContent? ReplayContent = null,
+    LocalTeamUpdate? Team = null);
 
 public sealed partial class OfflineServer
 {

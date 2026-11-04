@@ -9,11 +9,12 @@ public sealed partial class OfflineServer
         or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
         or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
-        or "get_replay_info" or "update_replay_info" or "achievement_new_update" || QueryTemplates.ContainsKey(api);
+        or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "team_update" => UpdateTeam(arguments?.Team),
         "achievement_new_update" => ClearAchievementMarkers(arguments?.Ids),
         "get_replay_info" => QuestReplay(arguments, false),
         "update_replay_info" => QuestReplay(arguments, true),

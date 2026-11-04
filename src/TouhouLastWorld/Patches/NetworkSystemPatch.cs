@@ -39,6 +39,13 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
+        if (api == "team_update")
+        {
+            var update = request.TryCast<TeamUpdateRequest>();
+            arguments = update == null ? null : new LocalArguments(Team: new(update.number, update.name,
+                update.user_unit_id_list?.ToArray(), update.use_cost, update.season_enhancement_user_unit_id_list?.ToArray(),
+                update.use_cost_with_friend));
+        }
         if (api == "achievement_new_update")
             arguments = new LocalArguments(Ids: request.TryCast<AchievementNewUpdateRequest>()?.new_update_id_list?.ToArray()
                 .Select(id => (long)id).ToArray());
