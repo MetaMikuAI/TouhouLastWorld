@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "friend/refuse_apply")
+        {
+            var refusal = request.TryCast<FriendRefuseRequest>();
+            arguments = refusal == null ? null : new LocalArguments(Value: refusal.is_all ? 1 : 0, Text: refusal.public_id);
+        }
         if (api == "avatar/preview")
             arguments = new LocalArguments(Value: request.TryCast<previewAvatarAPIAsyncRequest>()?.avatar_id);
         if (api == "avatar/update")

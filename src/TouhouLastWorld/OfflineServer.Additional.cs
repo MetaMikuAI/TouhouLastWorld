@@ -20,10 +20,17 @@ public sealed partial class OfflineServer
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
-        or "avatar/preview" or "avatar/update" || QueryTemplates.ContainsKey(api);
+        or "avatar/preview" or "avatar/update" or "friend/refuse_apply" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "friend/refuse_apply" => RefuseContactApplications(arguments),
+        "friend/apply_list" => new(0, new() { ["data"] = user["_local_friend_applications"]?.DeepClone() ?? new JsonArray() }),
+        "friend/list" => new(0, new()
+        {
+            ["data"] = new JsonArray(),
+            ["request_tips"] = user["_local_friend_applications"] is JsonArray { Count: > 0 } ? 1 : 0
+        }),
         "avatar/list" => new(0, new() { ["avatar_list"] = user["HeadListItemList"]?.DeepClone() ?? new JsonArray() }),
         "avatar/preview" => PreviewAvatar(arguments?.Value),
         "avatar/update" => SelectAvatar(arguments?.Value),
@@ -105,6 +112,25 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply RefuseContactApplications(LocalArguments? request)
+    {
+        if (request?.Value is not (0 or 1) || (request.Value == 0 && string.IsNullOrWhiteSpace(request.Text)))
+            return new(400, null, "Contact ID or all selection required.");
+        var updated = user.DeepClone().AsObject();
+        var entries = updated["_local_friend_applications"] as JsonArray ?? new JsonArray();
+        if (request.Value == 1)
+            entries.Clear();
+        else
+        {
+            var entry = entries.FirstOrDefault(value => value?["public_id"]?.GetValue<string>() == request.Text);
+            if (entry is null) return new(404, null, "Local contact application not found.");
+            entries.Remove(entry);
+        }
+        if (entries.Parent is null) updated["_local_friend_applications"] = entries;
+        Save(updated);
+        return new(0, new());
+    }
 
     private LocalReply SelectAvatar(int? id)
     {

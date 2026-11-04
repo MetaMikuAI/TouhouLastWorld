@@ -947,3 +947,27 @@ var selectedAvatarUser = selectedAvatarReload.Dispatch("login").Body!["user"]!;
 Check(selectedAvatarUser["avatar_id"]!.GetValue<int>() == 2 && selectedAvatarUser["avatar_title"]!.GetValue<string>() == "B"
     && !selectedAvatarUser["HeadListItemList"]![2]!["is_clear"]!.GetValue<bool>(), "avatar selection persists without unlocking other entries");
 Console.WriteLine("Passed 3 avatar selection checks.");
+var contactSeed = JsonNode.Parse(seed)!.AsObject();
+contactSeed["_local_friend_applications"] = new JsonArray(
+    new JsonObject { ["public_id"] = "local-a" }, new JsonObject { ["public_id"] = "local-b" });
+var contactDirectory = directory + "-contacts";
+var contactServer = new OfflineServer(contactDirectory, contactSeed.ToJsonString(), "offline://resources/");
+contactServer.Dispatch("game_init");
+contactServer.Dispatch("login");
+Check(contactServer.Dispatch("friend/refuse_apply", arguments: new(Value: 0, Text: "missing")).Status == 404
+    && contactServer.Dispatch("friend/refuse_apply", arguments: new(Value: 0)).Status == 400,
+    "contact refusal validates single target");
+contactServer.Dispatch("friend/refuse_apply", arguments: new(Value: 0, Text: "local-a"));
+Check(contactServer.Dispatch("friend/apply_list").Body!["data"]!.AsArray().Count == 1
+    && contactServer.Dispatch("friend/list").Body!["request_tips"]!.GetValue<int>() == 1,
+    "single refusal preserves remaining application and indicator");
+var contactsReload = new OfflineServer(contactDirectory, contactSeed.ToJsonString(), "offline://resources/");
+contactsReload.Dispatch("game_init");
+contactsReload.Dispatch("login");
+Check(contactsReload.Dispatch("friend/apply_list").Body!["data"]![0]!["public_id"]!.GetValue<string>() == "local-b",
+    "contact refusal persists");
+contactsReload.Dispatch("friend/refuse_apply", arguments: new(Value: 1));
+Check(contactsReload.Dispatch("friend/apply_list").Body!["data"]!.AsArray().Count == 0
+    && contactsReload.Dispatch("friend/list").Body!["request_tips"]!.GetValue<int>() == 0,
+    "bulk refusal clears applications and indicator");
+Console.WriteLine("Passed 4 contact refusal checks.");
