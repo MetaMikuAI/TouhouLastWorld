@@ -67,6 +67,18 @@ Check(saved["unit"]!["unit_list"]!.AsArray().Select(unit => unit!["user_unit_id"
 Console.WriteLine("Passed 10 battle/gacha persistence checks.");
 Check(version["master_path"]!.GetValue<string>() == "offline://resources/master", "master resource path");
 Check(version["assetbundle_path"]!.GetValue<string>() == "offline://resources/assetbundle/android", "bundle resource path");
+var resourcePaths = new LocalResourcePaths("https://cdn.example/resource", "https://cdn.example/master",
+    "https://cdn.example/assetbundle", 1031, 0);
+var cdnServer = new OfflineServer(directory + "-cdn", seed, "https://cdn.example/root", resourcePaths);
+var cdnInit = cdnServer.Dispatch("game_init").Body!;
+var cdnVersion = cdnServer.Dispatch("version_get").Body!;
+Check(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(cdnInit["api_server"]!.GetValue<string>())) == "offline://api/"
+    && cdnVersion["resource_path"]!.GetValue<string>() == resourcePaths.Resource
+    && cdnVersion["master_path"]!.GetValue<string>() == resourcePaths.Master
+    && cdnVersion["assetbundle_path"]!.GetValue<string>() == resourcePaths.AssetBundle
+    && cdnVersion["version"]!.GetValue<int>() == 1031 && cdnVersion["resource_version"]!.GetValue<int>() == 0,
+    "version response can use separate CDN directories while game API remains local");
+Console.WriteLine("Passed CDN resource routing check.");
 var home = fresh.Dispatch("home").Body!;
 Check(home["unread_talk_id_list"]!.AsArray().Count == 0, "home callback receives talk list");
 Check(home["put_beginner_mission_id_list"]!.AsArray().Count == 0, "home beginner mission list");

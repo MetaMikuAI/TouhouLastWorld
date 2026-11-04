@@ -9,6 +9,7 @@ public static class PatchRegistry
         harmony.PatchAll(typeof(NetworkSystemPatch));
         harmony.PatchAll(typeof(GGPublishLoaderPatch));
         harmony.PatchAll(typeof(AssetLoaderPatch));
+        harmony.PatchAll(typeof(AssetLoaderSettingsPatch));
         harmony.PatchAll(typeof(HomeBehaviourPatch));
         harmony.PatchAll(typeof(ItemHeaderBehaviourPatch));
         harmony.PatchAll(typeof(MissionBehaviorPatch));

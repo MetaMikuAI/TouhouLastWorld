@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 namespace TouhouLastWorld;
 
 public sealed record LocalReply(int Status, JsonObject? Body, string Error = "");
+public sealed record LocalResourcePaths(string Resource, string Master, string AssetBundle, int AppVersion, int ResourceVersion);
 public sealed record LocalProfileUpdate(string? PlayerName = null, string? HeroName = null, string? Comment = null);
 public sealed record LocalReplayMeasure(int QuestType, int TargetId, int Difficulty, int? WinRate = null, int? ActionNum = null);
 public sealed record LocalReplayContent(int TargetId, int Level, string? Rules, string? Content);
@@ -51,6 +52,8 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
 public sealed partial class OfflineServer
 {
     private readonly string resourceRoot;
+    private readonly LocalResourcePaths? resourcePaths;
+    internal bool HasResourceOverrides => resourcePaths is not null;
     private string? session;
     private DateTime? lastLoginAt;
     private JsonObject user;
@@ -62,7 +65,7 @@ public sealed partial class OfflineServer
     private sealed record LocalAccount(string DeviceId, string UserId, string PublicId);
     public const string InitialKey = "fwkGnVPHkjpPdC78dYrQM2pRZMYEFEha";
 
-    public OfflineServer(string directory, string seed, string resourceRoot)
+    public OfflineServer(string directory, string seed, string resourceRoot, LocalResourcePaths? resourcePaths = null)
     {
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "user.json");
@@ -71,6 +74,7 @@ public sealed partial class OfflineServer
         initialUser = JsonNode.Parse(seed)!.AsObject();
         accountPath = Path.Combine(directory, "account.json");
         this.resourceRoot = resourceRoot;
+        this.resourcePaths = resourcePaths;
         user = JsonNode.Parse(File.Exists(path) ? File.ReadAllText(path) : seed) as JsonObject
             ?? throw new InvalidDataException("Local user must be a JSON object.");
         if (!AccountDeleted && File.Exists(accountPath))
@@ -171,10 +175,10 @@ public sealed partial class OfflineServer
             "gacha_do" => DrawGacha(count!.Value),
             "version_get" => new()
             {
-                ["version"] = 92, ["resource_version"] = 5019,
-                ["resource_path"] = resourceRoot.TrimEnd('/') + "/resource",
-                ["master_path"] = resourceRoot.TrimEnd('/') + "/master",
-                ["assetbundle_path"] = resourceRoot.TrimEnd('/') + "/assetbundle/android"
+                ["version"] = resourcePaths?.AppVersion ?? 92, ["resource_version"] = resourcePaths?.ResourceVersion ?? 5019,
+                ["resource_path"] = resourcePaths?.Resource ?? resourceRoot.TrimEnd('/') + "/resource",
+                ["master_path"] = resourcePaths?.Master ?? resourceRoot.TrimEnd('/') + "/master",
+                ["assetbundle_path"] = resourcePaths?.AssetBundle ?? resourceRoot.TrimEnd('/') + "/assetbundle/android"
             },
             _ => new()
             {
