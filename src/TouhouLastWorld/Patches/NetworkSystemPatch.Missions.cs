@@ -4,6 +4,38 @@ namespace TouhouLastWorld.Patches;
 
 public partial class NetworkSystemPatch
 {
+    private static LocalDailyLoginMission? ReadDailyLoginMission()
+    {
+        var master = MasterDB.This();
+        var definitions = master?.Mission?.ToList()?.ToArray();
+        var rewards = master?.MissionReward?.ToList()?.ToArray();
+        var setting = master?.Setting;
+        return definitions == null || rewards == null || setting == null ? null
+            : ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR);
+    }
+
+    private static LocalDailyLoginMission? ReadDailyLoginMission(MissionRecord[] definitions, MissionRewardRecord[] rewards,
+        int switchingHour)
+    {
+        var daily = definitions.Where(row => row.type == MissionBehavior.c_menu_daily
+            && row.complete_type == 1 && row.complete_id == 0 && row.complete_value == 1 && row.event_id == 0
+            && string.IsNullOrWhiteSpace(row.start_at) && string.IsNullOrWhiteSpace(row.end_at)).Take(2).ToArray();
+        if (daily.Length != 1) return null;
+        var row = daily[0];
+        var groups = new[] { row.reward_group1_id, row.reward_group2_id, row.reward_group3_id, row.reward_group4_id };
+        var fixedRewards = new (int Id, int Count)[groups.Length];
+        for (var index = 0; index < groups.Length; index++)
+        {
+            var id = groups[index];
+            if (id == 0) continue;
+            var entries = rewards.Where(reward => reward.mission_reward_group_id == id).Take(2).ToArray();
+            if (entries.Length != 1 || entries[0].object_value <= 0 || !string.IsNullOrEmpty(entries[0].custom_parameter))
+                return null;
+            fixedRewards[index] = (id, entries[0].object_value);
+        }
+        return new(row.id, row.name, row.display_order, fixedRewards, switchingHour, DateTime.Now);
+    }
+
     private static LocalArguments? ReadBattlePassRewards()
     {
         var master = MasterDB.This();
@@ -79,7 +111,9 @@ public partial class NetworkSystemPatch
                 grants.Add(new(reward.object_type, reward.object_id, reward.object_value, reward.object_type switch
                 {
                     3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
-                    12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX, _ => 0
+                    12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX,
+                    OfflineServer.DailySweepRewardType => int.MaxValue,
+                    _ => 0
                 }));
             }
             if (supported)
@@ -87,6 +121,7 @@ public partial class NetworkSystemPatch
                     (string.IsNullOrWhiteSpace(definition.start_at) && string.IsNullOrWhiteSpace(definition.end_at))
                         || time.IsActiveDate(definition.start_at, definition.end_at), grants.ToArray()));
         }
-        return new(MissionClaim: new(request.mission_id, request.is_all, request.mission_type, request.event_id, request.chapter_id, rules.ToArray()));
+        return new(MissionClaim: new(request.mission_id, request.is_all, request.mission_type, request.event_id, request.chapter_id, rules.ToArray()),
+            DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR));
     }
 }

@@ -44,6 +44,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalIntroGrant? IntroGrant = null, LocalHistoryQuery? HistoryQuery = null,
     LocalHistoryDefinitions? HistoryDefinitions = null, LocalUnitRecycle? UnitRecycle = null,
     LocalDispatchSettlement? DispatchSettlement = null, LocalRetryFix? RetryFix = null, LocalMissionClaim? MissionClaim = null,
+    LocalDailyLoginMission? DailyLoginMission = null,
     LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null,
     LocalPointExchange? PointExchange = null, LocalSeriesStart? SeriesStart = null, LocalSeriesEnd? SeriesEnd = null, LocalTowerStart? TowerStart = null, LocalTowerEnd? TowerEnd = null, LocalTreasureDraw? TreasureDraw = null, LocalEventDraw? EventDraw = null, LocalArenaStart? ArenaStart = null, LocalArenaEnd? ArenaEnd = null, LocalVersusStart? VersusStart = null, LocalVersusEnd? VersusEnd = null, LocalBatchSearch? Batch = null, LocalReroll? Reroll = null);
 
@@ -51,6 +52,7 @@ public sealed partial class OfflineServer
 {
     private readonly string resourceRoot;
     private string? session;
+    private DateTime? lastLoginAt;
     private JsonObject user;
     private readonly string userPath;
     private readonly JsonObject unitTemplate;
@@ -91,7 +93,11 @@ public sealed partial class OfflineServer
             or "mail_top" or "friend/list" or "unit_voice_autoset_update" or "friend/apply_list" or "friend/recommend"
             or "get_shop_list") && !SupportsAdditional(api))
             return new(501, null, $"Offline API not implemented: {api}");
-        if (api == "game_init") session = Guid.NewGuid().ToString("N");
+        if (api == "game_init")
+        {
+            session = Guid.NewGuid().ToString("N");
+            lastLoginAt = null;
+        }
         if (session is null) return new(401, null, "Offline game_init required.");
         if (api == "check_user" && account is null) return new(401, null, "Offline account required.");
         if (api is not ("game_init" or "version_get" or "user_create" or "login" or "boot") && account is null)
@@ -112,6 +118,7 @@ public sealed partial class OfflineServer
             return new(400, null, "Not enough gold.");
         if (api == "battle_end" && battleResult is null) return new(400, null, "Battle result required.");
         if (api is "user_create" or "login") EnsureAccount();
+        if (api == "login") lastLoginAt = DateTime.Now;
         var operation = api switch
         {
             "unit_protection" => SetProtection(arguments, "unit", "unit_list", "user_unit_id"),

@@ -1,34 +1,89 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace TouhouLastWorld;
 
 public sealed record LocalMissionRule(int Id, int Type, int EventId, int Required, bool Active, LocalInventoryReward[] Rewards);
 public sealed record LocalMissionClaim(int Id, int All, int Type, int EventId, int ChapterId, LocalMissionRule[] Rules);
+public sealed record LocalDailyLoginMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
+    int SwitchingHour, DateTime Now)
+{
+    public DateTime DayStart => Now.AddHours(-SwitchingHour).Date.AddHours(SwitchingHour);
+}
 
 public sealed partial class OfflineServer
 {
-    private LocalReply MissionOverview()
+    internal const int DailySweepRewardType = 104;
+
+    private LocalReply MissionOverview(LocalDailyLoginMission? daily)
     {
         var body = QueryTemplates["mission_top"].DeepClone().AsObject();
-        if (user["_local_missions"] is JsonObject missions) body["mission"] = missions.DeepClone();
-        var rows = body["mission"]!["unlock_list"]!.AsArray().Concat(body["mission"]!["clear_list"]!.AsArray()).ToArray();
+        var overview = BuildMissionLists(daily);
+        body["mission"] = overview;
+        var rows = overview["unlock_list"]!.AsArray().Concat(overview["clear_list"]!.AsArray()).ToArray();
         foreach (var field in new[] { "event_id", "chapter_id" })
             body[field + "_list"] = new JsonArray(rows.Select(row => row?[field]?.GetValue<int>() ?? 0)
                 .Where(id => id > 0).Distinct().Select(id => (JsonNode?)JsonValue.Create(id)).ToArray());
         return new(0, body);
     }
 
-    private LocalReply ReceiveMission(LocalMissionClaim? request)
+    private JsonObject BuildMissionLists(LocalDailyLoginMission? daily)
+    {
+        var saved = user["_local_missions"] as JsonObject;
+        var overview = (saved ?? QueryTemplates["mission_top"]["mission"]!.AsObject()).DeepClone().AsObject();
+        var login = DailyLoginRow(daily, overview);
+        if (login is not null)
+            overview[login["current_value"]!.GetValue<int>() == 1 ? "clear_list" : "unlock_list"]!.AsArray().Add(login);
+        return overview;
+    }
+
+    private JsonObject? DailyLoginRow(LocalDailyLoginMission? daily, JsonObject missions)
+    {
+        if (daily is null || daily.Id <= 0 || daily.SwitchingHour is < 0 or > 23 || daily.RewardGroups.Length != 4)
+            return null;
+        var day = daily.DayStart;
+        if (DateOnly.TryParseExact(user["_local_daily_login_mission_claimed_on"]?.GetValue<string>(), "yyyy-MM-dd",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var claimed)
+            && claimed >= DateOnly.FromDateTime(day))
+            return null;
+        if (missions["unlock_list"]!.AsArray().Concat(missions["clear_list"]!.AsArray())
+                .Any(row => row?["id"]?.GetValue<int>() == daily.Id)
+            || user["_local_received_missions"]?.AsArray().Any(id => id?.GetValue<int>() == daily.Id) == true)
+            return null;
+        var login = new JsonObject
+        {
+            ["id"] = daily.Id, ["type"] = 3, ["name"] = daily.Name, ["complete_type"] = 1, ["complete_id"] = 0,
+            ["complete_value"] = 1, ["display_order"] = daily.DisplayOrder, ["open_mission_id"] = 0,
+            ["event_id"] = 0, ["chapter_id"] = 0,
+            ["current_value"] = lastLoginAt >= day && lastLoginAt <= daily.Now ? 1 : 0,
+            ["start_at"] = day.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+            ["end_at"] = day.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+        };
+        for (var index = 0; index < daily.RewardGroups.Length; index++)
+        {
+            var reward = daily.RewardGroups[index];
+            login[$"reward_group{index + 1}_id"] = reward.Id;
+            login[$"reward_group{index + 1}_value"] = reward.Count;
+        }
+        return login;
+    }
+
+    private LocalReply ReceiveMission(LocalMissionClaim? request, LocalDailyLoginMission? daily)
     {
         if (request is null || request.All is < 0 or > 1 || request.Type < 0 || request.EventId < 0 || request.ChapterId < 0
             || (request.All == 0 ? request.Id <= 0 : request.Id != 0))
             return new(400, null, "Invalid mission claim.");
         var updated = user.DeepClone().AsObject();
         var missions = updated["_local_missions"] as JsonObject;
-        var ready = missions?["clear_list"] as JsonArray;
-        if (ready is null || missions?["unlock_list"] is not JsonArray)
+        if (missions is null && daily is null)
             return new(404, null, "Mission state unavailable.");
-        var selected = ready.Where(row => row is JsonObject
+        missions ??= QueryTemplates["mission_top"]["mission"]!.DeepClone().AsObject();
+        var ready = missions["clear_list"] as JsonArray;
+        if (ready is null || missions["unlock_list"] is not JsonArray)
+            return new(404, null, "Mission state unavailable.");
+        var login = DailyLoginRow(daily, missions);
+        var claimable = login?["current_value"]?.GetValue<int>() == 1 ? ready.Append(login) : ready;
+        var selected = claimable.Where(row => row is JsonObject
             && (request.All == 1 || row["id"]?.GetValue<int>() == request.Id)
             && (request.Type == 0 || row["type"]?.GetValue<int>() == request.Type)
             && (request.EventId == 0 || row["event_id"]?.GetValue<int>() == request.EventId)
@@ -53,7 +108,8 @@ public sealed partial class OfflineServer
             var objects = new JsonArray();
             foreach (var reward in rule.Rewards)
             {
-                var error = ApplyInventoryReward(updated, reward);
+                var error = reward.Type == DailySweepRewardType
+                    ? ApplyDailySweepReward(updated, reward) : ApplyInventoryReward(updated, reward);
                 if (error is not null) return error;
                 var item = new JsonObject { ["object_type"] = reward.Type, ["object_id"] = reward.Id,
                     ["object_value"] = reward.Count, ["custom_parameter"] = "" };
@@ -62,13 +118,31 @@ public sealed partial class OfflineServer
                 rewards.Add(item);
             }
             receipts.Add(new JsonObject { ["mission_id"] = id, ["object_info"] = objects });
-            received.Add(id);
-            ready.Remove(mission);
+            if (ReferenceEquals(mission, login))
+                updated["_local_daily_login_mission_claimed_on"] = daily!.DayStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            else
+            {
+                received.Add(id);
+                ready.Remove(mission);
+            }
         }
         if (selected.Length > 0) Save(updated);
-        return new(0, new() { ["mission"] = missions!.DeepClone(), ["reward_list"] = rewards,
+        var userUpdate = new JsonObject { ["gold"] = updated["gold"]!.DeepClone(), ["crystal"] = updated["crystal"]!.DeepClone(),
+            ["item"] = updated["item"]!.DeepClone() };
+        if (updated["mop_up_day_coupon"] is JsonNode coupons)
+            userUpdate["mop_up_day_coupon"] = coupons.DeepClone();
+        return new(0, new() { ["mission"] = BuildMissionLists(daily), ["reward_list"] = rewards,
             ["receive_mission_list"] = receipts, ["not_receive_message"] = "",
-            ["user_update"] = new JsonObject { ["gold"] = updated["gold"]!.DeepClone(),
-                ["crystal"] = updated["crystal"]!.DeepClone(), ["item"] = updated["item"]!.DeepClone() } });
+            ["user_update"] = userUpdate });
+    }
+
+    private static LocalReply? ApplyDailySweepReward(JsonObject updated, LocalInventoryReward reward)
+    {
+        if (reward.Id != 0 || reward.Count <= 0)
+            return new(503, null, "Daily sweep coupon definition unsupported.");
+        var total = (long)(updated["mop_up_day_coupon"]?.GetValue<int>() ?? 0) + reward.Count;
+        if (total > reward.Capacity) return new(409, null, "Daily sweep coupon reward exceeds capacity.");
+        updated["mop_up_day_coupon"] = (int)total;
+        return null;
     }
 }

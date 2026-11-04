@@ -3083,6 +3083,39 @@ Check(missionReload.Dispatch("mission_end", arguments: new(MissionClaim: mission
     && missionReload.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim)).Body!["reward_list"]!.AsArray().Count == 0,
     "mission receipts survive restart and repeated batch claims grant no duplicate reward");
 Console.WriteLine("Passed 3 mission claim checks.");
+var dailyLoginDirectory = directory + "-daily-login";
+var dailyLoginServer = new OfflineServer(dailyLoginDirectory, seed, "offline://resources/");
+dailyLoginServer.Dispatch("game_init");
+dailyLoginServer.Dispatch("user_create");
+var loginMission = new LocalDailyLoginMission(300010, "登录", 1, [(3000101, 10), (3000102, 5), (0, 0), (0, 0)], 0, DateTime.Now);
+var loginRule = new LocalMissionRule(300010, 3, 0, 1, true,
+    [new(12, 401, 10, 9999), new(104, 0, 5, int.MaxValue)]);
+var dailyLoginArguments = new LocalArguments(DailyLoginMission: loginMission, MissionClaim: new(300010, 0, 3, 0, 0, [loginRule]));
+Check(dailyLoginServer.Dispatch("mission_top", arguments: dailyLoginArguments).Body!["mission"]!["unlock_list"]!.AsArray().Count == 1
+    && dailyLoginServer.Dispatch("mission_end", arguments: dailyLoginArguments).Status == 404,
+    "daily login mission requires a successful login");
+dailyLoginServer.Dispatch("login");
+dailyLoginArguments = dailyLoginArguments with { DailyLoginMission = loginMission with { Now = DateTime.Now } };
+var loginMissionRow = dailyLoginServer.Dispatch("mission_top", arguments: dailyLoginArguments).Body!["mission"]!["clear_list"]![0]!;
+Check(loginMissionRow["id"]!.GetValue<int>() == 300010 && loginMissionRow["reward_group2_value"]!.GetValue<int>() == 5,
+    "login completes the daily master mission");
+var dailyLoginClaim = dailyLoginServer.Dispatch("mission_end", arguments: dailyLoginArguments).Body!;
+Check(dailyLoginClaim["reward_list"]!.AsArray().Count == 2
+    && dailyLoginClaim["user_update"]!["mop_up_day_coupon"]!.GetValue<int>() == 5
+    && dailyLoginClaim["user_update"]!["item"]!["item_list"]!.AsArray()
+        .Single(item => item!["item_id"]!.GetValue<int>() == 401)!["num"]!.GetValue<int>() == 10
+    && dailyLoginClaim["mission"]!["clear_list"]!.AsArray().Count == 0,
+    "daily login grants the configured item and sweep tickets");
+var dailyLoginReload = new OfflineServer(dailyLoginDirectory, seed, "offline://resources/");
+dailyLoginReload.Dispatch("game_init");
+Check(dailyLoginReload.Dispatch("login").Body!["user"]!["mop_up_day_coupon"]!.GetValue<int>() == 5
+    && dailyLoginReload.Dispatch("mission_end", arguments: dailyLoginArguments).Status == 404
+    && dailyLoginReload.Dispatch("mission_top", arguments: dailyLoginArguments).Body!["mission"]!["unlock_list"]!.AsArray().Count == 0,
+    "daily login grant and receipt persist across restart");
+Check(dailyLoginReload.Dispatch("mission_top", arguments: dailyLoginArguments with
+    { DailyLoginMission = loginMission with { Now = loginMission.Now.AddDays(1) } }).Body!["mission"]!["unlock_list"]!.AsArray().Count == 1,
+    "new game day requires another login");
+Console.WriteLine("Passed 5 daily login mission checks.");
 var stageSeed = JsonNode.Parse(seed)!;
 stageSeed["battle_pass"] = new JsonObject { ["battle_pass_id"] = 7, ["battle_pass_level"] = 1, ["battle_pass_exp"] = 0,
     ["is_premium"] = 0, ["is_premium_2"] = 0 };
