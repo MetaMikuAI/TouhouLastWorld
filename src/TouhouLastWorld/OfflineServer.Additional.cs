@@ -5,12 +5,17 @@ namespace TouhouLastWorld;
 public sealed partial class OfflineServer
 {
     private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" or "set_age"
-        or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting" || QueryTemplates.ContainsKey(api);
+        or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting"
+        or "update_profile_setting2" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
         "update_profile_setting" => SaveProfileLayout(arguments?.Text),
+        "update_profile_setting2" => new(0, new()
+        {
+            ["text_value"] = arguments?.Text is null || arguments.Text.Any(char.IsControl) ? 1 : 0
+        }),
         "get_profile_setting" => new(0, new()
         {
             ["profile_setting"] = user["_local_profile_setting"]?.GetValue<string>() ?? "",

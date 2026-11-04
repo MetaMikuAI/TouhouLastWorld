@@ -41,6 +41,8 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
         if (api == "update_profile_setting")
             arguments = new LocalArguments(Text: request.TryCast<UpdateProfileSettingAPIRequest>()?.profile_setting);
+        if (api == "update_profile_setting2")
+            arguments = new LocalArguments(Text: request.TryCast<UpdateProfileSetting2APIRequest>()?.text_string);
         if (api == "user_info_update")
         {
             var names = request.TryCast<Comic.UserInfoUpdateRequest>();
