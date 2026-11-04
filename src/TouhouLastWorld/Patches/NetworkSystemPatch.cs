@@ -39,6 +39,11 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
+        if (api == "user_info_update")
+            arguments = new LocalArguments(Profile: new LocalProfileUpdate(
+                request.TryCast<UserPlayerNameUpdateRequest>()?.player_name,
+                request.TryCast<UserHeroNameUpdateRequest>()?.hero_name,
+                request.TryCast<UserCommentUpdateRequest>()?.comment));
         if (api == "tutorial_update")
             arguments = new LocalArguments(Value: request.TryCast<TutorialUpdateRequest>()?.progress_value);
         if (api == "unit_voice_autoset_update")
@@ -66,6 +71,11 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
+            if (api == "user_info_update")
+            {
+                var profileResponse = response.TryCast<Comic.UserInfoUpdateResponse>();
+                if (profileResponse != null) profileResponse.edit_validity = 1;
+            }
             // 本地缺失接口明确结束，不发起真实网络请求或无限重试。
             action?.Invoke(reply.Status, reply.Error);
             yield break;

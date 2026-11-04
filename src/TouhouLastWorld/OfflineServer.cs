@@ -5,7 +5,9 @@ using System.Text.Json.Nodes;
 namespace TouhouLastWorld;
 
 public sealed record LocalReply(int Status, JsonObject? Body, string Error = "");
-public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null);
+public sealed record LocalProfileUpdate(string? PlayerName = null, string? HeroName = null, string? Comment = null);
+public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null,
+    LocalProfileUpdate? Profile = null);
 
 public sealed partial class OfflineServer
 {

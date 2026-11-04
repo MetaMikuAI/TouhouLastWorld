@@ -147,7 +147,7 @@
 | PictureSpecActualizeRequest | 未确认 | 未实现 | — |
 | PopupAdWindowRequest | 未确认 | 未实现 | — |
 | previewAvatarAPIAsyncRequest | 未确认 | 未实现 | — |
-| ProfileUserInfoUpdateRequest | 未确认 | 未实现 | — |
+| ProfileUserInfoUpdateRequest | user_info_update | 业务实现 | 三种派生请求更新名称或简介，基础文本校验、原子保存；不含远端文本审核 |
 | QuestHelperSelectRequest | 未确认 | 未实现 | — |
 | ReadUnitTalkRequest | 未确认 | 未实现 | — |
 | ReincarnationReleaseRequest | 未确认 | 未实现 | — |

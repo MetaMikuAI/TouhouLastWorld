@@ -4,11 +4,13 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
-    private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" or "set_age" or "friend/search" || QueryTemplates.ContainsKey(api);
+    private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" or "set_age"
+        or "friend/search" or "user_info_update" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "user_info_update" => UpdateProfile(arguments?.Profile),
         "friend/search" => new(2000, null, "No matching local contact."),
         "set_age" => arguments?.Value is >= 1 and <= 3
             ? SetUserInteger("age_limit_type", arguments.Value.Value)
@@ -17,6 +19,23 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply UpdateProfile(LocalProfileUpdate? profile)
+    {
+        if (profile is null || (profile.PlayerName is null && profile.HeroName is null && profile.Comment is null)
+            || (profile.PlayerName is not null && string.IsNullOrWhiteSpace(profile.PlayerName))
+            || (profile.HeroName is not null && string.IsNullOrWhiteSpace(profile.HeroName))
+            || new[] { profile.PlayerName, profile.HeroName, profile.Comment }.Any(text => text?.Any(char.IsControl) == true))
+            return new(1000, null, "Invalid local profile text.");
+        var delta = new JsonObject();
+        if (profile.PlayerName is not null) delta["player_name"] = profile.PlayerName;
+        if (profile.HeroName is not null) delta["hero_name"] = profile.HeroName;
+        if (profile.Comment is not null) delta["comment"] = profile.Comment;
+        var updated = user.DeepClone().AsObject();
+        foreach (var (field, value) in delta) updated[field] = value!.DeepClone();
+        Save(updated);
+        return new(0, new() { ["edit_validity"] = 0, ["user_update"] = delta });
+    }
 
     private LocalReply SetUserInteger(string field, int value)
     {
