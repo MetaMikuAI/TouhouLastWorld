@@ -203,7 +203,7 @@
 | TutorialFirstGachaConfirmRequest | 未确认 | 未实现 | — |
 | TutorialFirstGachaDoRequest | 未确认 | 未实现 | — |
 | TutorialUpdateRequest | tutorial_update | 业务实现 | 校验并保存单调进度；不含阶段奖励 |
-| UnitAllocatePointsRequest | 未确认 | 未实现 | — |
+| UnitAllocatePointsRequest | allocate_points | 业务实现 | 按目标等级逐级校验主数据费用与提交前已用点数门槛，统一扣点并保存；拒绝降级和重复类型，不重算历史点数来源 |
 | UnitBGMUpdateRequest | unit_bgm_update | 业务实现 | 校验成员归属，保存非负音乐编号；不校验资源可用性，不解锁音乐 |
 | UnitDestinyValueUpRequest | 未确认 | 未实现 | — |
 | UnitEquipCostumeRequest | unit_equip_costume | 业务实现 | 批量切换默认、已持有或当前外观，校验主数据归属；不新增持有，未接入特殊进阶解锁 |

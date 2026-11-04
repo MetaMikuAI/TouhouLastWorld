@@ -21,12 +21,16 @@ public sealed record LocalFoodDistribution(int ItemId, int FoodId, int Count, in
 public sealed record LocalTrainingStart(long UnitId, int Skill, int ItemId, int Slot, int Capacity, int Seconds);
 public sealed record LocalTrainingMaterial(int ItemId, int Count, int Seconds);
 public sealed record LocalPointReset(long UnitId, int GoldCost, bool FreeReset);
+public sealed record LocalPointTarget(long Type, long Step);
+public sealed record LocalPointRule(int Type, int Step, int Cost, int RequiredUsed);
+public sealed record LocalPointAllocation(long UnitId, LocalPointTarget[]? Targets, LocalPointRule[]? Rules);
 public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null,
     LocalProfileUpdate? Profile = null, LocalReplayMeasure? ReplayMeasure = null, LocalReplayContent? ReplayContent = null,
     LocalTeamUpdate? Team = null, LocalHomeUpdate? Home = null, LocalEquipmentEntry[]? Equipment = null,
     LocalCostumeEntry[]? Costumes = null, LocalRhythmResult? Rhythm = null, LocalPagePurchase? Pages = null,
     LocalSeriesTeam[]? SeriesTeams = null, LocalFoodPurchase? FoodPurchase = null, LocalFoodDistribution? FoodDistribution = null,
-    LocalTrainingStart? Training = null, LocalTrainingMaterial[]? TrainingMaterials = null, LocalPointReset? PointReset = null);
+    LocalTrainingStart? Training = null, LocalTrainingMaterial[]? TrainingMaterials = null, LocalPointReset? PointReset = null,
+    LocalPointAllocation? PointAllocation = null);
 
 public sealed partial class OfflineServer
 {

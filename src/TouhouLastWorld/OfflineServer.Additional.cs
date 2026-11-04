@@ -21,11 +21,12 @@ public sealed partial class OfflineServer
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
-        or "friend/info" or "reset_point_allocation" || QueryTemplates.ContainsKey(api);
+        or "friend/info" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "reset_point_allocation" => ResetPoints(arguments?.PointReset),
+        "allocate_points" => AllocatePoints(arguments?.PointAllocation),
         "friend/info" => ContactInfo(arguments?.Text),
         "friend/refuse_apply" => RefuseContactApplications(arguments),
         "friend/accept_apply" => AcceptContactApplication(arguments),

@@ -1046,3 +1046,32 @@ freePoints.Dispatch("login");
 Check(freePoints.Dispatch("reset_point_allocation", arguments: new(PointReset: new(1, 200, true))).Body!["user_update"]!["gold"]!.GetValue<int>() == 100,
     "free reset setting overrides repeat cost");
 Console.WriteLine("Passed 5 point reset checks.");
+var allocationSeed = JsonNode.Parse(seed)!.AsObject();
+allocationSeed["unit"]!["unit_list"]![0]!["point_allocation_info"]!["pa_points"] = 20;
+LocalPointRule[] allocationRules = [new(1, 1, 3, 0), new(1, 2, 4, 0), new(7, 1, 5, 7)];
+var allocationDirectory = directory + "-allocation";
+var allocationServer = new OfflineServer(allocationDirectory, allocationSeed.ToJsonString(), "offline://resources/");
+allocationServer.Dispatch("game_init");
+allocationServer.Dispatch("login");
+Check(allocationServer.Dispatch("allocate_points", arguments: new(PointAllocation: new(1, [new(1, 2), new(7, 1)], allocationRules))).Status == 403,
+    "allocation prerequisites use pre-request spent points");
+var allocated = allocationServer.Dispatch("allocate_points", arguments: new(PointAllocation: new(1, [new(1, 2)], allocationRules))).Body!["user_update"]!["unit"]!["unit_list"]![0]!["point_allocation_info"]!;
+Check(allocated["pa_type_1"]!.GetValue<int>() == 2 && allocated["pa_points"]!.GetValue<int>() == 13
+    && allocated["pa_total_used_points"]!.GetValue<int>() == 7, "allocation sums every intermediate cost without partial failed changes");
+Check(allocationServer.Dispatch("allocate_points", arguments: new(PointAllocation: new(1, [new(1, 1)], allocationRules))).Status == 409
+    && allocationServer.Dispatch("allocate_points", arguments: new(PointAllocation: new(1, [new(1, 3)], allocationRules))).Status == 503,
+    "allocation rejects decreases and missing rules");
+Check(allocationServer.Dispatch("allocate_points", arguments: new(PointAllocation: new(1, [new(7, 1), new(7, 1)], allocationRules))).Status == 400,
+    "allocation rejects duplicate types");
+allocationServer.Dispatch("allocate_points", arguments: new(PointAllocation: new(1, [new(7, 1)], allocationRules)));
+allocationServer.Dispatch("allocate_points", arguments: new(PointAllocation: new(1, [new(7, 1)], allocationRules)));
+var allocationReload = new OfflineServer(allocationDirectory, allocationSeed.ToJsonString(), "offline://resources/");
+allocationReload.Dispatch("game_init");
+var allocationUser = allocationReload.Dispatch("login").Body!["user"]!;
+var savedAllocation = allocationUser["unit"]!["unit_list"]![0]!["point_allocation_info"]!;
+Check(savedAllocation["pa_points"]!.GetValue<int>() == 8 && savedAllocation["pa_total_used_points"]!.GetValue<int>() == 12
+    && savedAllocation["pa_type_7"]!.GetValue<int>() == 1, "allocation persists and target replay does not charge twice");
+var resetAllocation = allocationReload.Dispatch("reset_point_allocation", arguments: new(PointReset: new(1, 100, false))).Body!["user_update"]!["unit"]!["unit_list"]![0]!["point_allocation_info"]!;
+Check(resetAllocation["pa_points"]!.GetValue<int>() == 20 && resetAllocation["pa_total_used_points"]!.GetValue<int>() == 0,
+    "allocation and reset preserve total point balance");
+Console.WriteLine("Passed 6 point allocation checks.");

@@ -35,6 +35,14 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "allocate_points")
+        {
+            var allocation = request.TryCast<UnitAllocatePointsRequest>();
+            var rules = MasterDB.This()?.PointAllocation?.ToList()?.ToArray()
+                .Select(rule => new LocalPointRule(rule.type, rule.step, rule.need_point, rule.required_total_used_point)).ToArray();
+            arguments = allocation == null ? null : new LocalArguments(PointAllocation: new(allocation.user_unit_id,
+                allocation.allocate_dict_list?.ToArray().Select(entry => new LocalPointTarget(entry.type, entry.step)).ToArray(), rules));
+        }
         if (api == "reset_point_allocation")
         {
             var reset = request.TryCast<UnitResetPointAllocationRequest>();
