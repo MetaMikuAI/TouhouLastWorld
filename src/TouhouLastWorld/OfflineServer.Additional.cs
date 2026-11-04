@@ -22,10 +22,11 @@ public sealed partial class OfflineServer
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_approve" or "reset_point_allocation" or "allocate_points"
-        or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
+        or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "event_top" => EventOverview(),
         "daily_arena_top" => DailyOverview(),
         "weekly_arena_top" => WeeklyOverview(),
         "weekly_arena_battle_score_reset" => ResetWeeklyScore(arguments?.Value),
@@ -124,6 +125,20 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply EventOverview()
+    {
+        if (user["_local_event_overview"] is not JsonObject overview)
+            return new(503, null, "Local event snapshot unavailable.");
+        var body = new JsonObject();
+        foreach (var field in new[] { "event_point_gacha_list", "event_special_mission", "event_total_point_reward" })
+        {
+            if (overview[field] is not JsonArray entries)
+                return new(503, null, "Local event snapshot incomplete.");
+            body[field] = entries.DeepClone();
+        }
+        return new(0, body);
+    }
 
     private LocalReply DailyOverview()
     {

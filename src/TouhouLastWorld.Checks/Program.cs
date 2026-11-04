@@ -1233,3 +1233,25 @@ invalidDailyOverview.Dispatch("game_init");
 invalidDailyOverview.Dispatch("login");
 Check(invalidDailyOverview.Dispatch("daily_arena_top").Status == 503, "daily overview rejects absent enemy slots");
 Console.WriteLine("Passed 4 daily overview checks.");
+Check(dailyOverview.Dispatch("event_top").Status == 503, "event overview requires an explicit stored snapshot");
+var eventOverviewSeed = JsonNode.Parse(seed)!.AsObject();
+eventOverviewSeed["_local_event_overview"] = new JsonObject
+{
+    ["event_point_gacha_list"] = new JsonArray(),
+    ["event_special_mission"] = new JsonArray(),
+    ["event_total_point_reward"] = new JsonArray(new JsonObject
+    {
+        ["event_id"] = 1, ["next_reward_group_id"] = 2, ["total_point"] = 100, ["step_number"] = 1
+    })
+};
+var eventOverview = new OfflineServer(directory + "-event-overview", eventOverviewSeed.ToJsonString(), "offline://resources/");
+eventOverview.Dispatch("game_init");
+eventOverview.Dispatch("login");
+var eventSnapshot = eventOverview.Dispatch("event_top").Body!;
+Check(eventSnapshot["event_total_point_reward"]![0]!["total_point"]!.GetValue<int>() == 100
+    && eventSnapshot["event_special_mission"]!.AsArray().Count == 0 && eventSnapshot["user_update"] is null,
+    "event overview reads saved progress without issuing user rewards");
+eventSnapshot["event_total_point_reward"]![0]!["total_point"] = 0;
+Check(eventOverview.Dispatch("event_top").Body!["event_total_point_reward"]![0]!["total_point"]!.GetValue<int>() == 100,
+    "event overview returns an isolated snapshot");
+Console.WriteLine("Passed 3 event overview checks.");

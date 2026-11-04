@@ -48,7 +48,7 @@
 | EventPersonalInfoGetAPIRequest | personal_info_get | 最小响应 | 返回未填写联系信息；不提交报名或发放奖励 |
 | EventPersonalInfoUpdateAPIRequest | 未确认 | 未实现 | — |
 | EventPointGachaDoAPIRequest | 未确认 | 未实现 | — |
-| EventTopRequest | 未确认 | 未实现 | — |
+| EventTopRequest | event_top | 最小响应 | 读取本地抽取、任务、累计积分快照；缺失返回 503，不推进任务、不结算奖励、不验证当前主数据覆盖范围 |
 | ExchangeCodeRequest | 未确认 | 未实现 | — |
 | ExchangeRequest | 未确认 | 未实现 | — |
 | FirstGachaDrawRequest | 未确认 | 未实现 | — |
