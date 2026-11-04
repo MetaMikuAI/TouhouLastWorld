@@ -75,7 +75,7 @@
 | FriendTopRequest | friend_top | 最小响应 | 读取旧版本地关系、收发申请与助战编号；不生成远端数据 |
 | GachaDoRequest | gacha_do | 业务实现 | 仅固定本地池：扣费、入库、保存 |
 | GachaPointExchangeRequest | 未确认 | 未实现 | — |
-| GachaRetryFixRequest | 未确认 | 未实现 | — |
+| GachaRetryFixRequest | retry_gacha_fix | 业务实现 | 确认已有待定角色，校验有效期及容量后入库、记录图鉴和确认标记，重试返回原编号；仅本地角色模板，候选生成及其他对象未实现 |
 | GachaTopRequest | gacha_top | 最小响应 | 固定本地列表 |
 | GainFreeItemRequest | gain_free_item | 业务实现 | 领取本地商店唯一免费商品，按模块 UTC 日期限每日一次并保存；支持金币、晶体、物品，未配置或配置不明确时拒绝领取 |
 | GameInitRequest | game_init | 业务实现 | 本地会话与入口 |

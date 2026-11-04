@@ -2964,3 +2964,30 @@ unfinishedDispatch.Dispatch("login");
 Check(unfinishedDispatch.Dispatch("dispatch_end", arguments: new(90, DispatchSettlement: dispatchEndRule)).Status == 409,
     "dispatch cannot settle before its finish time");
 Console.WriteLine("Passed 4 dispatch settlement checks.");
+var retrySeed = JsonNode.Parse(seed)!;
+retrySeed["retry_gacha_count"] = new JsonArray(new JsonObject { ["gacha_id"] = 20, ["event_id"] = 0,
+    ["total_count"] = 3, ["count"] = 1, ["object_type"] = 9, ["object_id"] = 1001, ["is_fix"] = 0 });
+var retryDirectory = directory + "-retry-confirm";
+var retryServer = new OfflineServer(retryDirectory, retrySeed.ToJsonString(), "offline://resources/");
+retryServer.Dispatch("game_init");
+retryServer.Dispatch("login");
+var retryRule = new LocalRetryFix(20, 1001, 10, true);
+Check(retryServer.Dispatch("retry_gacha_fix", arguments: new(Value: 20, RetryFix: retryRule with { Active = false })).Status == 1006
+    && retryServer.Dispatch("retry_gacha_fix", arguments: new(Value: 20, RetryFix: retryRule with { Capacity = 1 })).Status == 409
+    && retryServer.Dispatch("login").Body!["user"]!["retry_gacha_count"]![0]!["is_fix"]!.GetValue<int>() == 0,
+    "retry confirmation preserves the pending selection when expired or over capacity");
+var retryFixed = retryServer.Dispatch("retry_gacha_fix", arguments: new(Value: 20, RetryFix: retryRule)).Body!;
+Check(retryFixed["unique_id"]!.GetValue<long>() == 2
+    && retryFixed["user_update"]!["unit"]!["unit_list"]!.AsArray().Count == 2
+    && retryFixed["user_update"]!["retry_gacha_count"]![0]!["is_fix"]!.GetValue<int>() == 1
+    && retryFixed["user_update"]!["album"]!["unit_list"]!.AsArray().Count == 1,
+    "retry confirmation grants a real instance and persists selection and album state");
+var retryReload = new OfflineServer(retryDirectory, seed, "offline://resources/");
+retryReload.Dispatch("game_init");
+retryReload.Dispatch("login");
+var retryReceipt = retryReload.Dispatch("retry_gacha_fix", arguments: new(Value: 20)).Body!;
+Check(retryReceipt["unique_id"]!.GetValue<long>() == 2
+    && retryReceipt["user_update"]!["unit"]!["unit_list"]!.AsArray().Count == 2
+    && retryReload.Dispatch("retry_gacha_fix", arguments: new(Value: 21, RetryFix: retryRule)).Status == 404,
+    "retry confirmation returns the original receipt after restart and rejects unrelated selections");
+Console.WriteLine("Passed 3 retry confirmation checks.");
