@@ -35,6 +35,18 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "pass_card/collect_exp")
+        {
+            var change = request.TryCast<CollectExpRequest>();
+            var master = MasterDB.This();
+            var row = change == null ? null : master?.PassCardTask?.Find(change.task_id);
+            var levels = master?.PassCard?.ToList()?.ToArray();
+            arguments = new LocalArguments(Value: change?.task_id);
+            if (row != null && levels != null && levels.All(entry => entry.id == entry.level))
+                arguments = arguments with { PassTask = new(row.id, row.exp,
+                    levels.Where(entry => entry.GetFreeParam()?.free_data?.Count > 0).Select(entry => entry.level).ToArray(),
+                    levels.Where(entry => entry.GetVipParam()?.pay_data?.Count > 0).Select(entry => entry.level).ToArray()) };
+        }
         if (api == "get_exchange_code_reward")
         {
             var change = request.TryCast<ExchangeCodeRequest>();

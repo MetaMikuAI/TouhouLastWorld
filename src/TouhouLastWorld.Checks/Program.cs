@@ -2450,3 +2450,31 @@ Check(codeReload.Dispatch("get_exchange_code_reward", arguments: localCodeArgs).
     && codeReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
     "code redemption persists and cannot grant twice");
 Console.WriteLine("Passed 4 local code redemption checks.");
+
+var passSeed = JsonNode.Parse(seed)!;
+passSeed["_local_pass_card"] = new JsonObject
+{
+    ["left_day"] = 10, ["level"] = 1, ["current_exp"] = 140, ["is_vip"] = 0,
+    ["had_got_free_reward_level"] = new JsonArray(JsonValue.Create(1)), ["had_got_vip_reward_level"] = new JsonArray(),
+    ["free_rewards"] = new JsonArray(), ["vip_rewards"] = new JsonArray(),
+    ["tasks"] = new JsonArray(new JsonObject { ["task_id"] = 4, ["can_cellable"] = 1, ["completed_times"] = 1 })
+};
+var passDirectory = directory + "-pass-exp";
+var passServer = new OfflineServer(passDirectory, passSeed.ToJsonString(), "offline://resources/");
+passServer.Dispatch("game_init");
+passServer.Dispatch("login");
+var passTaskRule = new LocalPassTask(4, 20, new[] { 1, 2, 3 }, new[] { 1, 2, 3 });
+Check(passServer.Dispatch("pass_card/collect_exp", arguments: new(Value: 5, PassTask: passTaskRule with { Id = 5 })).Status == 409,
+    "pass experience cannot be collected without a completed task");
+var passCollected = passServer.Dispatch("pass_card/collect_exp", arguments: new(Value: 4, PassTask: passTaskRule)).Body!["user_pass_card"]!;
+Check(passCollected["level"]!.GetValue<int>() == 2 && passCollected["current_exp"]!.GetValue<int>() == 10
+    && passCollected["tasks"]![0]!["can_cellable"]!.GetValue<int>() == 0
+    && passCollected["free_rewards"]![0]!.GetValue<int>() == 2 && passCollected["vip_rewards"]!.AsArray().Count == 0,
+    "pass experience upgrades levels, consumes one claim and updates eligible rewards");
+var passReload = new OfflineServer(passDirectory, seed, "offline://resources/");
+passReload.Dispatch("game_init");
+passReload.Dispatch("login");
+Check(passReload.Dispatch("pass_card/collect_exp", arguments: new(Value: 4, PassTask: passTaskRule)).Status == 409
+    && passReload.Dispatch("pass_card/show_task").Body!["user_pass_card"]!["level"]!.GetValue<int>() == 2,
+    "pass experience persists and cannot be claimed twice");
+Console.WriteLine("Passed 3 pass experience checks.");

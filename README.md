@@ -31,7 +31,7 @@
 | ClearHistoryPlayerInfoRequest | 未确认 | 未实现 | — |
 | ClearHistoryRequest | get_clear_history | 最小响应 | 无最佳记录，排行及最近记录为空；不生成战绩 |
 | ClearHistoryTeamInfoRequest | 未确认 | 未实现 | — |
-| CollectExpRequest | 未确认 | 未实现 | — |
+| CollectExpRequest | pass_card/collect_exp | 业务实现 | 按配置领取已完成任务经验，更新等级、次数与领奖提示并保存；任务进度生成未实现 |
 | CollectRewardRequest | 未确认 | 未实现 | — |
 | Comic.UserInfoUpdateRequest | user_info_update | 业务实现 | 单独或同时更新两个名称；基础文本校验、原子保存，不含远端文本审核 |
 | ComicGetPagesRequest | comic_get_pages | 业务实现 | 按主数据单价扣点并增加可读页数，校验余额与总页数，统一持久化；暂不校验发布期 |
@@ -181,8 +181,8 @@
 | ShopListRequest | get_shop_list | 最小响应 | 空目录与空推荐列表；不含订单处理 |
 | ShopOrderRequest | 未确认 | 未实现 | — |
 | ShowRewardRequest | 未确认 | 未实现 | — |
-| ShowShopRequest | pass_card/show_shop | 最小响应 | 未开通摘要与空目录；不含订单处理 |
-| ShowTaskRequest | pass_card/show_task | 最小响应 | 未开通摘要与空任务；不含权益和奖励 |
+| ShowShopRequest | pass_card/show_shop | 业务实现 | 读取本地摘要与目录，未配置时为空；不含订单处理 |
+| ShowTaskRequest | pass_card/show_task | 业务实现 | 读取本地任务和领取状态，未配置时为空；不生成进度 |
 | SweepRequest | 未确认 | 未实现 | — |
 | SwitchDoRequest | 未确认 | 未实现 | — |
 | SwitchUserInfoGetRequest | 未确认 | 未实现 | — |
