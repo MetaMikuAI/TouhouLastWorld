@@ -2218,3 +2218,23 @@ Check(lectureTrustReload.Dispatch("lecture_room_unit_trust_up", arguments: new(r
     && lectureTrustReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["trust"]!.GetValue<int>() == 10,
     "trust reward cannot be claimed twice after reload");
 Console.WriteLine("Passed 3 lecture trust checks.");
+
+var relationSeed = JsonNode.Parse(seed)!;
+relationSeed["twitter_info"]!["is_related"] = 1;
+relationSeed["_local_twitter_user_id"] = "local-test-identity";
+var relationDirectory = directory + "-local-relation";
+var relationServer = new OfflineServer(relationDirectory, relationSeed.ToJsonString(), "offline://resources/");
+relationServer.Dispatch("game_init");
+relationServer.Dispatch("login");
+Check(relationServer.Dispatch("user_twitter_info_delete", arguments: new(Text: "")).Status == 400
+    && relationServer.Dispatch("user_twitter_info_delete", arguments: new(Text: "different")).Status == 409
+    && relationServer.Dispatch("login").Body!["user"]!["twitter_info"]!["is_related"]!.GetValue<int>() == 1,
+    "local unlink rejects empty or mismatched identity without changing relation");
+Check(relationServer.Dispatch("user_twitter_info_delete", arguments: new(Text: "local-test-identity")).Body!["user_update"]!["twitter_info"]!["is_related"]!.GetValue<int>() == 0,
+    "local unlink clears relation flag");
+var relationReload = new OfflineServer(relationDirectory, seed, "offline://resources/");
+relationReload.Dispatch("game_init");
+Check(relationReload.Dispatch("login").Body!["user"]!["twitter_info"]!["is_related"]!.GetValue<int>() == 0
+    && relationReload.Dispatch("user_twitter_info_delete", arguments: new(Text: "local-test-identity")).Status == 0,
+    "local unlink persists and repeated clearing is harmless");
+Console.WriteLine("Passed 3 local relation checks.");

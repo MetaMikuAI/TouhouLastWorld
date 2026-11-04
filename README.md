@@ -234,7 +234,7 @@
 | UserCreateRequest | user_create | 业务实现 | 本地身份创建、重复调用保留存档 |
 | UserGoogleInfoDeleteRequest | 未确认 | 未实现 | — |
 | UserGoogleInfoUpdateRequest | 未确认 | 未实现 | — |
-| UserTwitterInfoDeleteRequest | 未确认 | 未实现 | — |
+| UserTwitterInfoDeleteRequest | user_twitter_info_delete | 业务实现 | 清除当前本地存档的关联标记与已保存编号；校验已有编号，不撤销外部平台授权 |
 | UserTwitterInfoUpdateRequest | 未确认 | 未实现 | — |
 | VersionGetRequest | version_get | 最小响应 | 固定版本与资源路径 |
 | VersusBattleEndRequest | 未确认 | 未实现 | — |

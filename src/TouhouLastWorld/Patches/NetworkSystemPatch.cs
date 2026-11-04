@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "user_twitter_info_delete")
+            arguments = new LocalArguments(Text: request.TryCast<UserTwitterInfoDeleteRequest>()?.twitter_user_id);
         if (api == "lecture_room_unit_trust_up")
         {
             var change = request.TryCast<LectureRoomUnitTrustUpRequest>();
