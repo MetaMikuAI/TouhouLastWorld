@@ -12,7 +12,8 @@ public sealed partial class OfflineServer
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
         or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
-        or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove" || QueryTemplates.ContainsKey(api);
+        or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
+        or "lecture_room_update" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
@@ -21,6 +22,11 @@ public sealed partial class OfflineServer
         "mail_delete" => DeleteReadMail(),
         "unit_voice_update" => SetVoice(arguments),
         "lecture_room_unit_remove" => RemoveLectureUnit(arguments?.EntityId),
+        "lecture_room_update" => new(0, new()
+        {
+            ["spend_info"] = new JsonObject { ["passage_time"] = 0, ["food"] = 0, ["exp"] = 0 },
+            ["user_update"] = new JsonObject { ["lecture_room"] = user["lecture_room"]!.DeepClone() }
+        }),
         "transcribe_kpi" => arguments?.Value is 1 or 2 ? new(0, new())
             : new(400, null, "Unknown local telemetry event."),
         "favorite_unit_update" => UpdateHome(arguments?.Home),

@@ -114,7 +114,7 @@
 | LectureRoomUnitRemoveRequest | lecture_room_unit_remove | 业务实现 | 移出本地成员并清除占用标记；重复移出幂等，不结算计时收益 |
 | LectureRoomUnitSetRequest | 未确认 | 未实现 | — |
 | LectureRoomUnitTrustUpRequest | 未确认 | 未实现 | — |
-| LectureRoomUpdateRequest | 未确认 | 未实现 | — |
+| LectureRoomUpdateRequest | lecture_room_update | 最小响应 | 返回已保存设施状态及零结算；未实现时间推进、食物消耗与经验增长 |
 | LevelGiftRequest | 未确认 | 未实现 | — |
 | LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 |
 | LogoutRequest | logout | 业务实现 | 校验本地身份并结束会话；保留身份与存档 |
