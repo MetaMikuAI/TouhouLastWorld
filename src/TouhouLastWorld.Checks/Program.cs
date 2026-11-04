@@ -2991,3 +2991,25 @@ Check(retryReceipt["unique_id"]!.GetValue<long>() == 2
     && retryReload.Dispatch("retry_gacha_fix", arguments: new(Value: 21, RetryFix: retryRule)).Status == 404,
     "retry confirmation returns the original receipt after restart and rejects unrelated selections");
 Console.WriteLine("Passed 3 retry confirmation checks.");
+var historyPlayerSeed = JsonNode.Parse(seed)!;
+historyPlayerSeed["_local_history_players"] = new JsonArray(new JsonObject
+{
+    ["player_id"] = "local-profile", ["unit_id"] = 1001, ["costume_id"] = 100101, ["home_motion"] = 0,
+    ["unit_get_count"] = 5, ["quest_complete_count"] = 12, ["dispatch_complete_count"] = 3, ["selected_achievement_id"] = 0,
+    ["bronze_trophy_count"] = 1, ["silver_trophy_count"] = 0, ["gold_trophy_count"] = 0,
+    ["comment"] = "local", ["last_login_at"] = "2026-01-01 00:00:00", ["player_name"] = "local profile", ["player_level"] = 10, ["friend_status"] = 0
+});
+var historyPlayerServer = new OfflineServer(directory + "-history-player", historyPlayerSeed.ToJsonString(), "offline://resources/");
+historyPlayerServer.Dispatch("game_init");
+historyPlayerServer.Dispatch("login");
+Check(historyPlayerServer.Dispatch("get_clear_history_playerinfo", arguments: new(Text: "missing", HistoryDefinitions: historyDefinitions)).Status == 404
+    && historyPlayerServer.Dispatch("get_clear_history_playerinfo", arguments: new(Text: "local-profile", HistoryDefinitions: historyDefinitions with { Costumes = new() })).Status == 503,
+    "player history rejects unknown players and unavailable avatar definitions");
+var historyPlayerReply = historyPlayerServer.Dispatch("get_clear_history_playerinfo", arguments: new(Text: "local-profile", HistoryDefinitions: historyDefinitions)).Body!;
+Check(historyPlayerReply["player_level"]!.GetValue<int>() == 10 && historyPlayerReply["unit_get_count"]!.GetValue<int>() == 5
+    && historyPlayerReply["bronze_trophy_count"]!.GetValue<int>() == 1 && !historyPlayerReply.ContainsKey("player_id"),
+    "player history returns the saved profile and counters without unrelated fields");
+historyPlayerReply["unit_get_count"] = 999;
+Check(historyPlayerServer.Dispatch("get_clear_history_playerinfo", arguments: new(Text: "local-profile", HistoryDefinitions: historyDefinitions)).Body!["unit_get_count"]!.GetValue<int>() == 5,
+    "player history returns an independent snapshot");
+Console.WriteLine("Passed 3 player history checks.");
