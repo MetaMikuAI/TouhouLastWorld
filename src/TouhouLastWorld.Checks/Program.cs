@@ -888,3 +888,30 @@ Check(trainingUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 1
     && trainingUser["training_room"]!["unit_list"]!.AsArray().Count == 1
     && JsonNode.DeepEquals(trainingUser["unit"], trainingSeed["unit"]), "training persists without fabricated skill growth");
 Console.WriteLine("Passed 5 training start checks.");
+Check(startTrainingReload.Dispatch("training_room_shortened_finish_time", arguments: new(EntityId: 1,
+    TrainingMaterials: [new(12, 1, 60), new(99, 1, 60)])).Status == 409,
+    "training reduction validates every inventory entry before saving");
+Check(startTrainingReload.Dispatch("training_room_shortened_finish_time", arguments: new(EntityId: 1,
+    TrainingMaterials: [new(12, 1, 60), new(12, 1, 60)])).Status == 400,
+    "duplicate training materials rejected");
+var shortenedTraining = startTrainingReload.Dispatch("training_room_shortened_finish_time", arguments: new(EntityId: 1,
+    TrainingMaterials: [new(12, 1, 60)])).Body!;
+Check(DateTime.Parse(trainingTask["training_finish_time"]!.GetValue<string>())
+        - DateTime.Parse(shortenedTraining["finish_time"]!.GetValue<string>()) == TimeSpan.FromSeconds(60)
+    && shortenedTraining["user_update"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 0,
+    "training reduction returns exact updated deadline and consumes material once");
+var reducedTrainingReload = new OfflineServer(startTrainingDirectory, trainingSeed.ToJsonString(), "offline://resources/");
+reducedTrainingReload.Dispatch("game_init");
+var reducedTrainingUser = reducedTrainingReload.Dispatch("login").Body!["user"]!;
+Check(reducedTrainingUser["training_room"]!["unit_list"]![0]!["training_finish_time"]!.GetValue<string>()
+        == shortenedTraining["finish_time"]!.GetValue<string>()
+    && reducedTrainingUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 0,
+    "training deadline and material reduction persist together");
+var overTraining = new OfflineServer(directory + "-over-training", trainingSeed.ToJsonString(), "offline://resources/");
+overTraining.Dispatch("game_init");
+overTraining.Dispatch("login");
+overTraining.Dispatch("training_room_start", arguments: new(Training: new(1, 1, 12, 1, 2, 600)));
+overTraining.Dispatch("training_room_shortened_finish_time", arguments: new(EntityId: 1, TrainingMaterials: [new(12, 1, int.MaxValue)]));
+Check(overTraining.Dispatch("training_room_shortened_finish_time", arguments: new(EntityId: 1,
+    TrainingMaterials: [new(12, 1, 60)])).Status == 409, "elapsed training cannot consume more materials");
+Console.WriteLine("Passed 5 training reduction checks.");

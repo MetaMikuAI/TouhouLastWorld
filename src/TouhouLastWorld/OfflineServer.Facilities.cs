@@ -8,6 +8,44 @@ public sealed partial class OfflineServer
     public int LectureFoodExpansionRank => user["lecture_room"]!["food"]!["expansion_rank"]!.GetValue<int>();
     public int TrainingExpansionRank => user["training_room"]!["expansion_rank"]!.GetValue<int>();
 
+    private LocalReply ShortenTraining(LocalArguments? request)
+    {
+        var materials = request?.TrainingMaterials;
+        if (request?.EntityId is null or <= 0 || materials is null || materials.Length == 0
+            || materials.Any(entry => entry.ItemId <= 0 || entry.Count <= 0)
+            || materials.Select(entry => entry.ItemId).Distinct().Count() != materials.Length)
+            return new(400, null, "Distinct positive training materials required.");
+        if (materials.Any(entry => entry.Seconds <= 0)) return new(503, null, "Material duration unavailable.");
+        var updated = user.DeepClone().AsObject();
+        var room = updated["training_room"]!.AsObject();
+        var task = room["unit_list"]!.AsArray().FirstOrDefault(entry => entry!["user_unit_id"]!.GetValue<long>() == request.EntityId);
+        if (task is null) return new(404, null, "Training task not found.");
+        if (!DateTimeOffset.TryParse(task["training_finish_time"]?.GetValue<string>(),
+                System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var finish))
+            return new(409, null, "Invalid training finish time.");
+        var now = DateTimeOffset.UtcNow;
+        if (finish <= now) return new(409, null, "Training already elapsed.");
+        var inventory = updated["item"]!["item_list"]!.AsArray();
+        decimal seconds = 0;
+        foreach (var material in materials)
+        {
+            var item = inventory.FirstOrDefault(entry => entry!["item_id"]!.GetValue<int>() == material.ItemId);
+            if (item is null || item["num"]!.GetValue<int>() < material.Count)
+                return new(409, null, "Insufficient training materials.");
+            item["num"] = item["num"]!.GetValue<int>() - material.Count;
+            seconds += (decimal)material.Seconds * material.Count;
+        }
+        var reduced = seconds >= (decimal)(finish - now).TotalSeconds ? now : finish.AddSeconds(-(double)seconds);
+        var finishText = reduced.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+        task["training_finish_time"] = finishText;
+        Save(updated);
+        return new(0, new()
+        {
+            ["finish_time"] = finishText,
+            ["user_update"] = new JsonObject { ["training_room"] = room.DeepClone(), ["item"] = updated["item"]!.DeepClone() }
+        });
+    }
+
     private LocalReply StartTraining(LocalTrainingStart? request)
     {
         if (request is null || request.Capacity <= 0 || request.Seconds <= 0)
