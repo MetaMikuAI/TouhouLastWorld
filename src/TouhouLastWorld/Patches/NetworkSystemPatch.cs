@@ -4,6 +4,7 @@ using System.Globalization;
 
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using HarmonyLib;
+using Il2CppInterop.Runtime;
 
 using Applet;
 
@@ -738,7 +739,7 @@ public partial class NetworkSystemPatch
         {
             if (api == "tower_battle_start")
             {
-                var panel = UnityEngine.Object.FindObjectOfType<TowerFormationBehaviour>();
+                var panel = FindActivePanel<TowerFormationBehaviour>();
                 if (panel != null) panel.m_isPlayingBattleDo = false;
                 SceneSystem.This()?.IndicatorActive(false);
                 PentopSystem.This()?.EnableEvent();
@@ -749,11 +750,14 @@ public partial class NetworkSystemPatch
             {
                 if (api is "arena_battle_start" or "multiple_spirits_weekly_battle_start")
                 {
-                    var formation = UnityEngine.Object.FindObjectOfType<FormationBehaviour>();
+                    var formation = FindActivePanel<FormationBehaviour>();
                     if (formation != null) formation.m_isPlayingBattleDo = false;
                 }
-                var panel = UnityEngine.Object.FindObjectOfType<MissionBehavior>();
-                if ((api is "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward") && panel != null) panel.m_rcvflg = false;
+                if (api is "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward")
+                {
+                    var panel = FindActivePanel<MissionBehavior>();
+                    if (panel != null) panel.m_rcvflg = false;
+                }
                 SceneSystem.This()?.IndicatorActive(false);
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);
@@ -761,7 +765,7 @@ public partial class NetworkSystemPatch
             }
             if (api == "friend_get_history")
             {
-                var panel = UnityEngine.Object.FindObjectOfType<FriendPlayerDetailPanel>();
+                var panel = FindActivePanel<FriendPlayerDetailPanel>();
                 if (panel != null)
                 {
                     panel.m_friendBehavior?.ShowLRPanel();
@@ -796,6 +800,17 @@ public partial class NetworkSystemPatch
         network.m_recv.body = ResponseProtocol.Encode(api, reply.Body!.ToJsonString(), network.m_enckey);
         network.OnSuccessAPI(request, response, action);
         Log.Info($"Offline callback completed: {api}; loggedIn={AppLogin.IsLoggedIn()}");
+    }
+
+    private static T? FindActivePanel<T>() where T : UnityEngine.Component
+    {
+        foreach (var candidate in UnityEngine.Resources.FindObjectsOfTypeAll(Il2CppType.Of<T>()))
+        {
+            var panel = candidate.TryCast<T>();
+            if (panel != null && panel.gameObject.activeInHierarchy && panel.gameObject.scene.isLoaded)
+                return panel;
+        }
+        return null;
     }
 
     [HarmonyPatch(nameof(NetworkSystem.TransceiveRoutine), typeof(string), typeof(TextCallback))]
