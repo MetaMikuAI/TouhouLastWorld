@@ -21,10 +21,11 @@ public sealed partial class OfflineServer
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
-        or "friend/info" or "friend_delete" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
+        or "friend/info" or "friend_delete" or "friend_request_cancel" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "friend_request_cancel" => CancelContactRequest(arguments),
         "friend_delete" => DeleteContact(arguments?.Text),
         "reset_point_allocation" => ResetPoints(arguments?.PointReset),
         "allocate_points" => AllocatePoints(arguments?.PointAllocation),
@@ -118,6 +119,27 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply CancelContactRequest(LocalArguments? request)
+    {
+        if (request?.Value is not (0 or 1) || (request.Value == 0 && string.IsNullOrWhiteSpace(request.Text)))
+            return new(400, null, "Player ID and valid cancellation mode required.");
+        var updated = user.DeepClone().AsObject();
+        var incoming = updated["_local_friend_approval_pending"] as JsonArray;
+        var outgoing = updated["_local_friend_requests"] as JsonArray;
+        if (request.Value == 1)
+            incoming?.Clear();
+        else
+        {
+            var received = incoming?.FirstOrDefault(entry => entry?["player_id"]?.GetValue<string>() == request.Text);
+            var sent = outgoing?.FirstOrDefault(entry => entry?["player_id"]?.GetValue<string>() == request.Text);
+            if (received is null && sent is null) return new(0, new() { ["result"] = 1 });
+            if (received is not null) incoming!.Remove(received);
+            if (sent is not null) outgoing!.Remove(sent);
+        }
+        Save(updated);
+        return new(0, new() { ["result"] = 0 });
+    }
 
     private LocalReply DeleteContact(string? id)
     {
@@ -310,6 +332,8 @@ public sealed partial class OfflineServer
     {
         var body = QueryTemplates["friend_top"].DeepClone().AsObject();
         body["friend_list"] = user["_local_friend_players"]?.DeepClone() ?? new JsonArray();
+        body["friend_request_list"] = user["_local_friend_requests"]?.DeepClone() ?? new JsonArray();
+        body["friend_approval_pending_list"] = user["_local_friend_approval_pending"]?.DeepClone() ?? new JsonArray();
         body["helper_user_unit_id1"] = user["helper_user_unit_id1"]!.DeepClone();
         return new(0, body);
     }

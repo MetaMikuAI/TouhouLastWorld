@@ -1098,3 +1098,27 @@ Check(deleteContactReload.Dispatch("friend_top").Body!["friend_list"]!.AsArray()
 Check(deleteContactReload.Dispatch("friend/list").Body!["data"]!.AsArray().Count == 1,
     "old-schema deletion does not guess public ID equivalence");
 Console.WriteLine("Passed 4 contact deletion checks.");
+var cancelContactSeed = JsonNode.Parse(seed)!.AsObject();
+cancelContactSeed["_local_friend_approval_pending"] = new JsonArray(new JsonObject { ["player_id"] = "incoming" });
+cancelContactSeed["_local_friend_requests"] = new JsonArray(new JsonObject { ["player_id"] = "outgoing" });
+cancelContactSeed["_local_friend_players"] = new JsonArray(new JsonObject { ["player_id"] = "friend" });
+var cancelContactDirectory = directory + "-cancel-contact";
+var cancelContact = new OfflineServer(cancelContactDirectory, cancelContactSeed.ToJsonString(), "offline://resources/");
+cancelContact.Dispatch("game_init");
+cancelContact.Dispatch("login");
+Check(cancelContact.Dispatch("friend_request_cancel", arguments: new(Value: 2)).Status == 400
+    && cancelContact.Dispatch("friend_request_cancel", arguments: new(Value: 0, Text: "missing")).Body!["result"]!.GetValue<int>() == 1,
+    "request cancellation validates mode and reports missing targets");
+cancelContact.Dispatch("friend_request_cancel", arguments: new(Value: 1));
+var afterRejectAll = cancelContact.Dispatch("friend_top").Body!;
+Check(afterRejectAll["friend_approval_pending_list"]!.AsArray().Count == 0
+    && afterRejectAll["friend_request_list"]!.AsArray().Count == 1
+    && afterRejectAll["friend_list"]!.AsArray().Count == 1, "reject all preserves outgoing requests and existing contacts");
+Check(cancelContact.Dispatch("friend_request_cancel", arguments: new(Value: 0, Text: "outgoing")).Body!["result"]!.GetValue<int>() == 0,
+    "single outgoing request can be cancelled");
+var cancelContactReload = new OfflineServer(cancelContactDirectory, cancelContactSeed.ToJsonString(), "offline://resources/");
+cancelContactReload.Dispatch("game_init");
+cancelContactReload.Dispatch("login");
+Check(cancelContactReload.Dispatch("friend_top").Body!["friend_request_list"]!.AsArray().Count == 0,
+    "request cancellation persists after reload");
+Console.WriteLine("Passed 4 contact request cancellation checks.");

@@ -68,11 +68,11 @@
 | FriendPlayerSearchRequest | friend_player_search | 最小响应 | 本地无远端用户目录，返回未找到；不返回虚构资料 |
 | FriendRecommendRequest | friend/recommend | 最小响应 | 空推荐列表；不含匹配逻辑 |
 | FriendRefuseRequest | friend/refuse_apply | 业务实现 | 删除单条或全部本地申请并保存；列表与提示同步读取，不联系远端 |
-| FriendRequestCancelRequest | 未确认 | 未实现 | — |
+| FriendRequestCancelRequest | friend_request_cancel | 业务实现 | 按 player_id 取消本地申请，全部拒绝仅清空收到的申请；目标不存在时 result=1，不同步远端 |
 | FriendRequestRequest | 未确认 | 未实现 | — |
 | FriendSearchRequest | friend/search | 最小响应 | 本地无远端用户目录，返回客户端无匹配状态 2000 |
 | FriendSettingHelperRequest | friend_setting_helper | 业务实现 | 校验助战成员归属，保存选择及上报战力，总览同步回读；不重新计算战力 |
-| FriendTopRequest | friend_top | 最小响应 | 读取旧版本地关系与助战编号；申请和待确认列表为空，不同步远端 |
+| FriendTopRequest | friend_top | 最小响应 | 读取旧版本地关系、收发申请与助战编号；不生成远端数据 |
 | GachaDoRequest | gacha_do | 业务实现 | 仅固定本地池：扣费、入库、保存 |
 | GachaPointExchangeRequest | 未确认 | 未实现 | — |
 | GachaRetryFixRequest | 未确认 | 未实现 | — |
