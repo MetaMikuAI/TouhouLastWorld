@@ -11,9 +11,10 @@ public sealed record LocalReplayContent(int TargetId, int Level, string? Rules, 
 public sealed record LocalTeamUpdate(int Number, string? Name, long[]? Units, int Cost, long[]? EnhancedUnits, int CostWithFriend);
 public sealed record LocalHomeEntry(int UnitId, long UserUnitId, int CostumeId, int Motion, int Music);
 public sealed record LocalHomeUpdate(LocalHomeEntry[]? Units, int SelectedIndex, int RandomMode);
+public sealed record LocalEquipmentEntry(int Slot, long PictureId);
 public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null,
     LocalProfileUpdate? Profile = null, LocalReplayMeasure? ReplayMeasure = null, LocalReplayContent? ReplayContent = null,
-    LocalTeamUpdate? Team = null, LocalHomeUpdate? Home = null);
+    LocalTeamUpdate? Team = null, LocalHomeUpdate? Home = null, LocalEquipmentEntry[]? Equipment = null);
 
 public sealed partial class OfflineServer
 {

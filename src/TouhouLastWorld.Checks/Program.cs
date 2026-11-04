@@ -573,3 +573,27 @@ Check(equipmentUser["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id
     && equipmentUser["picture"]!["picture_list"]![0]!["equip_user_unit_id"]!.GetValue<long>() == 0,
     "both equipment references persist together");
 Console.WriteLine("Passed 6 equipment reset checks.");
+Check(equipmentReload.Dispatch("unit_equip_picture", arguments: new(1, Equipment: [new(0, 11)])).Status == 400,
+    "equipment slot bounds enforced");
+Check(equipmentReload.Dispatch("unit_equip_picture", arguments: new(1, Equipment: [new(1, 11), new(1, 0)])).Status == 400,
+    "duplicate equipment slot rejected");
+var equippedUpdate = equipmentReload.Dispatch("unit_equip_picture", arguments: new(1, Equipment: [new(1, 11)])).Body!["user_update"]!;
+Check(equippedUpdate["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"]!.GetValue<long>() == 11
+    && equippedUpdate["picture"]!["picture_list"]![0]!["equip_user_unit_id"]!.GetValue<long>() == 1,
+    "equipment assignment updates both references");
+Check(equipmentReload.Dispatch("unit_equip_picture", arguments: new(1, Equipment: [new(2, 11)])).Status == 409,
+    "same equipment cannot fill two slots");
+Check(equipmentReload.Dispatch("unit_equip_picture", arguments: new(1, Equipment: [new(1, 0), new(2, 999)])).Status == 404
+    && equipmentReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"]!.GetValue<long>() == 11,
+    "invalid batch leaves earlier assignments unchanged");
+Check(equipmentReload.Dispatch("unit_equip_picture", arguments: new(1, Equipment: [new(2, 12)])).Status == 409,
+    "equipment owned by another unit must be released");
+Check(equipmentReload.Dispatch("unit_equip_picture", arguments: new(1, Equipment: [new(1, 0), new(2, 11)])).Status == 0,
+    "equipment can move between slots in one batch");
+var equippedReload = new OfflineServer(equipmentDirectory, equipmentSeed.ToJsonString(), "offline://resources/");
+equippedReload.Dispatch("game_init");
+var equippedUser = equippedReload.Dispatch("login").Body!["user"]!;
+Check(equippedUser["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"]!.GetValue<long>() == 0
+    && equippedUser["unit"]!["unit_list"]![0]!["equip_spellcard2_user_picture_id"]!.GetValue<long>() == 11,
+    "equipment slot move persists");
+Console.WriteLine("Passed 8 equipment assignment checks.");

@@ -4,6 +4,48 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply SetEquipment(LocalArguments? request)
+    {
+        if (request?.EntityId is null or <= 0 || request.Equipment is null || request.Equipment.Length > 5
+            || request.Equipment.Any(entry => entry.Slot is < 1 or > 5 || entry.PictureId < 0)
+            || request.Equipment.Select(entry => entry.Slot).Distinct().Count() != request.Equipment.Length)
+            return new(400, null, "Invalid equipment slots.");
+        var updated = user.DeepClone().AsObject();
+        var units = updated["unit"]!["unit_list"]!.AsArray();
+        var unit = units.FirstOrDefault(entry => entry!["user_unit_id"]!.GetValue<long>() == request.EntityId);
+        if (unit is null) return new(404, null, "Owned unit not found.");
+        var pictures = updated["picture"]!["picture_list"]!.AsArray();
+        foreach (var change in request.Equipment)
+        {
+            if (change.PictureId > 0)
+            {
+                var picture = pictures.FirstOrDefault(entry => entry!["user_picture_id"]!.GetValue<long>() == change.PictureId);
+                if (picture is null) return new(404, null, "Owned equipment not found.");
+                var owner = picture["equip_user_unit_id"]?.GetValue<long>() ?? 0;
+                if ((owner != 0 && owner != request.EntityId) || units.Any(other => other != unit
+                    && Enumerable.Range(1, 5).Any(slot => other![$"equip_spellcard{slot}_user_picture_id"]?.GetValue<long>() == change.PictureId)))
+                    return new(409, null, "Equipment must be released from its current owner.");
+            }
+            unit[$"equip_spellcard{change.Slot}_user_picture_id"] = change.PictureId;
+        }
+        var equipped = Enumerable.Range(1, 5).Select(slot => unit[$"equip_spellcard{slot}_user_picture_id"]!.GetValue<long>())
+            .Where(id => id > 0).ToArray();
+        if (equipped.Distinct().Count() != equipped.Length) return new(409, null, "Equipment cannot occupy multiple slots.");
+        foreach (var picture in pictures)
+        {
+            if (equipped.Contains(picture!["user_picture_id"]!.GetValue<long>())) picture["equip_user_unit_id"] = request.EntityId.Value;
+            else if (picture["equip_user_unit_id"]?.GetValue<long>() == request.EntityId) picture["equip_user_unit_id"] = 0L;
+        }
+        Save(updated);
+        return new(0, new()
+        {
+            ["user_update"] = new JsonObject
+            {
+                ["unit"] = updated["unit"]!.DeepClone(), ["picture"] = updated["picture"]!.DeepClone()
+            }
+        });
+    }
+
     private LocalReply ResetEquipment(long? id)
     {
         if (id is null or <= 0) return new(400, null, "Positive unit ID required.");

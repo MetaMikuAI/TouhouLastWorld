@@ -45,6 +45,13 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<TrainingRoomCancelRequest>()?.slot_number);
         if (api == "unit_equip_picture_reset")
             arguments = new LocalArguments(EntityId: request.TryCast<UnitEquipPictureResetRequest>()?.user_unit_id);
+        if (api == "unit_equip_picture")
+        {
+            var update = request.TryCast<UnitEquipPictureRequest>();
+            arguments = update == null ? null : new LocalArguments(update.user_unit_id,
+                Equipment: update.picture_list?.ToArray().Select(entry => entry == null
+                    ? new LocalEquipmentEntry(0, 0) : new LocalEquipmentEntry(entry.spellcard_number, entry.user_picture_id)).ToArray());
+        }
         if (api == "lecture_room_unit_remove")
             arguments = new LocalArguments(EntityId: request.TryCast<LectureRoomUnitRemoveRequest>()?.user_unit_id);
         if (api == "lecture_room_unit_set")

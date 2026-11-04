@@ -15,7 +15,7 @@ public sealed partial class OfflineServer
         or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
         or "lecture_room_food_expansion" or "training_room_expansion" or "training_room_update"
-        or "training_room_cancel" or "unit_equip_picture_reset" || QueryTemplates.ContainsKey(api);
+        or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
@@ -30,6 +30,7 @@ public sealed partial class OfflineServer
         "training_room_expansion" => ExpandFacility(arguments, "training_room"),
         "training_room_cancel" => CancelTraining(arguments?.Value),
         "unit_equip_picture_reset" => ResetEquipment(arguments?.EntityId),
+        "unit_equip_picture" => SetEquipment(arguments),
         "training_room_update" => new(0, new()
         {
             ["user_update"] = new JsonObject { ["training_room"] = user["training_room"]!.DeepClone() }
