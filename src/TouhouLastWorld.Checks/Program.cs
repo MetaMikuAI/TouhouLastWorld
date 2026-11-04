@@ -726,3 +726,13 @@ Check(savedDecks["0"]!["deck_no"]!.GetValue<int>() == 0
 Check(savedDecks["1"]!["deck_no"]!.GetValue<int>() == 1 && savedDecks["2"]!["deck_list"]!.AsArray().Count == 0,
     "activation preserves source and other presets");
 Console.WriteLine("Passed 6 deck checks.");
+Check(deckReload.Dispatch("roguelite_top").Status == 503, "overview requires master capacity");
+var deckOverview = deckReload.Dispatch("roguelite_top", arguments: new(Value: 3)).Body!;
+Check(deckOverview["saved_decks"]!.AsArray().Select(entry => entry!["deck_no"]!.GetValue<int>()).SequenceEqual(new[] { 0, 1, 2, 3 })
+    && JsonNode.DeepEquals(deckOverview["saved_decks"]![1]!["deck_list"], new JsonArray(3, 2, 3)),
+    "overview fills numbered slots and retains saved preset");
+Check(deckOverview["progress"]!.GetValue<int>() == 0 && deckOverview["map_id"]!.GetValue<int>() == 0
+    && deckOverview["play_details"]!.GetValue<string>() == "", "overview does not fabricate active progress");
+Check(deckReload.Dispatch("roguelite_deck_call", arguments: new(Value: 3)).Status == 0,
+    "initialized empty preset can be activated");
+Console.WriteLine("Passed 4 deck overview checks.");

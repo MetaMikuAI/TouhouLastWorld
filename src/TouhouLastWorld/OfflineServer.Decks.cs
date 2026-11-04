@@ -4,6 +4,34 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply DeckOverview(int? maxNumber)
+    {
+        if (maxNumber is null or <= 0 or int.MaxValue)
+            return new(503, null, "Deck capacity unavailable.");
+        var updated = user.DeepClone().AsObject();
+        var decks = updated["_local_saved_decks"] as JsonObject ?? new JsonObject();
+        if (decks.Parent is null) updated["_local_saved_decks"] = decks;
+        var saved = new JsonArray();
+        var changed = false;
+        for (var number = 0; number <= maxNumber.Value; number++)
+        {
+            var key = number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (decks[key] is null)
+            {
+                decks[key] = new JsonObject { ["deck_no"] = number, ["deck_name"] = "", ["deck_list"] = new JsonArray() };
+                changed = true;
+            }
+            saved.Add(decks[key]!.DeepClone());
+        }
+        if (changed) Save(updated);
+        return new(0, new()
+        {
+            ["progress"] = 0, ["path_list"] = new JsonArray(), ["saved_decks"] = saved,
+            ["map_id"] = 0, ["map_buff_id"] = 0, ["selected_seal_id_list"] = new JsonArray(),
+            ["drawn_seals"] = new JsonArray(), ["play_details"] = "", ["remaining_rerolls"] = 0, ["remaining_draws"] = 0
+        });
+    }
+
     private LocalReply CallDeck(int? number)
     {
         if (number is null or < 0) return new(400, null, "Nonnegative deck number required.");

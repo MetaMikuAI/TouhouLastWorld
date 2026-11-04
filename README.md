@@ -158,12 +158,12 @@
 | RogueLiteBattleEndRequest | 未确认 | 未实现 | — |
 | RogueLiteBattleStartRequest | 未确认 | 未实现 | — |
 | RogueliteDeckCallRequest | roguelite_deck_call | 业务实现 | 将已保存预设复制到当前配置并持久化；不存在的编号返回错误，不改变其他预设 |
-| RogueliteDeckSaveRequest | roguelite_deck_save | 业务实现 | 保存编号、名称和有序条目，同时更新当前配置；可保存空配置，暂不校验容量、持有数量或条目主数据；入口读取待实现 |
+| RogueliteDeckSaveRequest | roguelite_deck_save | 业务实现 | 保存编号、名称和有序条目，同时更新当前配置；可保存空配置，暂不校验容量、持有数量或条目主数据 |
 | RogueLiteEventEndRequest | 未确认 | 未实现 | — |
 | RogueLiteMapEndRequest | 未确认 | 未实现 | — |
 | RogueLiteMapStartRequest | 未确认 | 未实现 | — |
 | RogueLiteRerollRequest | 未确认 | 未实现 | — |
-| RogueLiteTopRequest | 未确认 | 未实现 | — |
+| RogueLiteTopRequest | roguelite_top | 最小响应 | 返回已保存预设并按主数据补齐空槽；地图未开始、详情为空、抽取额度为零，不生成关卡或奖励 |
 | SeriesBattleEndRequest | 未确认 | 未实现 | — |
 | SeriesBattleGetReplayInfoRequest | get_series_battle_replay_info | 业务实现 | 按关卡及 1–5 分区读取重放；未请求或无记录的字段为空 |
 | SeriesBattleRankingEndRequest | 未确认 | 未实现 | — |

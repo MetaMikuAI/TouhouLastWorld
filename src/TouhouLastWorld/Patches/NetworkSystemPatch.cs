@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "roguelite_top")
+            arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.MAX_DECK_NO);
         if (api == "roguelite_deck_call")
             arguments = new LocalArguments(Value: request.TryCast<RogueliteDeckCallRequest>()?.deck_no);
         if (api == "roguelite_deck_save")
