@@ -2288,3 +2288,24 @@ Check(activeReplayServer.Dispatch("auto_replay_start", arguments: new(Value: 10,
     && activeReplayServer.Dispatch("login").Body!["user"]!["auto_replay"]!["target_id"]!.GetValue<long>() == 1,
     "background replay does not overwrite an existing task");
 Console.WriteLine("Passed 3 background replay boundary checks.");
+
+var exchangeSeed = JsonNode.Parse(seed)!;
+exchangeSeed["item"]!["item_list"] = new JsonArray(new JsonObject { ["item_id"] = 71, ["num"] = 10 });
+var exchangeDirectory = directory + "-item-exchange";
+var exchangeServer = new OfflineServer(exchangeDirectory, exchangeSeed.ToJsonString(), "offline://resources/");
+exchangeServer.Dispatch("game_init");
+exchangeServer.Dispatch("login");
+var exchangeRule = new LocalItemExchange(1, 71, 3, 72, 100);
+Check(exchangeServer.Dispatch("item_exchange", arguments: new(1, 4, ItemExchange: exchangeRule)).Status == 409
+    && exchangeServer.Dispatch("item_exchange", arguments: new(1, 2, ItemExchange: exchangeRule with { Capacity = 1 })).Status == 409,
+    "item exchange checks both cost and capacity before saving");
+var exchangeReply = exchangeServer.Dispatch("item_exchange", arguments: new(1, 2, ItemExchange: exchangeRule)).Body!["user_update"]!["item"]!["item_list"]!;
+Check(exchangeReply[0]!["num"]!.GetValue<int>() == 4 && exchangeReply[1]!["num"]!.GetValue<int>() == 2,
+    "item exchange deducts multiplied cost and creates target inventory");
+var exchangeReload = new OfflineServer(exchangeDirectory, seed, "offline://resources/");
+exchangeReload.Dispatch("game_init");
+exchangeReload.Dispatch("login");
+Check(exchangeReload.Dispatch("item_exchange", arguments: new(1, int.MaxValue, ItemExchange: exchangeRule)).Status == 409
+    && exchangeReload.Dispatch("item_exchange", arguments: new(1, 1, ItemExchange: exchangeRule)).Body!["user_update"]!["item"]!["item_list"]![1]!["num"]!.GetValue<int>() == 3,
+    "item exchange persists, handles large quantities and accumulates existing target");
+Console.WriteLine("Passed 3 item exchange checks.");

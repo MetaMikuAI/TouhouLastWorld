@@ -35,6 +35,17 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "item_exchange")
+        {
+            var change = request.TryCast<ItemExchangeRequest>();
+            var master = MasterDB.This();
+            var row = change == null ? null : master?.ItemExchange?.ToList()?.ToArray().FirstOrDefault(entry => entry.id == change.item_exchange_id);
+            var source = row == null ? null : master?.Item?.Find(row.consume_item_id);
+            var target = row == null ? null : master?.Item?.Find(row.exchange_item_id);
+            arguments = new LocalArguments(change?.item_exchange_id, change?.exchange_count);
+            if (row != null && source != null && target != null && source.type == row.item_type && row.exchange_count == 1 && master?.Setting != null)
+                arguments = arguments with { ItemExchange = new(row.id, row.consume_item_id, row.consume_count, row.exchange_item_id, master.Setting.ITEM_MAX) };
+        }
         if (api == "auto_replay_start")
         {
             var change = request.TryCast<AutoReplayStartRequest>();

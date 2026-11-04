@@ -106,7 +106,7 @@
 | IdleSearchReceiveDropRequest | afk_receive_drop | 最小响应 | 仅空掉落响应；已有待领奖励返回 503，不生成、发放或清除奖励 |
 | IdleSearchSetRequest | afk_set | 业务实现 | 按主数据时长和成长限制保存、取消槽位；校验归属与占用；不结算成长或奖励 |
 | IdleSearchTopRequest | afk_top | 最小响应 | 返回已存槽位与阶段；无阶段推进或奖励 |
-| ItemExchangeRequest | 未确认 | 未实现 | — |
+| ItemExchangeRequest | item_exchange | 业务实现 | 普通物品按配置比例扣料、增加库存并保存；校验容量；其他类型及非单件产出配置尚不支持 |
 | LectureRoomFoodAdditionRequest | lecture_room_food_addition | 业务实现 | 按主数据价格扣除体力与货币，增加物品库存并统一保存；货币优先使用免费余额，不自动投放或结算成长 |
 | LectureRoomFoodDistributionRequest | lecture_room_food_distribution | 业务实现 | 扣库存、增加储量并保存分钟级效果期限；本地规则为储量截至容量、同类效果续时；暂不结算投放前的时间消耗与成长 |
 | LectureRoomFoodExpansionRequest | lecture_room_food_expansion | 业务实现 | 按下一级主数据费用更新食物容量等级；优先扣免费余额，不赠送或消耗食物 |
