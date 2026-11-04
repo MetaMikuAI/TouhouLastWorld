@@ -41,6 +41,8 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
         if (api == "home_select_unit_update")
             arguments = new LocalArguments(Value: request.TryCast<HomeCustomSelectUnitUpdateRequest>()?.select_unit_index);
+        if (api == "home_bgm_update")
+            arguments = new LocalArguments(Value: request.TryCast<HomeBGMUpdateRequest>()?.select_bgm_id);
         if (api == "friend_setting_helper")
         {
             var update = request.TryCast<FriendSettingHelperRequest>();
