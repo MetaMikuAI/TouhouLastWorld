@@ -54,7 +54,7 @@
 | FirstGachaDrawRequest | 未确认 | 未实现 | — |
 | FirstGachaSaveRequest | 未确认 | 未实现 | — |
 | FriendAcceptRequest | 未确认 | 未实现 | — |
-| FriendApplyListRequest | 未确认 | 未实现 | — |
+| FriendApplyListRequest | friend/apply_list | 最小响应 | 空申请列表；不含申请处理 |
 | FriendApplyRequest | 未确认 | 未实现 | — |
 | FriendApproveRequest | 未确认 | 未实现 | — |
 | FriendDeleteRequest | 未确认 | 未实现 | — |
