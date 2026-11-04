@@ -430,3 +430,27 @@ Check(voiceReload.Dispatch("transcribe_kpi", arguments: new(Value: 1)).Status ==
 Check(voiceReload.Dispatch("transcribe_kpi", arguments: new(Value: 3)).Status == 400, "unknown telemetry event rejected");
 Check(JsonNode.DeepEquals(beforeTelemetry, voiceReload.Dispatch("login").Body!["user"]), "telemetry does not mutate user state");
 Console.WriteLine("Passed 8 voice and telemetry checks.");
+var facilitySeed = JsonNode.Parse(seed)!.AsObject();
+facilitySeed["unit"]!["unit_list"]![0]!["is_lecture"] = 1;
+facilitySeed["lecture_room"]!["unit"]!["unit_list"]!.AsArray().Add(
+    new JsonObject { ["user_unit_id"] = 1L, ["put_trust_up_icon"] = 0 });
+var facilityDirectory = directory + "-facilities";
+var facilities = new OfflineServer(facilityDirectory, facilitySeed.ToJsonString(), "offline://resources/");
+facilities.Dispatch("game_init");
+facilities.Dispatch("login");
+Check(facilities.Dispatch("lecture_room_unit_remove", arguments: new(EntityId: 0)).Status == 400, "invalid facility member rejected");
+Check(facilities.Dispatch("lecture_room_unit_remove", arguments: new(EntityId: 999)).Status == 404, "facility removal requires owned unit");
+var snapshot = facilities.Dispatch("lecture_room_update").Body!;
+Check(snapshot["user_update"]!["lecture_room"]!["unit"]!["unit_list"]!.AsArray().Count == 1
+    && snapshot["spend_info"]!["exp"]!.GetValue<int>() == 0, "facility snapshot preserves members without fabricated earnings");
+var removed = facilities.Dispatch("lecture_room_unit_remove", arguments: new(EntityId: 1)).Body!["user_update"]!;
+Check(removed["lecture_room"]!["unit"]!["unit_list"]!.AsArray().Count == 0
+    && removed["unit"]!["unit_list"]![0]!["is_lecture"]!.GetValue<int>() == 0, "facility removal clears membership and flag");
+Check(facilities.Dispatch("lecture_room_unit_remove", arguments: new(EntityId: 1)).Status == 0, "facility removal is idempotent");
+var facilityReload = new OfflineServer(facilityDirectory, facilitySeed.ToJsonString(), "offline://resources/");
+facilityReload.Dispatch("game_init");
+var facilityUser = facilityReload.Dispatch("login").Body!["user"]!;
+Check(facilityUser["lecture_room"]!["unit"]!["unit_list"]!.AsArray().Count == 0
+    && facilityUser["unit"]!["unit_list"]![0]!["is_lecture"]!.GetValue<int>() == 0, "facility removal persists");
+Check(JsonNode.DeepEquals(facilitySeed["lecture_room"]!["food"], facilityUser["lecture_room"]!["food"]), "removal preserves food state");
+Console.WriteLine("Passed 7 facility checks.");
