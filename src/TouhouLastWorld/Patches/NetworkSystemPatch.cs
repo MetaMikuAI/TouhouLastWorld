@@ -52,6 +52,9 @@ public partial class NetworkSystemPatch
         }
         if (api == "weekly_arena_battle_score_reset")
             arguments = new LocalArguments(Value: request.TryCast<WeeklyArenaBattleScoreResetRequest>()?.battle_number);
+        if (api == "friend_request")
+            arguments = new LocalArguments(EntityId: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX,
+                Value: MasterDB.This()?.Setting?.REQUEST_COUNT_MAX, Text: request.TryCast<FriendRequestRequest>()?.request_player_id);
         if (api == "friend_approve")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX,
                 Text: request.TryCast<FriendApproveRequest>()?.approve_player_id);

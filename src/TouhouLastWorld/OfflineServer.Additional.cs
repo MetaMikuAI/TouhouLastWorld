@@ -21,7 +21,7 @@ public sealed partial class OfflineServer
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
-        or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_approve" or "reset_point_allocation" or "allocate_points"
+        or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_request" or "friend_approve" or "reset_point_allocation" or "allocate_points"
         or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
@@ -30,6 +30,8 @@ public sealed partial class OfflineServer
         "daily_arena_top" => DailyOverview(),
         "weekly_arena_top" => WeeklyOverview(),
         "weekly_arena_battle_score_reset" => ResetWeeklyScore(arguments?.Value),
+        "friend_request" => SendContactRequest(arguments),
+        "friend_get_candidate_list" => new(0, new() { ["helper_list"] = user["_local_friend_candidates"]?.DeepClone() ?? new JsonArray() }),
         "friend_approve" => ApproveContactRequest(arguments),
         "friend_request_cancel" => CancelContactRequest(arguments),
         "friend_delete" => DeleteContact(arguments?.Text),
@@ -189,6 +191,28 @@ public sealed partial class OfflineServer
         battle["user_unit_list"] = new JsonArray();
         Save(updated);
         return new(0, new());
+    }
+
+    private LocalReply SendContactRequest(LocalArguments? request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Text)) return new(400, null, "Player ID required.");
+        if (request.Value is null or <= 0 || request.EntityId is null or <= 0)
+            return new(503, null, "Contact and request capacities unavailable.");
+        var updated = user.DeepClone().AsObject();
+        var outgoing = updated["_local_friend_requests"] as JsonArray ?? new JsonArray();
+        var friends = updated["_local_friend_players"] as JsonArray ?? new JsonArray();
+        var candidate = (updated["_local_friend_candidates"] as JsonArray)?
+            .FirstOrDefault(entry => entry?["player_id"]?.GetValue<string>() == request.Text);
+        if (friends.Count >= request.EntityId)
+            return new(0, new() { ["result"] = 4, ["friend_request_list"] = outgoing.DeepClone() });
+        if (candidate is null || outgoing.Count >= request.Value
+            || outgoing.Any(entry => entry?["player_id"]?.GetValue<string>() == request.Text)
+            || friends.Any(entry => entry?["player_id"]?.GetValue<string>() == request.Text))
+            return new(0, new() { ["result"] = 1, ["friend_request_list"] = outgoing.DeepClone() });
+        outgoing.Add(candidate.DeepClone());
+        if (outgoing.Parent is null) updated["_local_friend_requests"] = outgoing;
+        Save(updated);
+        return new(0, new() { ["result"] = 0, ["friend_request_list"] = outgoing.DeepClone() });
     }
 
     private LocalReply ApproveContactRequest(LocalArguments? request)

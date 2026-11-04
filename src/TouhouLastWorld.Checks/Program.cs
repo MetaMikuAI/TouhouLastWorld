@@ -1255,3 +1255,28 @@ eventSnapshot["event_total_point_reward"]![0]!["total_point"] = 0;
 Check(eventOverview.Dispatch("event_top").Body!["event_total_point_reward"]![0]!["total_point"]!.GetValue<int>() == 100,
     "event overview returns an isolated snapshot");
 Console.WriteLine("Passed 3 event overview checks.");
+var sendContactSeed = JsonNode.Parse(seed)!.AsObject();
+sendContactSeed["_local_friend_candidates"] = new JsonArray(new JsonObject { ["player_id"] = "candidate-a", ["player_name"] = "Local A" },
+    new JsonObject { ["player_id"] = "candidate-b", ["player_name"] = "Local B" });
+var sendContactDirectory = directory + "-send-contact";
+var sendContact = new OfflineServer(sendContactDirectory, sendContactSeed.ToJsonString(), "offline://resources/");
+sendContact.Dispatch("game_init");
+sendContact.Dispatch("login");
+Check(sendContact.Dispatch("friend_get_candidate_list").Body!["helper_list"]!.AsArray().Count == 2
+    && sendContact.Dispatch("friend_request", arguments: new(EntityId: 2, Value: 1, Text: "missing")).Body!["result"]!.GetValue<int>() == 1,
+    "contact requests only target stored candidates");
+var sentContact = sendContact.Dispatch("friend_request", arguments: new(EntityId: 2, Value: 1, Text: "candidate-a")).Body!;
+Check(sentContact["result"]!.GetValue<int>() == 0 && sentContact["friend_request_list"]![0]!["player_name"]!.GetValue<string>() == "Local A",
+    "contact request persists candidate details");
+Check(sendContact.Dispatch("friend_request", arguments: new(EntityId: 2, Value: 2, Text: "candidate-a")).Body!["result"]!.GetValue<int>() == 1
+    && sendContact.Dispatch("friend_request", arguments: new(EntityId: 2, Value: 1, Text: "candidate-b")).Body!["result"]!.GetValue<int>() == 1,
+    "duplicate and over-capacity requests are rejected");
+var sendContactReload = new OfflineServer(sendContactDirectory, sendContactSeed.ToJsonString(), "offline://resources/");
+sendContactReload.Dispatch("game_init");
+sendContactReload.Dispatch("login");
+Check(sendContactReload.Dispatch("friend_top").Body!["friend_request_list"]!.AsArray().Count == 1,
+    "outgoing request survives reload");
+sendContactReload.Dispatch("friend_request_cancel", arguments: new(Value: 0, Text: "candidate-a"));
+Check(sendContactReload.Dispatch("friend_request", arguments: new(EntityId: 2, Value: 1, Text: "candidate-b")).Body!["result"]!.GetValue<int>() == 0,
+    "cancellation releases local request capacity");
+Console.WriteLine("Passed 5 outgoing contact request checks.");

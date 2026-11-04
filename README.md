@@ -58,7 +58,7 @@
 | FriendApplyRequest | 未确认 | 未实现 | — |
 | FriendApproveRequest | friend_approve | 业务实现 | 按 player_id 接受本地申请并保存关系；校验容量、重复和申请存在性，失败 result=1；不校验远端状态 |
 | FriendDeleteRequest | friend_delete | 业务实现 | 按 player_id 删除旧版本地关系并返回剩余列表；不存在时 result=1，不同步远端或新版 public_id 关系 |
-| FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 空候选列表；不含候选匹配 |
+| FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 读取本地候选列表，默认空；不含候选匹配或远端查询 |
 | FriendGetHelperDetailRequest | 未确认 | 未实现 | — |
 | FriendGetHistoryRequest | 未确认 | 未实现 | — |
 | FriendGetRequest | 未确认 | 未实现 | — |
@@ -69,7 +69,7 @@
 | FriendRecommendRequest | friend/recommend | 最小响应 | 空推荐列表；不含匹配逻辑 |
 | FriendRefuseRequest | friend/refuse_apply | 业务实现 | 删除单条或全部本地申请并保存；列表与提示同步读取，不联系远端 |
 | FriendRequestCancelRequest | friend_request_cancel | 业务实现 | 按 player_id 取消本地申请，全部拒绝仅清空收到的申请；目标不存在时 result=1，不同步远端 |
-| FriendRequestRequest | 未确认 | 未实现 | — |
+| FriendRequestRequest | friend_request | 业务实现 | 向本地候选玩家发出申请并持久化；校验申请与关系容量、重复和已有关系，不发送远端请求或校验对方容量 |
 | FriendSearchRequest | friend/search | 最小响应 | 本地无远端用户目录，返回客户端无匹配状态 2000 |
 | FriendSettingHelperRequest | friend_setting_helper | 业务实现 | 校验助战成员归属，保存选择及上报战力，总览同步回读；不重新计算战力 |
 | FriendTopRequest | friend_top | 最小响应 | 读取旧版本地关系、收发申请与助战编号；不生成远端数据 |
