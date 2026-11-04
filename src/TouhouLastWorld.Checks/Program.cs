@@ -240,3 +240,37 @@ Check(flags.Dispatch("update_profile_setting2", arguments: new(Text: "bad\ntext"
 Check(flags.Dispatch("update_profile_setting2").Body!["text_value"]!.GetValue<int>() != 0, "layout comment requires input");
 Check(flags.Dispatch("get_profile_setting").Body!["profile_setting"]!.GetValue<string>() == layoutText, "text check does not save layout");
 Console.WriteLine("Passed 13 layout checks.");
+Check(flags.Dispatch("get_auto_replay_info").Status == 400, "measurement query requires target");
+Check(flags.Dispatch("update_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0, -1, 1))).Status == 400,
+    "negative measurement rejected");
+Check(flags.Dispatch("update_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0, 120, 5))).Status == 0,
+    "win measurement preserves counts above 100");
+Check(flags.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 1))).Body!["win_rate"]!.GetValue<int>() == 0,
+    "measurement difficulty isolation");
+var measure = flags.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0))).Body!;
+Check(measure["win_rate"]!.GetValue<int>() == 120 && measure["action_num"]!.GetValue<int>() == 5, "measurement round trip");
+measure["win_rate"] = 0;
+Check(flags.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0))).Body!["win_rate"]!.GetValue<int>() == 120,
+    "measurement response isolation");
+const string readReplay = "get_multiple_spirits_weekly_replay_info";
+const string writeReplay = "update_multiple_spirits_weekly_replay_info";
+Check(flags.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!["replay_info"]!.GetValue<string>() == "", "absent replay is empty");
+Check(flags.Dispatch(writeReplay, arguments: new(ReplayContent: new(1, 10, "", null))).Status == 400, "missing replay content rejected");
+Check(flags.Dispatch(writeReplay, arguments: new(ReplayContent: new(1, 10, "rules", "opaque-content"))).Status == 0,
+    "replay content saved without reinterpretation");
+Check(flags.Dispatch(readReplay, arguments: new(EntityId: 2)).Body!["replay_info"]!.GetValue<string>() == "", "replay target isolation");
+var replayReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+replayReload.Dispatch("game_init");
+replayReload.Dispatch("login");
+var replayBody = replayReload.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!;
+Check(replayBody["replay_info"]!.GetValue<string>() == "opaque-content" && replayBody["level"]!.GetValue<int>() == 10
+    && replayBody["add_rules"]!.GetValue<string>() == "rules", "replay persists across restart");
+Check(replayReload.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0))).Body!["win_rate"]!.GetValue<int>() == 120,
+    "measurement persists across restart");
+Check(replayReload.Dispatch(writeReplay, arguments: new(ReplayContent: new(1, 10, "", ""))).Status == 0
+    && replayReload.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!["replay_info"]!.GetValue<string>() == "", "empty replay clears record");
+var clearedReplay = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+clearedReplay.Dispatch("game_init");
+clearedReplay.Dispatch("login");
+Check(clearedReplay.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!["replay_info"]!.GetValue<string>() == "", "replay deletion persists");
+Console.WriteLine("Passed 14 replay checks.");
