@@ -2162,3 +2162,35 @@ Check(protectedPictureServer.Dispatch("picture_potential_limitbreak", arguments:
     && protectedPictureServer.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 3,
     "protected material prevents all consumption");
 Console.WriteLine("Passed 4 equipment limit break checks.");
+
+pictureBreakSeed["picture"]!["picture_list"]![1]!["spec_actualize"] = 0;
+pictureBreakSeed["picture"]!["picture_list"]![2]!["spec_actualize"] = 0;
+pictureBreakSeed["picture"]!["picture_list"]![2]!["is_protection"] = 0;
+var pictureRecycleDirectory = directory + "-picture-recycle";
+var pictureRecycleServer = new OfflineServer(pictureRecycleDirectory, pictureBreakSeed.ToJsonString(), "offline://resources/");
+pictureRecycleServer.Dispatch("game_init");
+pictureRecycleServer.Dispatch("login");
+var pictureRecycleRule = new LocalPictureRecycle(
+    [new(701, 71, 0, 1, [new(3, 0, 100), new(12, 72, 3)]), new(702, 71, 0, 0, [new(3, 0, 200), new(5, 0, 5)])],
+    10000, 10000, 9999);
+Check(pictureRecycleServer.Dispatch("picture_recycle", arguments: new(Ids: [701, 702], PictureRecycle: pictureRecycleRule with { GoldMax = 5100 })).Status == 409
+    && pictureRecycleServer.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 3,
+    "recycle capacity failure preserves all equipment");
+Check(pictureRecycleServer.Dispatch("picture_recycle", arguments: new(Ids: [701, 702], PictureRecycle: pictureRecycleRule with
+    { Entries = [pictureRecycleRule.Entries[0], pictureRecycleRule.Entries[1] with { Gains = [new(10, 99, 1)] }] })).Status == 503,
+    "recycle rejects unsupported rewards before consuming equipment");
+var pictureRecycled = pictureRecycleServer.Dispatch("picture_recycle", arguments: new(Ids: [701, 702], PictureRecycle: pictureRecycleRule)).Body!;
+Check(pictureRecycled["gain_object_list"]!.AsArray().Count == 3
+    && pictureRecycled["gain_object_list"]![0]!["value"]!.GetValue<int>() == 300
+    && pictureRecycled["remove_user_picture_id_list"]!.AsArray().Count == 2
+    && pictureRecycled["user_update"]!["gold"]!.GetValue<int>() == 5300
+    && pictureRecycled["user_update"]!["item"]!["item_list"]!.AsArray().Any(item => item!["item_id"]!.GetValue<int>() == 72 && item["num"]!.GetValue<int>() == 3)
+    && pictureRecycled["user_update"]!["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"]!.GetValue<long>() == 0,
+    "recycle aggregates rewards, removes equipment and clears assignment");
+var pictureRecycleReload = new OfflineServer(pictureRecycleDirectory, seed, "offline://resources/");
+pictureRecycleReload.Dispatch("game_init");
+pictureRecycleReload.Dispatch("login");
+Check(pictureRecycleReload.Dispatch("picture_recycle", arguments: new(Ids: [701, 702], PictureRecycle: pictureRecycleRule)).Status == 404
+    && pictureRecycleReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5300,
+    "recycle persists and does not repeat rewards");
+Console.WriteLine("Passed 4 equipment recycle checks.");

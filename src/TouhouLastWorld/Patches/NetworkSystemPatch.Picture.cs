@@ -2,6 +2,36 @@ namespace TouhouLastWorld.Patches;
 
 public partial class NetworkSystemPatch
 {
+    private static LocalArguments? ReadPictureRecycle(PictureRecycleRequest? request)
+    {
+        if (request == null) return null;
+        var ids = request.user_picture_id_list?.ToArray();
+        var result = new LocalArguments(Ids: ids);
+        var master = MasterDB.This();
+        var setting = master?.Setting;
+        if (ids is not { Length: > 0 } || setting == null || master?.PictureRecycle == null) return result;
+        var entries = new List<LocalPictureRecycleEntry>();
+        foreach (var id in ids)
+        {
+            var picture = User.This()?.picture?.Find(id);
+            if (picture == null) return result;
+            var status = new PictureStatus(picture.picture_id);
+            status.Update(picture);
+            var row = master.PictureRecycle.Find(status.GetRecycleId(), picture.spec_actualize, picture.potential_limitbreak);
+            if (row == null) return result;
+            LocalRecycleGain[] gains =
+            [
+                new(3, 0, row.gold), new(2, 0, row.phantasm_point), new(5, 0, row.piece),
+                new(row.object1_type, row.object1_id, row.object1_value),
+                new(row.object2_type, row.object2_id, row.object2_value),
+                new(row.object3_type, row.object3_id, row.object3_value)
+            ];
+            if (gains.Any(gain => gain.Type == 12 && gain.Value > 0 && master.Item?.Find(gain.Id) == null)) return result;
+            entries.Add(new(id, picture.picture_id, picture.spec_actualize, picture.potential_limitbreak, gains));
+        }
+        return result with { PictureRecycle = new(entries.ToArray(), setting.GOLD_MAX, setting.PHANTASM_POINT_MAX, setting.ITEM_MAX) };
+    }
+
     private static LocalArguments? ReadPictureLimitBreak(PicturePotentialLimitbreakRequest? request)
     {
         if (request == null) return null;
