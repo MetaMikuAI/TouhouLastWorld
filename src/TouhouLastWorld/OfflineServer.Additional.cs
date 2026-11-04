@@ -16,11 +16,13 @@ public sealed partial class OfflineServer
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
         or "lecture_room_food_expansion" or "training_room_expansion" or "training_room_update"
         or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture"
-        or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" || QueryTemplates.ContainsKey(api);
+        or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "rhythm_game_start" => StartRhythm(arguments),
+        "rhythm_game_end" => EndRhythm(arguments?.Rhythm),
+        "rhythm_game_top" => new(0, new() { ["clear_info"] = user["_local_rhythm_scores"]?.DeepClone() ?? new JsonArray() }),
         "tutorial_update" => UpdateProgress(arguments?.Value),
         "read_unit_talk" => MarkTalkRead(arguments?.Value),
         "mail_delete" => DeleteReadMail(),

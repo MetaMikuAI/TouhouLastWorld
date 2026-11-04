@@ -655,3 +655,33 @@ Check(new[] { "normal_received_reward_level", "premium_received_reward_level_1",
     .All(field => passOverview[field]!.GetValue<int>() == 0), "no pass reward levels fabricated");
 Check(dispatchReload.Dispatch("rhythm_game_top").Body!["clear_info"]!.AsArray().Count == 0, "score overview starts empty");
 Console.WriteLine("Passed 3 overview query checks.");
+var rhythmDirectory = directory + "-rhythm";
+var rhythm = new OfflineServer(rhythmDirectory, seed, "offline://resources/");
+rhythm.Dispatch("game_init");
+rhythm.Dispatch("login");
+Check(rhythm.Dispatch("rhythm_game_start", arguments: new(1, 0)).Status == 404, "missing music definition rejected");
+Check(rhythm.Dispatch("rhythm_game_end", arguments: new(Rhythm: new(1, 2, 100, 90, 2))).Status == 409,
+    "result without start rejected");
+Check(rhythm.Dispatch("rhythm_game_start", arguments: new(1, 1)).Status == 0, "known music starts");
+Check(rhythm.Dispatch("rhythm_game_end", arguments: new(Rhythm: new(1, 0, 100, 90, 2))).Status == 400
+    && rhythm.Dispatch("rhythm_game_end", arguments: new(Rhythm: new(1, 2, 100, float.NaN, 2))).Status == 400,
+    "invalid wire difficulty and nonfinite rate rejected");
+var rhythmEnded = rhythm.Dispatch("rhythm_game_end", arguments: new(Rhythm: new(1, 2, 100, 90, 2)));
+Check(rhythmEnded.Status == 0 && rhythmEnded.Body!["reward_list"]!.AsArray().Count == 0
+    && rhythmEnded.Body["remaining_phantasm_point"]!.GetValue<int>() == 0, "result persists without reward allocation");
+Check(rhythm.Dispatch("rhythm_game_end", arguments: new(Rhythm: new(1, 2, 200, 95, 3))).Status == 409,
+    "duplicate completion rejected");
+rhythm.Dispatch("rhythm_game_start", arguments: new(1, 1));
+rhythm.Dispatch("rhythm_game_end", arguments: new(Rhythm: new(1, 2, 50, 95, 1)));
+rhythm.Dispatch("rhythm_game_start", arguments: new(1, 1));
+rhythm.Dispatch("rhythm_game_end", arguments: new(Rhythm: new(1, 3, 20, 50, 1)));
+var rhythmReload = new OfflineServer(rhythmDirectory, seed, "offline://resources/");
+rhythmReload.Dispatch("game_init");
+var rhythmUser = rhythmReload.Dispatch("login").Body!["user"]!;
+var savedScores = rhythmReload.Dispatch("rhythm_game_top").Body!["clear_info"]!.AsArray();
+Check(savedScores.Count == 2 && savedScores[0]!["highest_score"]!.GetValue<int>() == 100
+    && savedScores[0]!["highest_rate"]!.GetValue<float>() == 95 && savedScores[0]!["rank"]!.GetValue<int>() == 2,
+    "independent best values persist by difficulty");
+Check(JsonNode.DeepEquals(rhythmUser["phantasm_point"], JsonNode.Parse(seed)!["phantasm_point"]),
+    "rhythm completion preserves held points");
+Console.WriteLine("Passed 8 rhythm checks.");

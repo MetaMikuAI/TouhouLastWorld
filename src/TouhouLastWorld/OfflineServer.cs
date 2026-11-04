@@ -13,10 +13,11 @@ public sealed record LocalHomeEntry(int UnitId, long UserUnitId, int CostumeId, 
 public sealed record LocalHomeUpdate(LocalHomeEntry[]? Units, int SelectedIndex, int RandomMode);
 public sealed record LocalEquipmentEntry(int Slot, long PictureId);
 public sealed record LocalCostumeEntry(long UserUnitId, int CostumeId, int UnitId, bool IsDefault);
+public sealed record LocalRhythmResult(int MusicId, int Difficulty, int Score, float Rate, int Rank);
 public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null,
     LocalProfileUpdate? Profile = null, LocalReplayMeasure? ReplayMeasure = null, LocalReplayContent? ReplayContent = null,
     LocalTeamUpdate? Team = null, LocalHomeUpdate? Home = null, LocalEquipmentEntry[]? Equipment = null,
-    LocalCostumeEntry[]? Costumes = null);
+    LocalCostumeEntry[]? Costumes = null, LocalRhythmResult? Rhythm = null);
 
 public sealed partial class OfflineServer
 {

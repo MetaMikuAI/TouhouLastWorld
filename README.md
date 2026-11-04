@@ -152,9 +152,9 @@
 | ReadUnitTalkRequest | read_unit_talk | 业务实现 | 保存正数对话 ID 的已读标记，重复提交幂等；不校验内容存在性，不生成解锁或奖励 |
 | ReincarnationReleaseRequest | 未确认 | 未实现 | — |
 | replaceAvatarRequest | 未确认 | 未实现 | — |
-| RhythmGameEndRequest | 未确认 | 未实现 | — |
+| RhythmGameEndRequest | rhythm_game_end | 业务实现 | 匹配当前曲目、校验难度 2–4，按曲目和难度分别保存分数、完成率及等级最大值；禁止重复结束，不复算成绩，恢复额度为零且无奖励 |
 | RhythmGameStartRequest | rhythm_game_start | 业务实现 | 校验曲目主数据并保存当前曲目；再次开始替换上次记录，不扣除资源 |
-| RhythmGameTopRequest | rhythm_game_top | 最小响应 | 空成绩列表；曲目由客户端主数据加载，不生成分数或奖励 |
+| RhythmGameTopRequest | rhythm_game_top | 业务实现 | 返回本地最佳成绩；初始为空，曲目由客户端主数据加载 |
 | RogueLiteBattleEndRequest | 未确认 | 未实现 | — |
 | RogueLiteBattleStartRequest | 未确认 | 未实现 | — |
 | RogueliteDeckCallRequest | 未确认 | 未实现 | — |

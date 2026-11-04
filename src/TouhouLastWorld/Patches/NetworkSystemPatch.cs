@@ -40,6 +40,12 @@ public partial class NetworkSystemPatch
             var id = request.TryCast<RhythmGameStartRequest>()?.rhythm_game_music_master_id;
             arguments = new LocalArguments(id, id is > 0 && MasterDB.This()?.RhythmGameMusic?.Find(id.Value) != null ? 1 : 0);
         }
+        if (api == "rhythm_game_end")
+        {
+            var result = request.TryCast<RhythmGameEndRequest>();
+            arguments = result == null ? null : new LocalArguments(Rhythm: new(result.rhythm_game_music_master_id,
+                result.difficulty, result.score, result.rate, result.rank));
+        }
         if (api == "logout")
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
