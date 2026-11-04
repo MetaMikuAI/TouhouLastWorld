@@ -172,7 +172,7 @@
 | SeriesBattleRankingResetRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingScoreSimulateRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingStartRequest | 未确认 | 未实现 | — |
-| SeriesBattleRankingTopRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingTopRequest | series_battle_ranking_top | 最小响应 | 未开放、未入榜、零成绩；不创建赛程或成绩，界面仍依赖客户端活动主数据 |
 | SeriesBattleResetRequest | series_battle_reset | 业务实现 | 将当前流程恢复未开始状态并持久化；保留编队和存储回放，不结算奖励或退款 |
 | SeriesBattleStartRequest | 未确认 | 未实现 | — |
 | SeriesBattleTeamUpdateRequest | 未确认 | 未实现 | — |

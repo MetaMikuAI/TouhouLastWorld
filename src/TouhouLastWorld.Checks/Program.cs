@@ -783,3 +783,7 @@ Check(seriesUser["series_battle_status"]!["progress"]!.GetValue<int>() == 0
     && JsonNode.DeepEquals(seriesUser["unit"], seriesSeed["unit"])
     && JsonNode.DeepEquals(seriesUser["gold"], seriesSeed["gold"]), "series reset persists without changing collection or rewards");
 Console.WriteLine("Passed 3 series reset checks.");
+var seriesOverview = seriesReload.Dispatch("series_battle_ranking_top").Body!;
+Check(seriesOverview["is_held"]!.GetValue<int>() == 0 && seriesOverview["ranking"]!.GetValue<int>() == 0
+    && seriesOverview["score_info"]!.AsArray().Count == 0, "ranking overview remains inactive without scores");
+Console.WriteLine("Passed 1 ranking overview check.");
