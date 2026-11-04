@@ -2194,3 +2194,27 @@ Check(pictureRecycleReload.Dispatch("picture_recycle", arguments: new(Ids: [701,
     && pictureRecycleReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5300,
     "recycle persists and does not repeat rewards");
 Console.WriteLine("Passed 4 equipment recycle checks.");
+
+var lectureTrustSeed = JsonNode.Parse(seed)!;
+lectureTrustSeed["lecture_room"]!["unit"]!["unit_list"] = new JsonArray(new JsonObject
+    { ["user_unit_id"] = rankMaterialId, ["put_trust_up_icon"] = 1 });
+lectureTrustSeed["_local_lecture_trust_rewards"] = new JsonArray(new JsonObject
+    { ["user_unit_id"] = rankMaterialId, ["value"] = 10 });
+var lectureTrustDirectory = directory + "-lecture-trust";
+var lectureTrustServer = new OfflineServer(lectureTrustDirectory, lectureTrustSeed.ToJsonString(), "offline://resources/");
+lectureTrustServer.Dispatch("game_init");
+lectureTrustServer.Dispatch("login");
+Check(lectureTrustServer.Dispatch("lecture_room_unit_trust_up", arguments: new(rankMaterialId, 5)).Status == 409
+    && lectureTrustServer.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["trust"]!.GetValue<int>() == 0,
+    "trust capacity failure preserves pending reward and value");
+var lectureTrustReply = lectureTrustServer.Dispatch("lecture_room_unit_trust_up", arguments: new(rankMaterialId, 100)).Body!["user_update"]!;
+Check(lectureTrustReply["unit"]!["unit_list"]![0]!["trust"]!.GetValue<int>() == 10
+    && lectureTrustReply["lecture_room"]!["unit"]!["unit_list"]![0]!["put_trust_up_icon"]!.GetValue<int>() == 0,
+    "trust receipt credits saved value and clears notification");
+var lectureTrustReload = new OfflineServer(lectureTrustDirectory, seed, "offline://resources/");
+lectureTrustReload.Dispatch("game_init");
+lectureTrustReload.Dispatch("login");
+Check(lectureTrustReload.Dispatch("lecture_room_unit_trust_up", arguments: new(rankMaterialId, 100)).Status == 409
+    && lectureTrustReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["trust"]!.GetValue<int>() == 10,
+    "trust reward cannot be claimed twice after reload");
+Console.WriteLine("Passed 3 lecture trust checks.");

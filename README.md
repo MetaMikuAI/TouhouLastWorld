@@ -113,7 +113,7 @@
 | LectureRoomUnitExpansionRequest | lecture_room_unit_expansion | 业务实现 | 按下一级主数据费用扣款并保存等级；本地规则优先扣免费余额，余额不足不变更 |
 | LectureRoomUnitRemoveRequest | lecture_room_unit_remove | 业务实现 | 移出本地成员并清除占用标记；重复移出幂等，不结算计时收益 |
 | LectureRoomUnitSetRequest | lecture_room_unit_set | 业务实现 | 校验持有与主数据容量，保存成员和占用标记；不推进计时收益 |
-| LectureRoomUnitTrustUpRequest | 未确认 | 未实现 | — |
+| LectureRoomUnitTrustUpRequest | lecture_room_unit_trust_up | 业务实现 | 结算已保存的待领取信赖值并清除领取标记；校验归属、入驻和上限；尚不自动生成待领取值 |
 | LectureRoomUpdateRequest | lecture_room_update | 最小响应 | 返回已保存设施状态及零结算；未实现时间推进、食物消耗与经验增长 |
 | LevelGiftRequest | 未确认 | 未实现 | — |
 | LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 |

@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "lecture_room_unit_trust_up")
+        {
+            var change = request.TryCast<LectureRoomUnitTrustUpRequest>();
+            arguments = new LocalArguments(change?.user_unit_id, MasterDB.This()?.UnitTrustGrowth?.Last()?.trust_upper_limit);
+        }
         if (api == "picture_recycle")
             arguments = ReadPictureRecycle(request.TryCast<PictureRecycleRequest>());
         if (api == "picture_potential_limitbreak")

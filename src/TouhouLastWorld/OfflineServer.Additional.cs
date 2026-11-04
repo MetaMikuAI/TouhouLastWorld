@@ -12,7 +12,7 @@ public sealed partial class OfflineServer
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
         or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
-        or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
+        or "lecture_room_unit_trust_up" or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
         or "lecture_room_food_expansion" or "training_room_expansion" or "training_room_update"
         or "training_room_cancel" or "training_room_start" or "unit_equip_picture_reset" or "unit_equip_picture"
@@ -27,6 +27,7 @@ public sealed partial class OfflineServer
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "friend/give" => GiveContactGift(arguments),
+        "lecture_room_unit_trust_up" => ReceiveLectureTrust(arguments),
         "picture_recycle" => RecyclePictures(arguments),
         "picture_potential_limitbreak" => LimitBreakPicture(arguments),
         "unit_destiny_value_up" => IncreaseDestiny(arguments),
