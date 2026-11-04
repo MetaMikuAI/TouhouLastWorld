@@ -1847,3 +1847,33 @@ Check(pointBuyReload.Dispatch("phantasm_point_buy", arguments: new(PointPurchase
     && pointBuyReload.Dispatch("login").Body!["user"]!["phantasm_point"]!["points"]!.GetValue<int>() == 112,
     "point purchase state survives restart and rejects stale count");
 Console.WriteLine("Passed 4 point purchase checks.");
+
+var rankMaterialSeed = JsonNode.Parse(seed)!;
+rankMaterialSeed["item"]!["item_list"]!.AsArray().Add(new JsonObject { ["item_id"] = 71, ["num"] = 5 });
+var rankMaterialUnit = rankMaterialSeed["unit"]!["unit_list"]![0]!;
+var rankMaterialId = rankMaterialUnit["user_unit_id"]!.GetValue<long>();
+var rankMaterialDefinition = new LocalRankMaterial(rankMaterialUnit["unit_id"]!.GetValue<int>(), 1, 12, 71, 3);
+var rankMaterialDirectory = directory + "-rank-material";
+var rankMaterialServer = new OfflineServer(rankMaterialDirectory, rankMaterialSeed.ToJsonString(), "offline://resources/");
+rankMaterialServer.Dispatch("game_init");
+rankMaterialServer.Dispatch("login");
+Check(rankMaterialServer.Dispatch("unit_rank_promote_item_set", arguments: new(rankMaterialId, 7, RankMaterial: rankMaterialDefinition)).Status == 400
+    && rankMaterialServer.Dispatch("unit_rank_promote_item_set", arguments: new(rankMaterialId, 1, RankMaterial: rankMaterialDefinition with { Rank = 2 })).Status == 409
+    && rankMaterialServer.Dispatch("unit_rank_promote_item_set", arguments: new(rankMaterialId, 1, RankMaterial: rankMaterialDefinition with { ObjectType = 10 })).Status == 503,
+    "rank material rejects invalid slots, stale ranks and unsupported types");
+Check(rankMaterialServer.Dispatch("unit_rank_promote_item_set", arguments: new(rankMaterialId, 1, RankMaterial: rankMaterialDefinition with { Count = 6 })).Status == 409
+    && rankMaterialServer.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["is_set_rank_promote_slot1"]!.GetValue<int>() == 0,
+    "insufficient materials leave the slot unchanged");
+var rankMaterialReply = rankMaterialServer.Dispatch("unit_rank_promote_item_set", arguments: new(rankMaterialId, 1, RankMaterial: rankMaterialDefinition)).Body!["user_update"]!;
+Check(rankMaterialReply["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2
+    && rankMaterialReply["unit"]!["unit_list"]![0]!["is_set_rank_promote_slot1"]!.GetValue<int>() == 1
+    && rankMaterialReply["unit"]!["unit_list"]![0]!["rank"]!.GetValue<int>() == 1,
+    "rank material consumes inventory and fills only the selected slot");
+var rankMaterialReload = new OfflineServer(rankMaterialDirectory, seed, "offline://resources/");
+rankMaterialReload.Dispatch("game_init");
+rankMaterialReload.Dispatch("login");
+Check(rankMaterialReload.Dispatch("unit_rank_promote_item_set", arguments: new(rankMaterialId, 1, RankMaterial: rankMaterialDefinition)).Status == 409
+    && rankMaterialReload.Dispatch("unit_rank_promote_item_set", arguments: new(rankMaterialId, 2, RankMaterial: rankMaterialDefinition with { ObjectType = 3, Count = 100 })).Body!["user_update"]!["gold"]!.GetValue<int>() == 4900
+    && rankMaterialReload.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2,
+    "material slots persist and prevent duplicate charges while allowing another slot");
+Console.WriteLine("Passed 4 rank material checks.");

@@ -214,7 +214,7 @@
 | UnitLimitbreakStrongFragrantWoodRequest | 未确认 | 未实现 | — |
 | UnitNewUpdateRequest | unit_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 |
-| UnitRankPromoteItemSetRequest | 未确认 | 未实现 | — |
+| UnitRankPromoteItemSetRequest | unit_rank_promote_item_set | 业务实现 | 按当前阶数和槽位配置扣除物品或金币、保存材料槽；校验归属和重复填充，暂不支持装备实例材料 |
 | UnitRankPromoteRequest | 未确认 | 未实现 | — |
 | UnitRareAwakenRequest | 未确认 | 未实现 | — |
 | UnitRecycleRequest | 未确认 | 未实现 | — |
