@@ -183,7 +183,7 @@
 | ShowRewardRequest | pass_card/show_reward | 业务实现 | 查询已保存的等级、资格及领奖记录；校验当前等级和下一档奖励配置，不创建进度或发奖 |
 | ShowShopRequest | pass_card/show_shop | 业务实现 | 读取本地摘要与目录，未配置时为空；不含订单处理 |
 | ShowTaskRequest | pass_card/show_task | 业务实现 | 读取本地任务和领取状态，未配置时为空；不生成进度 |
-| SweepRequest | 未确认 | 未实现 | — |
+| SweepRequest | mop_up | 未实现 | 依赖上次战斗、队伍与分关卡次数；请求券数及可选挑战等级，响应按 round 分组掉落；券扣除顺序、成员消耗及结算记录待实现 |
 | SwitchDoRequest | 未确认 | 未实现 | — |
 | SwitchUserInfoGetRequest | 未确认 | 未实现 | — |
 | TeamUpdateRequest | team_update | 业务实现 | 更新已有编队的名称、六个成员位及强化位，校验归属和重复；成本采用客户端值，不扩充槽位 |
