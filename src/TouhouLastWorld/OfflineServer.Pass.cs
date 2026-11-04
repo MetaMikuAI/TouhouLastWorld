@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 namespace TouhouLastWorld;
 
 public sealed record LocalPassTask(int Id, int Experience, int[] Levels, int[] VipLevels);
+public sealed record LocalPassReward(int Level, LocalInventoryReward[] Free, LocalInventoryReward[] Vip);
 
 public sealed partial class OfflineServer
 {
@@ -40,10 +41,64 @@ public sealed partial class OfflineServer
         var vip = pass["is_vip"]?.GetValue<int>() == 1
             ? rule.VipLevels.Distinct().Where(value => value <= next && !vipReceived.Any(id => id!.GetValue<int>() == value)).Order().ToArray()
             : Array.Empty<int>();
-        pass["free_rewards"] = new JsonArray(free.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray());
-        pass["vip_rewards"] = new JsonArray(vip.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray());
+        pass["free_rewards"] = new JsonArray();
+        pass["vip_rewards"] = new JsonArray();
         pass["is_reward"] = free.Length > 0 || vip.Length > 0 ? 1 : 0;
         Save(updated);
         return new(0, new() { ["user_pass_card"] = pass.DeepClone() });
+    }
+
+    private LocalReply CollectPassRewards(LocalArguments? request)
+    {
+        if (request?.Value is not (0 or 1) || request.Value == 0 && (request.EntityId is null or < 1 or > 80 || request.Text is not ("free" or "vip")))
+            return new(400, null, "Invalid reward selection.");
+        var rules = request.PassRewards;
+        if (rules is null || rules.Length == 0 || rules.Any(row => row.Level is < 1 or > 80)
+            || rules.Select(row => row.Level).Distinct().Count() != rules.Length)
+            return new(503, null, "Pass rewards unavailable.");
+        var updated = user.DeepClone().AsObject();
+        if (updated["_local_pass_card"] is not JsonObject pass
+            || pass["had_got_free_reward_level"] is not JsonArray freeReceived
+            || pass["had_got_vip_reward_level"] is not JsonArray vipReceived)
+            return new(409, null, "Local pass progress unavailable.");
+        var level = pass["level"]?.GetValue<int>() ?? 0;
+        var vip = pass["is_vip"]?.GetValue<int>() == 1;
+        var freeClaims = new JsonArray();
+        var vipClaims = new JsonArray();
+        foreach (var row in rules.OrderBy(row => row.Level))
+        {
+            if (row.Level > level || request.Value == 0 && row.Level != request.EntityId) continue;
+            foreach (var kind in new[] { "free", "vip" })
+            {
+                if (request.Value == 0 && request.Text != kind || kind == "vip" && !vip) continue;
+                var received = kind == "free" ? freeReceived : vipReceived;
+                var rewards = kind == "free" ? row.Free : row.Vip;
+                if (rewards.Length == 0 || received.Any(id => id!.GetValue<int>() == row.Level)) continue;
+                foreach (var reward in rewards)
+                {
+                    var error = ApplyInventoryReward(updated, reward);
+                    if (error is not null) return error;
+                }
+                received.Add(row.Level);
+                (kind == "free" ? freeClaims : vipClaims).Add(row.Level);
+            }
+        }
+        if (request.Value == 0 && freeClaims.Count + vipClaims.Count == 0)
+            return new(409, null, "Reward unavailable or already received.");
+        pass["is_reward"] = rules.Any(row => row.Level <= level &&
+            (row.Free.Length > 0 && !freeReceived.Any(id => id!.GetValue<int>() == row.Level)
+             || vip && row.Vip.Length > 0 && !vipReceived.Any(id => id!.GetValue<int>() == row.Level))) ? 1 : 0;
+        pass["free_rewards"] = new JsonArray();
+        pass["vip_rewards"] = new JsonArray();
+        if (freeClaims.Count + vipClaims.Count > 0) Save(updated);
+        var response = pass.DeepClone().AsObject();
+        response["free_rewards"] = freeClaims;
+        response["vip_rewards"] = vipClaims;
+        return new(0, new()
+        {
+            ["user_pass_card"] = response,
+            ["user_update"] = new JsonObject { ["gold"] = updated["gold"]!.DeepClone(),
+                ["crystal"] = updated["crystal"]!.DeepClone(), ["item"] = updated["item"]!.DeepClone() }
+        });
     }
 }

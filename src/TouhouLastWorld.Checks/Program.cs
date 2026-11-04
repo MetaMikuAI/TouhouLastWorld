@@ -2469,7 +2469,7 @@ Check(passServer.Dispatch("pass_card/collect_exp", arguments: new(Value: 5, Pass
 var passCollected = passServer.Dispatch("pass_card/collect_exp", arguments: new(Value: 4, PassTask: passTaskRule)).Body!["user_pass_card"]!;
 Check(passCollected["level"]!.GetValue<int>() == 2 && passCollected["current_exp"]!.GetValue<int>() == 10
     && passCollected["tasks"]![0]!["can_cellable"]!.GetValue<int>() == 0
-    && passCollected["free_rewards"]![0]!.GetValue<int>() == 2 && passCollected["vip_rewards"]!.AsArray().Count == 0,
+    && passCollected["is_reward"]!.GetValue<int>() == 1 && passCollected["free_rewards"]!.AsArray().Count == 0 && passCollected["vip_rewards"]!.AsArray().Count == 0,
     "pass experience upgrades levels, consumes one claim and updates eligible rewards");
 var passReload = new OfflineServer(passDirectory, seed, "offline://resources/");
 passReload.Dispatch("game_init");
@@ -2478,3 +2478,29 @@ Check(passReload.Dispatch("pass_card/collect_exp", arguments: new(Value: 4, Pass
     && passReload.Dispatch("pass_card/show_task").Body!["user_pass_card"]!["level"]!.GetValue<int>() == 2,
     "pass experience persists and cannot be claimed twice");
 Console.WriteLine("Passed 3 pass experience checks.");
+
+var passRewardRules = new[]
+{
+    new LocalPassReward(1, new[] { new LocalInventoryReward(3, 0, 100, 100000) }, Array.Empty<LocalInventoryReward>()),
+    new LocalPassReward(2, new[] { new LocalInventoryReward(3, 0, 100, 100000) }, new[] { new LocalInventoryReward(6, 0, 1, 100000) }),
+    new LocalPassReward(3, new[] { new LocalInventoryReward(3, 0, 100, 100000) }, Array.Empty<LocalInventoryReward>())
+};
+Check(passReload.Dispatch("pass_card/collect_reward", arguments: new(2, 0, Text: "vip", PassRewards: passRewardRules)).Status == 409
+    && passReload.Dispatch("pass_card/collect_reward", arguments: new(3, 0, Text: "free", PassRewards: passRewardRules)).Status == 409,
+    "pass rewards enforce entitlement and level");
+var failingPassRewards = passRewardRules.ToArray();
+failingPassRewards[1] = failingPassRewards[1] with { Free = new[] { new LocalInventoryReward(3, 0, 100, 1) } };
+Check(passReload.Dispatch("pass_card/collect_reward", arguments: new(Value: 1, PassRewards: failingPassRewards)).Status == 409,
+    "pass reward batch preserves claims when capacity is insufficient");
+var passRewardsReply = passReload.Dispatch("pass_card/collect_reward", arguments: new(Value: 1, PassRewards: passRewardRules)).Body!;
+Check(passRewardsReply["user_update"]!["gold"]!.GetValue<int>() == 5100
+    && passRewardsReply["user_pass_card"]!["free_rewards"]![0]!.GetValue<int>() == 2
+    && passRewardsReply["user_pass_card"]!["vip_rewards"]!.AsArray().Count == 0,
+    "pass reward batch returns only rewards actually granted");
+var passRewardsReload = new OfflineServer(passDirectory, seed, "offline://resources/");
+passRewardsReload.Dispatch("game_init");
+passRewardsReload.Dispatch("login");
+Check(passRewardsReload.Dispatch("pass_card/collect_reward", arguments: new(2, 0, Text: "free", PassRewards: passRewardRules)).Status == 409
+    && passRewardsReload.Dispatch("pass_card/collect_reward", arguments: new(Value: 1, PassRewards: passRewardRules)).Body!["user_pass_card"]!["free_rewards"]!.AsArray().Count == 0,
+    "pass reward claims persist and repeat batches do not grant again");
+Console.WriteLine("Passed 4 pass reward checks.");

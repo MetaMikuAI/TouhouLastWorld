@@ -32,7 +32,7 @@
 | ClearHistoryRequest | get_clear_history | 最小响应 | 无最佳记录，排行及最近记录为空；不生成战绩 |
 | ClearHistoryTeamInfoRequest | 未确认 | 未实现 | — |
 | CollectExpRequest | pass_card/collect_exp | 业务实现 | 按配置领取已完成任务经验，更新等级、次数与领奖提示并保存；任务进度生成未实现 |
-| CollectRewardRequest | 未确认 | 未实现 | — |
+| CollectRewardRequest | pass_card/collect_reward | 业务实现 | 单项及批量发放等级奖励，校验等级、权益、库存并保存领取标记；支持金币、晶体、普通物品 |
 | Comic.UserInfoUpdateRequest | user_info_update | 业务实现 | 单独或同时更新两个名称；基础文本校验、原子保存，不含远端文本审核 |
 | ComicGetPagesRequest | comic_get_pages | 业务实现 | 按主数据单价扣点并增加可读页数，校验余额与总页数，统一持久化；暂不校验发布期 |
 | ComicReadEndRequest | comic_read_end | 业务实现 | 保存最大已读页数，拒绝未持有条目和超出可读范围的页数；不发放奖励 |
