@@ -82,7 +82,7 @@
 | GatherGoldRequest | 未确认 | 未实现 | — |
 | GatherPhantasmPointRequest | 未确认 | 未实现 | — |
 | GetAutoReplayInfoRequest | 未确认 | 未实现 | — |
-| GetDispatchListRequest | 未确认 | 未实现 | — |
+| GetDispatchListRequest | get_dispatch_list | 最小响应 | 空派遣列表；不含派遣开始与结算 |
 | GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
 | GetEventTotalPointRewardRequest | 未确认 | 未实现 | — |
 | GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 |
