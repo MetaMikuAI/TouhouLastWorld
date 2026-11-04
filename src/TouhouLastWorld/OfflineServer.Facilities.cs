@@ -5,12 +5,14 @@ namespace TouhouLastWorld;
 public sealed partial class OfflineServer
 {
     public int LectureExpansionRank => user["lecture_room"]!["unit"]!["expansion_rank"]!.GetValue<int>();
+    public int LectureFoodExpansionRank => user["lecture_room"]!["food"]!["expansion_rank"]!.GetValue<int>();
 
-    private LocalReply ExpandLectureUnit(LocalArguments? request)
+    private LocalReply ExpandLecture(LocalArguments? request, string section)
     {
         if (request?.EntityId is null or <= 0 or > int.MaxValue || request.Value is null or < 0)
             return new(503, null, "Next facility level unavailable.");
-        if (request.EntityId != (long)LectureExpansionRank + 1)
+        var rank = user["lecture_room"]![section]!["expansion_rank"]!.GetValue<int>();
+        if (request.EntityId != (long)rank + 1)
             return new(409, null, "Facility level changed.");
         var updated = user.DeepClone().AsObject();
         var orb = updated["orb"]!.AsObject();
@@ -22,7 +24,7 @@ public sealed partial class OfflineServer
         var freeSpent = Math.Min(free, cost);
         orb["free"] = free - freeSpent;
         orb["purchased"] = purchased - (cost - freeSpent);
-        updated["lecture_room"]!["unit"]!["expansion_rank"] = (int)request.EntityId.Value;
+        updated["lecture_room"]![section]!["expansion_rank"] = (int)request.EntityId.Value;
         Save(updated);
         return new(0, new()
         {

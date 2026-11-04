@@ -498,3 +498,15 @@ expansionReload.Dispatch("game_init");
 Check(expansionReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 5
     && expansionReload.LectureExpansionRank == 1, "expansion debit and level persist together");
 Console.WriteLine("Passed 6 facility expansion checks.");
+Check(expansionReload.Dispatch("lecture_room_food_expansion", arguments: new(1, 6)).Status == 409
+    && expansionReload.LectureFoodExpansionRank == 0, "food expansion requires funds");
+var foodExpanded = expansionReload.Dispatch("lecture_room_food_expansion", arguments: new(1, 2)).Body!["user_update"]!;
+Check(expansionReload.LectureFoodExpansionRank == 1 && expansionReload.LectureExpansionRank == 1
+    && foodExpanded["orb"]!["purchased"]!.GetValue<long>() == 3, "food expansion has independent level and shared balance");
+Check(foodExpanded["lecture_room"]!["food"]!["food_rest_value"]!.GetValue<int>() == 0,
+    "food expansion does not grant food");
+var foodExpansionReload = new OfflineServer(expansionDirectory, expansionSeed.ToJsonString(), "offline://resources/");
+foodExpansionReload.Dispatch("game_init");
+Check(foodExpansionReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 3
+    && foodExpansionReload.LectureFoodExpansionRank == 1, "food expansion persists with debit");
+Console.WriteLine("Passed 4 food expansion checks.");
