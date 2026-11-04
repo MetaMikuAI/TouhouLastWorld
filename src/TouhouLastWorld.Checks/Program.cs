@@ -705,3 +705,24 @@ Check(achievementReload.Dispatch("achievement_select", arguments: new(Value: 0))
     && achievementReload.Dispatch("achievement_top").Body!["achievement_list"]!.AsArray().Count == 2, "clearing selection preserves collection");
 Check(achievementReload.Dispatch("update_voice_version").Status == 0, "voice notification receives minimal response");
 Console.WriteLine("Passed 5 selection and notification checks.");
+var deckDirectory = directory + "-decks";
+var decks = new OfflineServer(deckDirectory, seed, "offline://resources/");
+decks.Dispatch("game_init");
+decks.Dispatch("login");
+Check(decks.Dispatch("roguelite_deck_save", arguments: new(Value: -1, Ids: [1], Text: "A")).Status == 400
+    && decks.Dispatch("roguelite_deck_save", arguments: new(Value: 1, Ids: [0], Text: "A")).Status == 400,
+    "invalid preset number and entry rejected");
+Check(decks.Dispatch("roguelite_deck_save", arguments: new(Value: 1, Ids: [3, 2, 3], Text: "A")).Status == 0,
+    "preset preserves ordered entries and repeated copies");
+decks.Dispatch("roguelite_deck_save", arguments: new(Value: 2, Ids: [], Text: "B"));
+Check(decks.Dispatch("roguelite_deck_call", arguments: new(Value: 99)).Status == 404, "missing preset rejected");
+Check(decks.Dispatch("roguelite_deck_call", arguments: new(Value: 1)).Status == 0, "saved preset activates");
+var deckReload = new OfflineServer(deckDirectory, seed, "offline://resources/");
+deckReload.Dispatch("game_init");
+var savedDecks = deckReload.Dispatch("login").Body!["user"]!["_local_saved_decks"]!;
+Check(savedDecks["0"]!["deck_no"]!.GetValue<int>() == 0
+    && savedDecks["0"]!["deck_name"]!.GetValue<string>() == "A"
+    && JsonNode.DeepEquals(savedDecks["0"]!["deck_list"], new JsonArray(3, 2, 3)), "active preset survives reload");
+Check(savedDecks["1"]!["deck_no"]!.GetValue<int>() == 1 && savedDecks["2"]!["deck_list"]!.AsArray().Count == 0,
+    "activation preserves source and other presets");
+Console.WriteLine("Passed 6 deck checks.");
