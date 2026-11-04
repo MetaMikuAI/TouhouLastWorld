@@ -27,7 +27,7 @@
 | BuyGoodsRequest | 未确认 | 未实现 | — |
 | CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 |
 | CheckUserRequest | check_user | 业务实现 | 本地身份存在性检查 |
-| CheckVersionRequest | 未确认 | 未实现 | — |
+| CheckVersionRequest | offline://version/check | 最小响应 | 原始文本入口返回当前安装版本；渠道未匹配时使用首条记录，不提供升级下载 |
 | ClearHistoryPlayerInfoRequest | 未确认 | 未实现 | — |
 | ClearHistoryRequest | get_clear_history | 最小响应 | 无最佳记录，排行及最近记录为空；不生成战绩 |
 | ClearHistoryTeamInfoRequest | 未确认 | 未实现 | — |
