@@ -45,7 +45,8 @@ public sealed class OfflineServer
         if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user"
             or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack"
             or "afk_top" or "unit_protection" or "unit_new_update" or "picture_protection" or "picture_new_update"
-            or "mail_top" or "friend/list" or "unit_voice_autoset_update" or "friend/apply_list" or "friend/recommend"))
+            or "mail_top" or "friend/list" or "unit_voice_autoset_update" or "friend/apply_list" or "friend/recommend"
+            or "get_shop_list"))
             return new(501, null, $"Offline API not implemented: {api}");
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
@@ -90,6 +91,7 @@ public sealed class OfflineServer
             "friend/list" => new() { ["data"] = new JsonArray(), ["request_tips"] = 0 },
             "friend/apply_list" => new() { ["data"] = new JsonArray() },
             "friend/recommend" => new() { ["data"] = new JsonArray() },
+            "get_shop_list" => new() { ["shop_list"] = new JsonArray(), ["feature_product_shop_list"] = new JsonArray() },
             "check_conditional_pack" => new()
             {
                 ["conditional_pack"] = new JsonArray(), ["is_ignore_check"] = 0

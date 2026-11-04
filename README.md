@@ -178,7 +178,7 @@
 | SeriesBattleTeamUpdateRequest | 未确认 | 未实现 | — |
 | SeriesBattleUpdateReplayInfoRequest | 未确认 | 未实现 | — |
 | SetAgeRequest | 未确认 | 未实现 | — |
-| ShopListRequest | 未确认 | 未实现 | — |
+| ShopListRequest | get_shop_list | 最小响应 | 空目录与空推荐列表；不含订单处理 |
 | ShopOrderRequest | 未确认 | 未实现 | — |
 | ShowRewardRequest | 未确认 | 未实现 | — |
 | ShowShopRequest | 未确认 | 未实现 | — |
