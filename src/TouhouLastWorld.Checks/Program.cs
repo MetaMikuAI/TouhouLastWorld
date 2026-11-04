@@ -1557,3 +1557,23 @@ invalidTowerOverview.Dispatch("game_init");
 invalidTowerOverview.Dispatch("login");
 Check(invalidTowerOverview.Dispatch("tower_top").Status == 503, "invalid floor state is not presented as a successful overview");
 Console.WriteLine("Passed 3 floor overview checks.");
+
+Check(towerOverviewServer.Dispatch("get_tower_unit_info").Body!["tower_unit_info"]!.GetValue<string>() == "",
+    "absent unit continuation state remains empty");
+var towerUnitCsv = "1,123,5,100," + string.Join(",", Enumerable.Repeat("0", 25));
+var towerUnitSeed = JsonNode.Parse(seed)!;
+towerUnitSeed["_local_tower_unit_info"] = towerUnitCsv;
+var towerUnitServer = new OfflineServer(directory + "-tower-unit-info", towerUnitSeed.ToJsonString(), "offline://resources/");
+towerUnitServer.Dispatch("game_init");
+towerUnitServer.Dispatch("login");
+Check(towerUnitServer.Dispatch("get_tower_unit_info").Body!["tower_unit_info"]!.GetValue<string>() == towerUnitCsv,
+    "saved unit continuation CSV is preserved without recovery or regeneration");
+foreach (var badCsv in new[] { "1,123", towerUnitCsv + "\n" + towerUnitCsv, "999" + towerUnitCsv[1..], towerUnitCsv + ",bad" })
+{
+    towerUnitSeed["_local_tower_unit_info"] = badCsv;
+    var badTowerUnits = new OfflineServer(directory + "-tower-unit-invalid-" + Guid.NewGuid().ToString("N"), towerUnitSeed.ToJsonString(), "offline://resources/");
+    badTowerUnits.Dispatch("game_init");
+    badTowerUnits.Dispatch("login");
+    Check(badTowerUnits.Dispatch("get_tower_unit_info").Status == 503, "invalid, duplicate or unowned continuation records are rejected");
+}
+Console.WriteLine("Passed 6 unit continuation checks.");

@@ -4,6 +4,28 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply TowerUnits()
+    {
+        var snapshot = user["_local_tower_unit_info"];
+        if (snapshot == null)
+            return new(0, new() { ["tower_unit_info"] = "" });
+        if (snapshot is not JsonValue value || !value.TryGetValue<string>(out var csv))
+            return new(503, null, "Local unit state unavailable.");
+
+        var ids = new HashSet<long>();
+        foreach (var line in csv.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var fields = line.Split(',');
+            if (fields.Length is not (27 or 29) ||
+                !long.TryParse(fields[0], out var id) || id <= 0 || !ids.Add(id) ||
+                user["unit"]?["unit_list"] is not JsonArray units ||
+                !units.Any(unit => unit?["user_unit_id"]?.GetValue<long>() == id) ||
+                fields.Skip(1).Any(field => !int.TryParse(field, out _)))
+                return new(503, null, "Invalid local unit state.");
+        }
+        return new(0, new() { ["tower_unit_info"] = csv });
+    }
+
     private LocalReply TowerOverview()
     {
         if (user["tower"] is not JsonObject tower ||
