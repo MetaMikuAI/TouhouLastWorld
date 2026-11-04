@@ -92,7 +92,7 @@
 | GetShrineOfficeShopListRequest | get_shrine_office_shop_list | 最小响应 | 空目录；不含兑换或购买 |
 | GetSwitchCodeRequest | 未确认 | 未实现 | — |
 | GetVersusReplayInfoRequest | get_multiple_spirits_weekly_replay_info | 业务实现 | 按目标读取本地重放；无记录返回空内容，客户端关闭重放模式 |
-| GGTapAdRequest | 未确认 | 未实现 | — |
+| GGTapAdRequest | get_tap_ad | 最小响应 | 返回空归因字段与 first_login=0，跳过调用方首次激活上传；不读取或保存设备标识 |
 | GGTapAdSecRequest | 未确认 | 未实现 | — |
 | GoldBoxRenovationEndRequest | 未确认 | 未实现 | — |
 | GoldBoxRenovationStartRequest | 未确认 | 未实现 | — |

@@ -7,6 +7,15 @@ public sealed partial class OfflineServer
     private static readonly Dictionary<string, JsonObject> QueryTemplates = new()
     {
         ["popup"] = new(),
+        ["get_tap_ad"] = new()
+        {
+            ["idfa"] = "", ["idfa_md5"] = "", ["caid"] = "", ["anid"] = "", ["imei"] = "",
+            ["OAID"] = "", ["oaid_md5"] = "", ["time"] = "", ["ip"] = "", ["ipv6"] = "",
+            ["org_id"] = "", ["org_name"] = "", ["game_name"] = "", ["adset_id"] = "", ["adset_name"] = "",
+            ["creative_id"] = "", ["conversion_type"] = "", ["device"] = "", ["device_brand"] = "",
+            ["device_model"] = "", ["os_version"] = "", ["web_ua"] = "", ["tap_track_id"] = "",
+            ["tap_project_id"] = "", ["callback"] = "", ["first_login"] = "0"
+        },
         ["series_battle_ranking_top"] = new()
         {
             ["is_held"] = 0, ["ranking"] = 0, ["hi_score_stage_master_id"] = 0,
