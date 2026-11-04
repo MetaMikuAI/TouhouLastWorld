@@ -134,9 +134,6 @@ public sealed partial class OfflineServer
         battle["total_score"] = 0;
         battle["unit_list"] = new JsonArray();
         battle["user_unit_list"] = new JsonArray();
-        var total = battles.Sum(entry => (long)(entry.Value?["total_score"]?.GetValue<int>() ?? 0));
-        if (total is < 0 or > int.MaxValue) return new(409, null, "Invalid local weekly score total.");
-        overview!["total_battle_score"] = (int)total;
         Save(updated);
         return new(0, new());
     }

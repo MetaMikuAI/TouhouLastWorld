@@ -1170,9 +1170,9 @@ var weeklyResetReload = new OfflineServer(weeklyResetDirectory, weeklyResetSeed.
 weeklyResetReload.Dispatch("game_init");
 var resetWeekly = weeklyResetReload.Dispatch("login").Body!["user"]!["_local_weekly_arena"]!;
 var resetWeeklyBattle = resetWeekly["weekly_battle_data"]!["battle_number1"]!;
-Check(resetWeekly["total_battle_score"]!.GetValue<int>() == 20 && resetWeeklyBattle["total_score"]!.GetValue<int>() == 0
+Check(resetWeekly["total_battle_score"]!.GetValue<int>() == 30 && resetWeeklyBattle["total_score"]!.GetValue<int>() == 0
     && resetWeeklyBattle["unit_list"]!.AsArray().Count == 0 && resetWeeklyBattle["user_unit_list"]!.AsArray().Count == 0,
-    "weekly reset persists cleared score and roster with other scores retained");
+    "weekly reset persists cleared score and roster while preserving historical high score");
 Check(resetWeeklyBattle["difficulty"]!.GetValue<int>() == 3 && resetWeeklyBattle["attack_count_score"]!.GetValue<int>() == 5,
     "weekly reset preserves difficulty and component scores");
 Console.WriteLine("Passed 4 weekly score reset checks.");
