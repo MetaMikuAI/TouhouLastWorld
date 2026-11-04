@@ -50,6 +50,12 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(EntityId: level.HasValue ? MasterDB.This()?.PlayerExp?.Find(level.Value)?.gold_max : null,
                 Value: level);
         }
+        if (api == "gold_box_renovation_end")
+        {
+            var level = User.This()?.gold_box?.level;
+            var next = level is > 0 and < int.MaxValue ? MasterDB.This()?.GoldBox?.Find(level.Value + 1) : null;
+            arguments = new LocalArguments(EntityId: next?.level, Value: level);
+        }
         if (api == "gather_phantasm_point")
         {
             var level = User.This()?.level;

@@ -1722,3 +1722,29 @@ gatherPointReload.Dispatch("gather_phantasm_point", arguments: new(9999, 1));
 Check(gatherPointReload.Dispatch("gather_phantasm_point", arguments: new(9999, 1)).Body!["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 150,
     "point stock persists and repeated gathering does not duplicate credit");
 Console.WriteLine("Passed 4 point gathering checks.");
+
+var renovationSeed = JsonNode.Parse(seed)!;
+renovationSeed["gold_box"]!["renovation_finish_time"] = DateTimeOffset.UtcNow.AddHours(1).ToString("O");
+var earlyRenovation = new OfflineServer(directory + "-early-renovation", renovationSeed.ToJsonString(), "offline://resources/");
+earlyRenovation.Dispatch("game_init");
+earlyRenovation.Dispatch("login");
+Check(earlyRenovation.Dispatch("gold_box_renovation_end", arguments: new(2, 1)).Status == 409,
+    "renovation cannot finish before its saved deadline");
+renovationSeed["gold_box"]!["renovation_finish_time"] = DateTimeOffset.UtcNow.AddMinutes(-1).ToString("O");
+var renovationDirectory = directory + "-finished-renovation";
+var renovationServer = new OfflineServer(renovationDirectory, renovationSeed.ToJsonString(), "offline://resources/");
+renovationServer.Dispatch("game_init");
+renovationServer.Dispatch("login");
+Check(renovationServer.Dispatch("gold_box_renovation_end", arguments: new(3, 1)).Status == 503,
+    "renovation rejects missing or mismatched next-level data");
+var renovated = renovationServer.Dispatch("gold_box_renovation_end", arguments: new(2, 1)).Body!["user_update"]!["gold_box"]!;
+Check(renovated["level"]!.GetValue<int>() == 2 && renovated["renovation_finish_time"]!.GetValue<string>() == ""
+    && renovationServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000,
+    "renovation advances exactly one level and clears its timer without a second charge");
+var renovationReload = new OfflineServer(renovationDirectory, seed, "offline://resources/");
+renovationReload.Dispatch("game_init");
+renovationReload.Dispatch("login");
+Check(renovationReload.Dispatch("gold_box_renovation_end", arguments: new(3, 2)).Status == 409
+    && renovationReload.Dispatch("login").Body!["user"]!["gold_box"]!["level"]!.GetValue<int>() == 2,
+    "completed renovation survives restart and cannot advance again");
+Console.WriteLine("Passed 4 renovation completion checks.");
