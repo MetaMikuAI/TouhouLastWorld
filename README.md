@@ -136,8 +136,8 @@
 | PhantasmBoxRenovationEndRequest | phantasm_box_renovation_end | 业务实现 | 校验已保存升级时间及下一等级配置，到期升一级并清除计时，重复结算不升级；不调整时间产出 |
 | PhantasmBoxRenovationStartRequest | phantasm_box_renovation_start | 业务实现 | 按下一等级配置校验等级、金币费用与时长，一次保存扣款及结束时间，拒绝重复开工；不调整时间产出 |
 | PhantasmPointBuyRequest | phantasm_point_buy | 业务实现 | 按次数价格及等级公式购买，优先扣免费额度，一次保存余额、点数和次数；容量不足整笔拒绝，不重置每日次数 |
-| PictureBookReciveRequest | 未确认 | 未实现 | — |
-| PictureBookRequest | picture_book/get_user_picture_book_list | 最小响应 | 空完成记录；不含进度与奖励 |
+| PictureBookReciveRequest | picture_book/get_reward | 业务实现 | 按已完成记录发放配置中的金币、晶体或物品，保存领奖标记；其他奖励类型及进度生成未实现 |
+| PictureBookRequest | picture_book/get_user_picture_book_list | 业务实现 | 读取本地待领取与已领奖记录；不生成进度 |
 | PictureFrameRequest | avatar/list | 业务实现 | 返回已保存条目及已读状态；无条目时返回空列表，不自动解锁 |
 | PictureNewUpdateRequest | picture_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | PicturePotentialLimitbreakRequest | picture_potential_limitbreak | 业务实现 | 消耗同类装备并逐级扣金币；校验保护、培养占用和上限，解绑材料装备槽并返回删除编号 |

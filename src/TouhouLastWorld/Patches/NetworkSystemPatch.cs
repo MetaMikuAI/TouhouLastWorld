@@ -35,6 +35,23 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "picture_book/get_reward")
+        {
+            var change = request.TryCast<PictureBookReciveRequest>();
+            var master = MasterDB.This();
+            var row = change == null ? null : master?.PictureBookTask?.Find(change.task_id);
+            arguments = new LocalArguments(Value: change?.task_id);
+            if (row != null && master?.Setting != null)
+            {
+                var capacity = row.reward_object_type switch
+                {
+                    3 => master.Setting.GOLD_MAX, 6 => master.Setting.CRYSTAL_MAX,
+                    12 when master.Item?.Find(row.reward_object_id) != null => master.Setting.ITEM_MAX, _ => 0
+                };
+                arguments = arguments with { BookReward = new(row.id, row.picture_book_id,
+                    new(row.reward_object_type, row.reward_object_id, row.reward_object_value, capacity)) };
+            }
+        }
         if (api == "dispatch_start") arguments = ReadDispatchStart(request.TryCast<DispatchStartRequest>());
         if (api == "personal_info_update")
         {

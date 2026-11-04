@@ -2392,3 +2392,28 @@ Check(expiredDispatchServer.Dispatch("dispatch_bulk_end").Status == 503
     && expiredDispatchServer.Dispatch("login").Body!["user"]!["dispatch"]!["dispatch_list"]!.AsArray().Count == 1,
     "dispatch bulk settlement never discards finished tasks without rewards");
 Console.WriteLine("Passed 3 dispatch bulk boundary checks.");
+
+var bookSeed = JsonNode.Parse(seed)!;
+bookSeed["_local_picture_book"] = new JsonArray(new JsonObject
+{
+    ["pb_id"] = 1, ["complete_ls"] = new JsonArray(JsonValue.Create(11)), ["reward"] = new JsonArray()
+});
+var bookDirectory = directory + "-book-reward";
+var bookServer = new OfflineServer(bookDirectory, bookSeed.ToJsonString(), "offline://resources/");
+bookServer.Dispatch("game_init");
+bookServer.Dispatch("login");
+var bookRule = new LocalBookReward(11, 1, new(12, 99991, 3, 100));
+Check(bookServer.Dispatch("picture_book/get_reward", arguments: new(Value: 12, BookReward: bookRule with { TaskId = 12 })).Status == 409
+    && bookServer.Dispatch("picture_book/get_reward", arguments: new(Value: 11, BookReward: bookRule with { Reward = new(12, 99991, 3, 2) })).Status == 409,
+    "book reward checks completion and capacity without consuming the task");
+Check(bookServer.Dispatch("picture_book/get_reward", arguments: new(Value: 11, BookReward: bookRule)).Body!["user_update"]!["item"]!["item_list"]!.AsArray()
+    .Single(item => item!["item_id"]!.GetValue<int>() == 99991)!["num"]!.GetValue<int>() == 3,
+    "book reward grants the configured item");
+var bookReload = new OfflineServer(bookDirectory, seed, "offline://resources/");
+bookReload.Dispatch("game_init");
+bookReload.Dispatch("login");
+var bookProgress = bookReload.Dispatch("picture_book/get_user_picture_book_list").Body!["user_completed_info"]![0]!;
+Check(bookProgress["complete_ls"]!.AsArray().Count == 0 && bookProgress["reward"]![0]!.GetValue<int>() == 11
+    && bookReload.Dispatch("picture_book/get_reward", arguments: new(Value: 11, BookReward: bookRule)).Status == 409,
+    "book reward persists the received marker and prevents duplicate rewards");
+Console.WriteLine("Passed 3 book reward checks.");
