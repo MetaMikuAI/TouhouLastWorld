@@ -1466,3 +1466,64 @@ Check(helperListServer.Dispatch("friend_helper_select", arguments: new(Value: 2)
     && helperListServer.Dispatch("friend_helper_select").Status == 503,
     "helper listing uses a known capacity definition");
 Console.WriteLine("Passed 2 helper list checks.");
+JsonObject MailFixture(long id, int type, int amount, int itemId = 0, int grace = 0) => new()
+{
+    ["id"] = id, ["open_type"] = 0, ["receive_grace"] = grace,
+    ["present_list"] = new JsonArray(new JsonObject { ["object_type"] = type, ["object_id"] = itemId, ["object_value"] = amount })
+};
+var receiptSeed = JsonNode.Parse(seed)!.AsObject();
+receiptSeed["_local_mail"] = new JsonArray(MailFixture(1, 3, 30), MailFixture(2, 6, 2), MailFixture(3, 12, 5, 99999),
+    MailFixture(4, 9, 1), MailFixture(5, 3, 1, grace: 1));
+var receiptDirectory = directory + "-mail-receive";
+var mailServer = new OfflineServer(receiptDirectory, receiptSeed.ToJsonString(), "offline://resources/");
+mailServer.Dispatch("game_init");
+mailServer.Dispatch("login");
+var mailRules = new LocalMailRules(1000000, 1000000, 999, [99999]);
+Check(mailServer.Dispatch("mail_receive", arguments: new(Ids: [1, 4], MailRules: mailRules)).Status == 503
+    && mailServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == receiptSeed["gold"]!.GetValue<int>()
+    && mailServer.Dispatch("mail_top").Body!["mail"]![0]!["open_type"]!.GetValue<int>() == 0,
+    "unsupported mixed rewards preserve all mail and currency");
+Check(mailServer.Dispatch("mail_receive", arguments: new(Ids: [1], MailRules: mailRules with { GoldMax = 1 })).Status == 409
+    && mailServer.Dispatch("mail_receive", arguments: new(Ids: [5], MailRules: mailRules)).Status == 503
+    && mailServer.Dispatch("mail_receive", arguments: new(Ids: [1, 1], MailRules: mailRules)).Status == 400,
+    "mail claims reject capacity overflow, unsupported expiry and duplicate IDs");
+var receivedMail = mailServer.Dispatch("mail_receive", arguments: new(Ids: [1, 2, 3], MailRules: mailRules)).Body!;
+Check(receivedMail["user_update"]!["gold"]!.GetValue<int>() == receiptSeed["gold"]!.GetValue<int>() + 30
+    && receivedMail["user_update"]!["crystal"]!.GetValue<int>() == receiptSeed["crystal"]!.GetValue<int>() + 2
+    && receivedMail["user_update"]!["item"]!["item_list"]!.AsArray().Single(entry => entry!["item_id"]!.GetValue<int>() == 99999)!["num"]!.GetValue<int>() == 5
+    && receivedMail["unread_mail_num"]!.GetValue<int>() == 2, "mail claims apply supported inventory and receipt states together");
+var receiptReload = new OfflineServer(receiptDirectory, receiptSeed.ToJsonString(), "offline://resources/");
+receiptReload.Dispatch("game_init");
+receiptReload.Dispatch("login");
+var repeatedMail = receiptReload.Dispatch("mail_receive", arguments: new(Ids: [1, 2, 3])).Body!;
+Check(repeatedMail["user_update"]!["gold"]!.GetValue<int>() == receivedMail["user_update"]!["gold"]!.GetValue<int>()
+    && repeatedMail["mail"]![0]!["open_type"]!.GetValue<int>() == 1,
+    "reloaded mail receipts prevent duplicate rewards without requiring definitions again");
+Check(receiptReload.Dispatch("mail_receive", arguments: new(Ids: [99], MailRules: mailRules)).Status == 404
+    && receiptReload.Dispatch("mail_receive", arguments: new(Ids: [])).Status == 0, "mail claims distinguish missing IDs and an empty selection");
+Console.WriteLine("Passed 5 mail receipt checks.");
+if (OperatingSystem.IsWindows())
+{
+    var lockedDirectory = directory + "-locked-save";
+    var lockedServer = new OfflineServer(lockedDirectory, seed, "offline://resources/");
+    lockedServer.Dispatch("game_init");
+    lockedServer.Dispatch("login");
+    var savePath = Path.Combine(lockedDirectory, "user.json");
+    var shortLock = File.Open(savePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+    var release = Task.Run(async () => { await Task.Delay(100); shortLock.Dispose(); });
+    Check(lockedServer.Dispatch("set_age", arguments: new(Value: 1)).Status == 0,
+        "save retries a temporary Windows delete-sharing conflict");
+    release.GetAwaiter().GetResult();
+    var rejected = false;
+    using (File.Open(savePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+    {
+        try { lockedServer.Dispatch("set_age", arguments: new(Value: 2)); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { rejected = true; }
+    }
+    Check(rejected && lockedServer.Dispatch("login").Body!["user"]!["age_limit_type"]!.GetValue<int>() == 1
+        && JsonNode.Parse(File.ReadAllText(savePath))!["age_limit_type"]!.GetValue<int>() == 1,
+        "persistent conflict still fails without changing memory or the saved file");
+    Check(lockedServer.Dispatch("set_age", arguments: new(Value: 2)).Status == 0,
+        "save succeeds after the conflict is released");
+    Console.WriteLine("Passed 3 Windows save conflict checks.");
+}

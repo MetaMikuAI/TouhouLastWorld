@@ -119,7 +119,7 @@
 | LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 |
 | LogoutRequest | logout | 业务实现 | 校验本地身份并结束会话；保留身份与存档 |
 | MailDeleteRequest | mail_delete | 业务实现 | 删除本地 open_type > 0 的已读邮件并持久化；保留未读邮件，不发放附件 |
-| MailReceiveRequest | 未确认 | 未实现 | — |
+| MailReceiveRequest | mail_receive | 业务实现 | 无期限邮件的金币、结晶、道具入库并标记；按主数据限额整批校验、防重领；限期、特殊奖励或超额整批保留 |
 | MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 |
 | MiniGameRequest | 未确认 | 未实现 | — |
 | MissionEndRequest | 未确认 | 未实现 | — |

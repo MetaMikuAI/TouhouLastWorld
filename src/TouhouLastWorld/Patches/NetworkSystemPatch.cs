@@ -35,6 +35,13 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "mail_receive")
+        {
+            var setting = MasterDB.This()?.Setting;
+            var items = MasterDB.This()?.Item?.ToList()?.ToArray().Select(item => item.id).ToArray();
+            arguments = new LocalArguments(Ids: request.TryCast<MailReceiveRequest>()?.receive_id_list?.ToArray(),
+                MailRules: setting == null ? null : new(setting.GOLD_MAX, setting.CRYSTAL_MAX, setting.ITEM_MAX, items));
+        }
         if (api == "friend_helper_select")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX);
         if (api == "get_quest_cleared_team_info")

@@ -30,7 +30,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalCostumeEntry[]? Costumes = null, LocalRhythmResult? Rhythm = null, LocalPagePurchase? Pages = null,
     LocalSeriesTeam[]? SeriesTeams = null, LocalFoodPurchase? FoodPurchase = null, LocalFoodDistribution? FoodDistribution = null,
     LocalTrainingStart? Training = null, LocalTrainingMaterial[]? TrainingMaterials = null, LocalPointReset? PointReset = null,
-    LocalPointAllocation? PointAllocation = null, LocalIdleSet? Idle = null);
+    LocalPointAllocation? PointAllocation = null, LocalIdleSet? Idle = null, LocalMailRules? MailRules = null);
 
 public sealed partial class OfflineServer
 {
@@ -259,7 +259,19 @@ public sealed partial class OfflineServer
     private void Save(JsonObject updated)
     {
         File.WriteAllText(userPath + ".tmp", updated.ToJsonString());
-        File.Move(userPath + ".tmp", userPath, true);
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                File.Move(userPath + ".tmp", userPath, true);
+                break;
+            }
+            catch (Exception error) when (OperatingSystem.IsWindows() && attempt < 4
+                && (error is UnauthorizedAccessException || error is IOException && (error.HResult & 0xffff) is 32 or 33))
+            {
+                System.Threading.Thread.Sleep(25 << attempt);
+            }
+        }
         user = updated;
     }
 
