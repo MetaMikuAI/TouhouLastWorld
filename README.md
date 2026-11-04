@@ -137,7 +137,7 @@
 | PhantasmBoxRenovationStartRequest | 未确认 | 未实现 | — |
 | PhantasmPointBuyRequest | 未确认 | 未实现 | — |
 | PictureBookReciveRequest | 未确认 | 未实现 | — |
-| PictureBookRequest | 未确认 | 未实现 | — |
+| PictureBookRequest | picture_book/get_user_picture_book_list | 最小响应 | 空完成记录；不含进度与奖励 |
 | PictureFrameRequest | 未确认 | 未实现 | — |
 | PictureNewUpdateRequest | picture_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
