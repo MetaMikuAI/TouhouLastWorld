@@ -1122,3 +1122,24 @@ cancelContactReload.Dispatch("login");
 Check(cancelContactReload.Dispatch("friend_top").Body!["friend_request_list"]!.AsArray().Count == 0,
     "request cancellation persists after reload");
 Console.WriteLine("Passed 4 contact request cancellation checks.");
+var approveContactDirectory = directory + "-approve-contact";
+var approveContact = new OfflineServer(approveContactDirectory, cancelContactSeed.ToJsonString(), "offline://resources/");
+approveContact.Dispatch("game_init");
+approveContact.Dispatch("login");
+Check(approveContact.Dispatch("friend_approve", arguments: new(Value: 1, Text: "incoming")).Body!["result"]!.GetValue<int>() == 1
+    && approveContact.Dispatch("friend_top").Body!["friend_approval_pending_list"]!.AsArray().Count == 1,
+    "full contact list preserves pending application");
+var approvedContact = approveContact.Dispatch("friend_approve", arguments: new(Value: 2, Text: "incoming")).Body!;
+Check(approvedContact["result"]!.GetValue<int>() == 0 && approvedContact["friend_list"]!.AsArray().Count == 2,
+    "approval adds the incoming player to old-schema contacts");
+Check(approveContact.Dispatch("friend_approve", arguments: new(Value: 3, Text: "incoming")).Body!["result"]!.GetValue<int>() == 1,
+    "approval cannot duplicate an accepted application");
+var approveContactReload = new OfflineServer(approveContactDirectory, cancelContactSeed.ToJsonString(), "offline://resources/");
+approveContactReload.Dispatch("game_init");
+approveContactReload.Dispatch("login");
+var approvedOverview = approveContactReload.Dispatch("friend_top").Body!;
+Check(approvedOverview["friend_approval_pending_list"]!.AsArray().Count == 0
+    && approvedOverview["friend_list"]!.AsArray().Count == 2
+    && approvedOverview["friend_request_list"]!.AsArray().Count == 1,
+    "approval persists incoming removal and preserves outgoing requests");
+Console.WriteLine("Passed 4 contact approval checks.");

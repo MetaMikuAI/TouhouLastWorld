@@ -21,10 +21,11 @@ public sealed partial class OfflineServer
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
-        or "friend/info" or "friend_delete" or "friend_request_cancel" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
+        or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_approve" or "reset_point_allocation" or "allocate_points" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "friend_approve" => ApproveContactRequest(arguments),
         "friend_request_cancel" => CancelContactRequest(arguments),
         "friend_delete" => DeleteContact(arguments?.Text),
         "reset_point_allocation" => ResetPoints(arguments?.PointReset),
@@ -119,6 +120,24 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply ApproveContactRequest(LocalArguments? request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Text)) return new(400, null, "Player ID required.");
+        if (request.Value is null or <= 0) return new(503, null, "Contact capacity unavailable.");
+        var updated = user.DeepClone().AsObject();
+        var incoming = updated["_local_friend_approval_pending"] as JsonArray;
+        var entry = incoming?.FirstOrDefault(value => value?["player_id"]?.GetValue<string>() == request.Text);
+        var friends = updated["_local_friend_players"] as JsonArray ?? new JsonArray();
+        if (entry is null || friends.Count >= request.Value
+            || friends.Any(value => value?["player_id"]?.GetValue<string>() == request.Text))
+            return new(0, new() { ["result"] = 1, ["friend_list"] = friends.DeepClone() });
+        friends.Add(entry.DeepClone());
+        incoming!.Remove(entry);
+        if (friends.Parent is null) updated["_local_friend_players"] = friends;
+        Save(updated);
+        return new(0, new() { ["result"] = 0, ["friend_list"] = friends.DeepClone() });
+    }
 
     private LocalReply CancelContactRequest(LocalArguments? request)
     {

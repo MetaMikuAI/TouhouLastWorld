@@ -56,7 +56,7 @@
 | FriendAcceptRequest | friend/accept_apply | 业务实现 | 按主数据容量将本地申请转为关系并保存；亲密度初始为零，不同步远端或校验对方容量 |
 | FriendApplyListRequest | friend/apply_list | 业务实现 | 返回已保存的本地申请；不从远端获取 |
 | FriendApplyRequest | 未确认 | 未实现 | — |
-| FriendApproveRequest | 未确认 | 未实现 | — |
+| FriendApproveRequest | friend_approve | 业务实现 | 按 player_id 接受本地申请并保存关系；校验容量、重复和申请存在性，失败 result=1；不校验远端状态 |
 | FriendDeleteRequest | friend_delete | 业务实现 | 按 player_id 删除旧版本地关系并返回剩余列表；不存在时 result=1，不同步远端或新版 public_id 关系 |
 | FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 空候选列表；不含候选匹配 |
 | FriendGetHelperDetailRequest | 未确认 | 未实现 | — |
