@@ -165,7 +165,7 @@
 | RogueLiteRerollRequest | 未确认 | 未实现 | — |
 | RogueLiteTopRequest | 未确认 | 未实现 | — |
 | SeriesBattleEndRequest | 未确认 | 未实现 | — |
-| SeriesBattleGetReplayInfoRequest | 未确认 | 未实现 | — |
+| SeriesBattleGetReplayInfoRequest | get_series_battle_replay_info | 业务实现 | 按关卡及 1–5 分区读取重放；未请求或无记录的字段为空 |
 | SeriesBattleRankingEndRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingGetListRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingGetTeamInfoRequest | 未确认 | 未实现 | — |

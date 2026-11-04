@@ -39,6 +39,12 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
+        if (api == "get_series_battle_replay_info")
+        {
+            var query = request.TryCast<SeriesBattleGetReplayInfoRequest>();
+            arguments = query == null ? null : new LocalArguments(EntityId: query.stage_id,
+                Ids: query.area_index?.ToArray().Select(area => (long)area).ToArray());
+        }
         if (api == "get_auto_replay_info")
         {
             var query = request.TryCast<GetAutoReplayInfoRequest>();
