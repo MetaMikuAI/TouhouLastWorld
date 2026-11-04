@@ -45,7 +45,7 @@
 | EpisodeEndRequest | 未确认 | 未实现 | — |
 | EventAnniversaryInfoGetAPIRequest | anniversary_info_get | 最小响应 | 返回未填写邮箱；不提交报名或发放奖励 |
 | EventAnniversaryInfoUpdateAPIRequest | 未确认 | 未实现 | — |
-| EventPersonalInfoGetAPIRequest | 未确认 | 未实现 | — |
+| EventPersonalInfoGetAPIRequest | personal_info_get | 最小响应 | 返回未填写联系信息；不提交报名或发放奖励 |
 | EventPersonalInfoUpdateAPIRequest | 未确认 | 未实现 | — |
 | EventPointGachaDoAPIRequest | 未确认 | 未实现 | — |
 | EventTopRequest | 未确认 | 未实现 | — |
