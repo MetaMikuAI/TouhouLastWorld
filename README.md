@@ -61,7 +61,7 @@
 | FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 读取本地候选列表，默认空；不含候选匹配或远端查询 |
 | FriendGetHelperDetailRequest | friend_get_helper_detail | 最小响应 | 无可用援助；返回零编号触发未选中分支，不生成对象或装备 |
 | FriendGetHistoryRequest | 未确认 | 未实现 | — |
-| FriendGetRequest | 未确认 | 未实现 | — |
+| FriendGetRequest | friend/receive | 业务实现 | 领取本地收件记录中的明确金币数量，更新标记并防重复；每日 UTC 最多 30 份，校验金币容量，不生成收件或奖励数量 |
 | FriendGiveRequest | friend/give | 业务实现 | 单个或批量清除本地可赠送标记并保存待投递记录；重复调用不重复入队，不投递远端、不生成奖励或每日重置 |
 | FriendInfoRequest | friend/info | 最小响应 | 已有关系返回本地三项累计计数，缺失值为零；不代表远端统计，未知关系返回未找到 |
 | FriendListRequest | friend/list | 业务实现 | 返回本地关系；申请提示按本地未处理申请计算，不同步远端 |

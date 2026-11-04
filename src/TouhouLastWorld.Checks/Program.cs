@@ -1637,3 +1637,39 @@ giftReload.Dispatch("friend/give", arguments: new(Value: 1));
 Check(JsonNode.Parse(File.ReadAllText(Path.Combine(giftDirectory, "user.json")))!["_local_friend_gifts_sent"]!.AsArray().Count == 2,
     "gift flags and outgoing records survive restart without duplicate sends");
 Console.WriteLine("Passed 4 local gift checks.");
+
+var receiveGiftSeed = JsonNode.Parse(seed)!;
+receiveGiftSeed["_local_friends"] = new JsonArray(
+    new JsonObject { ["public_id"] = "A", ["is_receive_gold"] = true },
+    new JsonObject { ["public_id"] = "B", ["is_receive_gold"] = true });
+receiveGiftSeed["_local_friend_gifts_inbox"] = new JsonArray(new JsonObject { ["public_id"] = "A", ["gold"] = 25 });
+var receiveGiftDirectory = directory + "-receive-gift";
+var receiveGiftServer = new OfflineServer(receiveGiftDirectory, receiveGiftSeed.ToJsonString(), "offline://resources/");
+receiveGiftServer.Dispatch("game_init");
+receiveGiftServer.Dispatch("login");
+Check(receiveGiftServer.Dispatch("friend/receive", arguments: new(99999, 1)).Status == 503
+    && receiveGiftServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<long>() == 5000,
+    "missing gift amount preserves the entire selected batch");
+Check(receiveGiftServer.Dispatch("friend/receive", arguments: new(5000, 0, Text: "A")).Status == 409,
+    "gift capacity rejection preserves the receipt");
+var receivedGiftReply = receiveGiftServer.Dispatch("friend/receive", arguments: new(99999, 0, Text: "A")).Body!;
+Check(receivedGiftReply["user_update"]!["gold"]!.GetValue<int>() == 5025
+    && receivedGiftReply["user_list"]![0]!.GetValue<string>() == "A",
+    "gift receipt credits the saved amount and reports its sender");
+var receiveGiftReload = new OfflineServer(receiveGiftDirectory, seed, "offline://resources/");
+receiveGiftReload.Dispatch("game_init");
+receiveGiftReload.Dispatch("login");
+Check(receiveGiftReload.Dispatch("friend/receive", arguments: new(99999, 0, Text: "A")).Body!["user_list"]!.AsArray().Count == 0
+    && receiveGiftReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<long>() == 5025,
+    "replayed gift receipt cannot credit the same amount after restart");
+receiveGiftSeed["_local_friend_gift_day"] = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd");
+receiveGiftSeed["_local_friend_gift_count"] = 29;
+receiveGiftSeed["_local_friend_gifts_inbox"]!.AsArray().Add(new JsonObject { ["public_id"] = "B", ["gold"] = 30 });
+var limitedGifts = new OfflineServer(directory + "-limited-gifts", receiveGiftSeed.ToJsonString(), "offline://resources/");
+limitedGifts.Dispatch("game_init");
+limitedGifts.Dispatch("login");
+Check(limitedGifts.Dispatch("friend/receive", arguments: new(99999, 1)).Body!["user_list"]!.AsArray().Count == 1
+    && limitedGifts.Dispatch("friend/receive", arguments: new(99999, 1)).Status == 20006
+    && limitedGifts.Dispatch("friend/list").Body!["data"]![1]!["is_receive_gold"]!.GetValue<bool>(),
+    "daily limit leaves unclaimed gifts pending");
+Console.WriteLine("Passed 5 gift receipt checks.");

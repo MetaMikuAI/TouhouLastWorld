@@ -104,6 +104,12 @@ public partial class NetworkSystemPatch
             var gift = request.TryCast<FriendGiveRequest>();
             arguments = gift == null ? null : new LocalArguments(Value: gift.is_all ? 1 : 0, Text: gift.public_id);
         }
+        if (api == "friend/receive")
+        {
+            var gift = request.TryCast<FriendGetRequest>();
+            arguments = gift == null ? null : new LocalArguments(MasterDB.This()?.Setting?.GOLD_MAX,
+                gift.is_all ? 1 : 0, Text: gift.public_id);
+        }
         if (api == "friend/accept_apply")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX,
                 Text: request.TryCast<FriendAcceptRequest>()?.public_id);
