@@ -58,6 +58,21 @@ public partial class NetworkSystemPatch
                     next.spec_actualize, picture.spec_actualize_limit, next.item_id, next.item_value, next.consume_gold) };
             }
         }
+        if (api == "picture_spec_actualize_chemicals")
+        {
+            var change = request.TryCast<PictureSpecActualizeChemicalRequest>();
+            var picture = change == null ? null : User.This()?.picture?.Find(change.user_picture_id);
+            arguments = new LocalArguments(change?.user_picture_id);
+            if (picture != null && picture.spec_actualize >= 0 && picture.spec_actualize < picture.spec_actualize_limit)
+            {
+                var status = new PictureStatus(picture.picture_id);
+                var master = MasterDB.This();
+                var next = master?.PictureEnhanceChemical?.Find(status.GetPictureType(), status.GetRare(), picture.spec_actualize + 1);
+                var growth = master?.PictureSpecActualize?.Find(status.GetPictureType(), status.GetRare(), picture.spec_actualize + 1);
+                if (next != null && growth != null) arguments = arguments with { PictureGrowth = new(picture.picture_id, picture.spec_actualize,
+                    next.spec_actualize, picture.spec_actualize_limit, next.item_id, next.item_value, 0) };
+            }
+        }
         if (api == "unit_level_limitbreak")
         {
             var change = request.TryCast<UnitLevelLimitbreakRequest>();

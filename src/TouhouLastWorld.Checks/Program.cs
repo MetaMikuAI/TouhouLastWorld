@@ -2077,3 +2077,12 @@ Check(pictureGrowthReload.Dispatch("picture_spec_actualize", arguments: new(700,
     && pictureGrowthReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
     "equipment growth persists and rejects stale advancement");
 Console.WriteLine("Passed 3 equipment growth checks.");
+var chemicalGrowthRule = pictureGrowthRule with { Current = 1, Next = 2, ItemCount = 2, GoldCost = 0 };
+Check(pictureGrowthReload.Dispatch("picture_spec_actualize_chemicals", arguments: new(700, PictureGrowth: chemicalGrowthRule with { ItemCount = 3 })).Status == 409,
+    "chemical growth rejects insufficient inventory");
+var chemicalGrown = pictureGrowthReload.Dispatch("picture_spec_actualize_chemicals", arguments: new(700, PictureGrowth: chemicalGrowthRule)).Body!["user_update"]!;
+Check(chemicalGrown["gold"]!.GetValue<int>() == 4900
+    && chemicalGrown["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 0
+    && chemicalGrown["picture"]!["picture_list"]![0]!["spec_actualize"]!.GetValue<int>() == 2,
+    "chemical growth consumes only materials and advances equipment");
+Console.WriteLine("Passed 2 chemical growth checks.");

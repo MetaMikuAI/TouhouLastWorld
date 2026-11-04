@@ -143,7 +143,7 @@
 | PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
 | PictureProtectionRequest | picture_protection | 业务实现 | 保护标记校验、更新与保存 |
 | PictureRecycleRequest | 未确认 | 未实现 | — |
-| PictureSpecActualizeChemicalRequest | 未确认 | 未实现 | — |
+| PictureSpecActualizeChemicalRequest | picture_spec_actualize_chemicals | 业务实现 | 按类型、稀有度和下一等级配置消耗特殊材料；校验归属与上限后保存强化等级，不扣金币 |
 | PictureSpecActualizeRequest | picture_spec_actualize | 业务实现 | 按类型、稀有度和下一等级配置消耗物品与金币；校验归属、等级和上限后保存强化等级 |
 | PopupAdWindowRequest | popup | 最小响应 | 确认弹窗打开通知，恢复调用方交互；不上传、不记录、不改变资产 |
 | previewAvatarAPIAsyncRequest | avatar/preview | 业务实现 | 保存指定条目的已读状态，按剩余未读且已解锁条目返回提示；列表读取本地条目，不自动解锁 |
