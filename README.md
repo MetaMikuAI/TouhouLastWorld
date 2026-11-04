@@ -13,7 +13,7 @@
 | AppleSwitchDoRequest | 未确认 | 未实现 | — |
 | AppleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
 | ArenaBattleEndRequest | 未确认 | 未实现 | — |
-| ArenaBattleStartRequest | 未确认 | 未实现 | — |
+| ArenaBattleStartRequest | arena_battle_start | 业务实现 | 校验主表、本地入场规则、队伍及周常跨场成员限制，按配置扣点并保存待结算状态；重试不重复扣点，入场规则自动生成及结算未实现 |
 | AutoReplayEndRequest | 未确认 | 未实现 | — |
 | AutoReplayStartRequest | auto_replay_start | 最小响应 | 无运行任务时返回原生“未启动”状态，不扣费；已有任务拒绝覆盖；后台执行与奖励结算尚未实现 |
 | BatchSearchRequest | 未确认 | 未实现 | — |

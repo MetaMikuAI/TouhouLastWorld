@@ -3410,3 +3410,46 @@ Check(eventDrawNext.Status == 0 && eventDrawNext.Body!["user_update"]!["event_in
     && eventDrawNext.Body["event_point_gacha_list"]![1]!["drop_count_list"]![0]!["drop_count"]!.GetValue<int>() == 1,
     "completed target rewards unlock the next stage with persistent counts");
 Console.WriteLine("Passed 5 event draw settlement checks.");
+
+var arenaEntrySeed = dailyOverviewSeed.DeepClone();
+arenaEntrySeed["_local_daily_arena"]!["enemy_info"]![0]!["enemy2"] = new JsonObject { ["enemy_id"] = 0 };
+arenaEntrySeed["_local_daily_arena"]!["entry_rules"] = new JsonArray(new JsonObject {
+    ["difficulty"] = 2, ["enemy_level"] = 20, ["battle_number"] = 0, ["cost"] = 10 });
+var arenaEntryDirectory = directory + "-arena-entry";
+var arenaEntryServer = new OfflineServer(arenaEntryDirectory, arenaEntrySeed.ToJsonString(), "offline://resources/");
+arenaEntryServer.Dispatch("game_init");
+arenaEntryServer.Dispatch("login");
+var arenaEntryRule = new LocalArenaStart(1, 1, 20, 2, 0, [1]);
+Check(arenaEntryServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule with { BattleId = 2 })).Status == 409
+    && arenaEntryServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule with { Difficulty = 3 })).Status == 503,
+    "battle mismatch and missing admission rules reject entry");
+var arenaEntryReply = arenaEntryServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule));
+var arenaEntryRetry = arenaEntryServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaEntryRule));
+Check(arenaEntryReply.Status == 0 && arenaEntryRetry.Status == 0
+    && arenaEntryReply.Body!["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 90
+    && arenaEntryRetry.Body!["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 90,
+    "admission deducts once and retries return the current balance");
+var arenaEntryReload = new OfflineServer(arenaEntryDirectory, seed, "offline://resources/");
+arenaEntryReload.Dispatch("game_init");
+var arenaEntrySaved = arenaEntryReload.Dispatch("login").Body!["user"]!;
+Check(arenaEntrySaved["_local_arena_pending"]!["custom_battle_id"]!.GetValue<int>() == 1
+    && arenaEntrySaved["phantasm_point"]!["points"]!.GetValue<int>() == 90,
+    "pending battle and admission payment survive restart");
+var arenaWeeklySeed = weeklyOverviewSeed.DeepClone();
+arenaWeeklySeed["_local_weekly_arena"]!["entry_rules"] = new JsonArray(new JsonObject {
+    ["difficulty"] = 2, ["enemy_level"] = 0, ["battle_number"] = 1, ["cost"] = 0 });
+var arenaWeeklyTeam = arenaWeeklySeed["team"]!["team_list"]![0]!.DeepClone();
+arenaWeeklyTeam["number"] = 60;
+arenaWeeklySeed["team"]!["team_list"]!.AsArray().Add(arenaWeeklyTeam);
+arenaWeeklySeed["_local_weekly_arena"]!["weekly_battle_data"]!["battle_number2"]!["unit_list"] =
+    new JsonArray(arenaWeeklySeed["unit"]!["unit_list"]![0]!["unit_id"]!.GetValue<int>());
+var arenaWeeklyServer = new OfflineServer(directory + "-arena-weekly-entry", arenaWeeklySeed.ToJsonString(), "offline://resources/");
+arenaWeeklyServer.Dispatch("game_init");
+arenaWeeklyServer.Dispatch("login");
+var arenaWeeklyRule = new LocalArenaStart(2, 1, 0, 2, 1, [60]);
+Check(arenaWeeklyServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaWeeklyRule)).Status == 409,
+    "weekly entry prevents reusing a character type from another battle");
+arenaWeeklyServer.Dispatch("weekly_arena_battle_score_reset", arguments: new(Value: 2));
+Check(arenaWeeklyServer.Dispatch("arena_battle_start", arguments: new(ArenaStart: arenaWeeklyRule)).Status == 0,
+    "weekly reset releases the occupied character for admission");
+Console.WriteLine("Passed 5 arena admission checks.");
