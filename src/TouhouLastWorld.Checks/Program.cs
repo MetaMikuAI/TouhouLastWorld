@@ -2504,3 +2504,26 @@ Check(passRewardsReload.Dispatch("pass_card/collect_reward", arguments: new(2, 0
     && passRewardsReload.Dispatch("pass_card/collect_reward", arguments: new(Value: 1, PassRewards: passRewardRules)).Body!["user_pass_card"]!["free_rewards"]!.AsArray().Count == 0,
     "pass reward claims persist and repeat batches do not grant again");
 Console.WriteLine("Passed 4 pass reward checks.");
+
+var passBuySeed = passSeed.DeepClone();
+passBuySeed["orb"]!["free"] = 25L;
+passBuySeed["orb"]!["purchased"] = 20L;
+var passBuyDirectory = directory + "-pass-buy";
+var passBuyServer = new OfflineServer(passBuyDirectory, passBuySeed.ToJsonString(), "offline://resources/");
+passBuyServer.Dispatch("game_init");
+passBuyServer.Dispatch("login");
+Check(passBuyServer.Dispatch("pass_card/user_orb_add_level", arguments: new(Value: 21, PassRewards: passRewardRules)).Status == 400
+    && passBuyServer.Dispatch("pass_card/user_orb_add_level", arguments: new(Value: 1600, PassRewards: passRewardRules)).Status == 409
+    && passBuyServer.Dispatch("pass_card/user_orb_add_level", arguments: new(Value: 60, PassRewards: passRewardRules)).Status == 20000,
+    "pass level purchase rejects invalid quantities, excess levels and insufficient balance");
+var passBought = passBuyServer.Dispatch("pass_card/user_orb_add_level", arguments: new(Value: 40, PassRewards: passRewardRules)).Body!;
+Check(passBought["user_pass_card"]!["level"]!.GetValue<int>() == 3 && passBought["user_pass_card"]!["current_exp"]!.GetValue<int>() == 140
+    && passBought["user_update"]!["orb"]!["free"]!.GetValue<long>() == 0 && passBought["user_update"]!["orb"]!["purchased"]!.GetValue<long>() == 5,
+    "pass level purchase deducts balance and retains experience");
+var passBuyReload = new OfflineServer(passBuyDirectory, seed, "offline://resources/");
+passBuyReload.Dispatch("game_init");
+passBuyReload.Dispatch("login");
+Check(passBuyReload.Dispatch("pass_card/show_task").Body!["user_pass_card"]!["level"]!.GetValue<int>() == 3
+    && passBuyReload.Dispatch("pass_card/user_orb_add_level", arguments: new(Value: 20, PassRewards: passRewardRules)).Status == 20000,
+    "pass purchased levels and spent balance survive restart");
+Console.WriteLine("Passed 3 pass level purchase checks.");

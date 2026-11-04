@@ -5,7 +5,11 @@ public partial class NetworkSystemPatch
     private static LocalArguments? ReadPassRewards(CollectRewardRequest? request)
     {
         if (request == null) return null;
-        var arguments = new LocalArguments(request.level, request.is_all, Text: request.reward_type);
+        return ReadPassRewardDefinitions(new LocalArguments(request.level, request.is_all, Text: request.reward_type));
+    }
+
+    private static LocalArguments ReadPassRewardDefinitions(LocalArguments arguments)
+    {
         var master = MasterDB.This();
         var setting = master?.Setting;
         var rows = master?.PassCard?.ToList()?.ToArray();
