@@ -88,7 +88,7 @@
 | GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 |
 | GetProfileSettingAPIRequest | get_profile_setting | 业务实现 | 读取本地布局，首次返回空字符串使用客户端默认值；成就列表为空 |
 | GetQuestClearedTeamInfoRequest | 未确认 | 未实现 | — |
-| GetRaidGaugeRequest | 未确认 | 未实现 | — |
+| GetRaidGaugeRequest | get_raid_gauge | 最小响应 | 进度列表为空，客户端使用零累计值；不统计跨用户进度 |
 | GetShrineOfficeShopListRequest | get_shrine_office_shop_list | 最小响应 | 空目录；不含兑换或购买 |
 | GetSwitchCodeRequest | 未确认 | 未实现 | — |
 | GetVersusReplayInfoRequest | get_multiple_spirits_weekly_replay_info | 业务实现 | 按目标读取本地重放；无记录返回空内容，客户端关闭重放模式 |
