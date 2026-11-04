@@ -181,7 +181,7 @@
 | ShopListRequest | get_shop_list | 最小响应 | 空目录与空推荐列表；不含订单处理 |
 | ShopOrderRequest | 未确认 | 未实现 | — |
 | ShowRewardRequest | 未确认 | 未实现 | — |
-| ShowShopRequest | 未确认 | 未实现 | — |
+| ShowShopRequest | pass_card/show_shop | 最小响应 | 未开通摘要与空目录；不含订单处理 |
 | ShowTaskRequest | pass_card/show_task | 最小响应 | 未开通摘要与空任务；不含权益和奖励 |
 | SweepRequest | 未确认 | 未实现 | — |
 | SwitchDoRequest | 未确认 | 未实现 | — |
