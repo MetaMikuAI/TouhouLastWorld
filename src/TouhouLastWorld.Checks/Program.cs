@@ -3142,3 +3142,24 @@ Check(stageRewardReload.Dispatch("battle_pass_receive_reward", arguments: new(Ba
     && stageRewardReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
     "stage reward progress persists and prevents duplicate grants");
 Console.WriteLine("Passed 3 stage reward checks.");
+var rankingSeed = JsonNode.Parse(seed)!;
+rankingSeed["_local_ranking_teams"] = new JsonArray(new JsonObject { ["manage_id"] = 30, ["public_id"] = "local-entry",
+    ["player_name"] = "local", ["difficulty"] = 1, ["stage_group_master_id"] = 40,
+    ["area1_team_info"] = new JsonArray(new JsonObject { ["unit_id"] = 1001, ["costume_id"] = 100101 }),
+    ["area2_team_info"] = new JsonArray(), ["area3_team_info"] = new JsonArray(),
+    ["area4_team_info"] = new JsonArray(), ["area5_team_info"] = new JsonArray() });
+var rankingServer = new OfflineServer(directory + "-ranking-history", rankingSeed.ToJsonString(), "offline://resources/");
+rankingServer.Dispatch("game_init");
+rankingServer.Dispatch("login");
+var rankingQuery = new LocalArguments(Value: 30, Text: "local-entry", HistoryDefinitions: historyDefinitions with { StageGroups = new[] { 40 } });
+Check(rankingServer.Dispatch("get_series_battle_ranking_teaminfo", arguments: rankingQuery with { Value = 31 }).Status == 404
+    && rankingServer.Dispatch("get_series_battle_ranking_teaminfo", arguments: rankingQuery with { HistoryDefinitions = historyDefinitions }).Status == 503,
+    "ranking query requires matching identifiers and valid stage definitions");
+var rankingReply = rankingServer.Dispatch("get_series_battle_ranking_teaminfo", arguments: rankingQuery).Body!;
+Check(rankingReply["area1_team_info"]![0]!["costume_id"]!.GetValue<int>() == 100101
+    && rankingReply["area5_team_info"]!.AsArray().Count == 0 && !rankingReply.ContainsKey("public_id"),
+    "ranking history returns validated area members and omits internal query keys");
+rankingReply["area1_team_info"]![0]!["unit_id"] = 0;
+Check(rankingServer.Dispatch("get_series_battle_ranking_teaminfo", arguments: rankingQuery).Body!["area1_team_info"]![0]!["unit_id"]!.GetValue<int>() == 1001,
+    "ranking response mutation does not alter stored history");
+Console.WriteLine("Passed 3 ranking history checks.");

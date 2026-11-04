@@ -42,6 +42,7 @@ public partial class NetworkSystemPatch
         if (api == "mission_end") arguments = ReadMissionClaim(request.TryCast<MissionEndRequest>());
         if (api == "battle_pass_mission_end") arguments = ReadBattlePassClaim(request.TryCast<BattlePassMissionEndRequest>());
         if (api == "battle_pass_receive_reward") arguments = ReadBattlePassRewards();
+        if (api == "get_series_battle_ranking_teaminfo") arguments = ReadRankingHistory(request.TryCast<SeriesBattleRankingGetTeamInfoRequest>());
         if (api == "dispatch_end") arguments = ReadDispatchSettlement(request.TryCast<DispatchEndRequest>());
         if (api == "retry_gacha_fix")
         {
@@ -701,10 +702,10 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api is "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward")
+            if (api is "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo")
             {
                 var panel = UnityEngine.Object.FindObjectOfType<MissionBehavior>();
-                if (panel != null) panel.m_rcvflg = false;
+                if (api != "get_series_battle_ranking_teaminfo" && panel != null) panel.m_rcvflg = false;
                 SceneSystem.This()?.IndicatorActive(false);
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);

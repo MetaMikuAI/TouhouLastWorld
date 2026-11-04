@@ -168,7 +168,7 @@
 | SeriesBattleGetReplayInfoRequest | get_series_battle_replay_info | 业务实现 | 按关卡及 1–5 分区读取重放；未请求或无记录的字段为空 |
 | SeriesBattleRankingEndRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingGetListRequest | get_series_battle_ranking_list | 最小响应 | 排行和个人排名为空，不生成名次或分数 |
-| SeriesBattleRankingGetTeamInfoRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingGetTeamInfoRequest | get_series_battle_ranking_teaminfo | 业务实现 | 按管理编号和公开编号读取本地队伍快照，校验关卡、难度、连续区域及服装归属；快照缺失时报错，不生成排名或历史记录 |
 | SeriesBattleRankingResetRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingScoreSimulateRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingStartRequest | 未确认 | 未实现 | — |

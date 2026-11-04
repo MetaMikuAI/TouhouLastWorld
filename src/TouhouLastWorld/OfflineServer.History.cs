@@ -3,10 +3,46 @@ using System.Text.Json.Nodes;
 namespace TouhouLastWorld;
 
 public sealed record LocalHistoryQuery(int Kind, int FirstId, int SecondId, int Type, string? PlayerId);
-public sealed record LocalHistoryDefinitions(int[] Units, Dictionary<int, int> Costumes, int[] Pictures, int[]? Achievements = null);
+public sealed record LocalHistoryDefinitions(int[] Units, Dictionary<int, int> Costumes, int[] Pictures,
+    int[]? Achievements = null, int[]? StageGroups = null);
 
 public sealed partial class OfflineServer
 {
+    private LocalReply RankingHistoryTeam(LocalArguments? request)
+    {
+        if (request?.Value is null or <= 0 || string.IsNullOrWhiteSpace(request.Text) || request.Text.Any(char.IsControl))
+            return new(400, null, "Complete ranking query required.");
+        var matches = (user["_local_ranking_teams"] as JsonArray)?.Where(row =>
+            row?["manage_id"]?.GetValue<int>() == request.Value && row["public_id"]?.GetValue<string>() == request.Text).ToArray();
+        if (matches is null || matches.Length == 0) return new(404, null, "Local ranking team not found.");
+        if (matches.Length != 1 || matches[0] is not JsonObject source || request.HistoryDefinitions is not { } rules
+            || source["difficulty"]?.GetValue<int>() is not (>= 0 and <= 2)
+            || source["stage_group_master_id"]?.GetValue<int>() is not int group || rules.StageGroups?.Contains(group) != true
+            || source["player_name"] is not JsonValue nameValue || !nameValue.TryGetValue<string>(out var name) || name.Any(char.IsControl))
+            return new(503, null, "Ranking team definitions unavailable.");
+        var response = new JsonObject { ["player_name"] = name, ["difficulty"] = source["difficulty"]!.DeepClone(),
+            ["stage_group_master_id"] = group };
+        var ended = false;
+        for (var area = 1; area <= 5; area++)
+        {
+            var key = $"area{area}_team_info";
+            if (source[key] is not JsonArray team || team.Count > 6 || area == 1 && team.Count == 0 || ended && team.Count > 0)
+                return new(503, null, "Ranking areas are incomplete.");
+            if (team.Count == 0) ended = true;
+            var members = new JsonArray();
+            foreach (var member in team)
+            {
+                if (member?["unit_id"]?.GetValue<int>() is not int unit || unit <= 0 || !rules.Units.Contains(unit)
+                    || member["costume_id"]?.GetValue<int>() is not int costume
+                    || !rules.Costumes.TryGetValue(costume, out var owner) || owner != unit)
+                    return new(503, null, "Ranking member definition unavailable.");
+                members.Add(new JsonObject { ["unit_id"] = unit, ["costume_id"] = costume });
+            }
+            response[key] = members;
+        }
+        return new(0, response);
+    }
+
     private LocalReply HistoryPlayer(LocalArguments? request, bool summaryOnly = false)
     {
         if (string.IsNullOrWhiteSpace(request?.Text) || request.Text.Any(char.IsControl))
