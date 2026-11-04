@@ -20,7 +20,7 @@ public sealed partial class OfflineServer
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
-        or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
+        or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply" or "friend/apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_request" or "friend_approve" or "reset_point_allocation" or "allocate_points"
         or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
@@ -37,6 +37,8 @@ public sealed partial class OfflineServer
         "friend_delete" => DeleteContact(arguments?.Text),
         "reset_point_allocation" => ResetPoints(arguments?.PointReset),
         "allocate_points" => AllocatePoints(arguments?.PointAllocation),
+        "friend/apply" => ApplyContact(arguments),
+        "friend/recommend" => new(0, new() { ["data"] = user["_local_friend_recommendations"]?.DeepClone() ?? new JsonArray() }),
         "friend/info" => ContactInfo(arguments?.Text),
         "friend/refuse_apply" => RefuseContactApplications(arguments),
         "friend/accept_apply" => AcceptContactApplication(arguments),
@@ -189,6 +191,27 @@ public sealed partial class OfflineServer
         battle["total_score"] = 0;
         battle["unit_list"] = new JsonArray();
         battle["user_unit_list"] = new JsonArray();
+        Save(updated);
+        return new(0, new());
+    }
+
+    private LocalReply ApplyContact(LocalArguments? request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Text)) return new(400, null, "Contact ID required.");
+        if (request.Value is null or <= 0) return new(503, null, "Contact capacity unavailable.");
+        var updated = user.DeepClone().AsObject();
+        var friends = updated["_local_friends"] as JsonArray ?? new JsonArray();
+        if (friends.Count >= request.Value) return new(20007, null, "Local contact list is full.");
+        if (friends.Any(entry => entry?["public_id"]?.GetValue<string>() == request.Text))
+            return new(409, null, "Local contact already exists.");
+        var candidate = (updated["_local_friend_recommendations"] as JsonArray)?
+            .FirstOrDefault(entry => entry?["public_id"]?.GetValue<string>() == request.Text);
+        if (candidate is null) return new(404, null, "Local candidate not found.");
+        var outgoing = updated["_local_friend_outgoing"] as JsonArray ?? new JsonArray();
+        if (outgoing.Any(entry => entry?["public_id"]?.GetValue<string>() == request.Text))
+            return new(409, null, "Local application already exists.");
+        outgoing.Add(candidate.DeepClone());
+        if (outgoing.Parent is null) updated["_local_friend_outgoing"] = outgoing;
         Save(updated);
         return new(0, new());
     }

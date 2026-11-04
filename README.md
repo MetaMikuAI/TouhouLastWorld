@@ -55,7 +55,7 @@
 | FirstGachaSaveRequest | 未确认 | 未实现 | — |
 | FriendAcceptRequest | friend/accept_apply | 业务实现 | 按主数据容量将本地申请转为关系并保存；亲密度初始为零，不同步远端或校验对方容量 |
 | FriendApplyListRequest | friend/apply_list | 业务实现 | 返回已保存的本地申请；不从远端获取 |
-| FriendApplyRequest | 未确认 | 未实现 | — |
+| FriendApplyRequest | friend/apply | 业务实现 | 按 public_id 向本地推荐玩家发出并保存申请；校验关系容量、重复和已有关系，不校验远端容量或发送远端请求 |
 | FriendApproveRequest | friend_approve | 业务实现 | 按 player_id 接受本地申请并保存关系；校验容量、重复和申请存在性，失败 result=1；不校验远端状态 |
 | FriendDeleteRequest | friend_delete | 业务实现 | 按 player_id 删除旧版本地关系并返回剩余列表；不存在时 result=1，不同步远端或新版 public_id 关系 |
 | FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 读取本地候选列表，默认空；不含候选匹配或远端查询 |
@@ -66,7 +66,7 @@
 | FriendInfoRequest | friend/info | 最小响应 | 已有关系返回本地三项累计计数，缺失值为零；不代表远端统计，未知关系返回未找到 |
 | FriendListRequest | friend/list | 业务实现 | 返回本地关系；申请提示按本地未处理申请计算，不同步远端 |
 | FriendPlayerSearchRequest | friend_player_search | 最小响应 | 本地无远端用户目录，返回未找到；不返回虚构资料 |
-| FriendRecommendRequest | friend/recommend | 最小响应 | 空推荐列表；不含匹配逻辑 |
+| FriendRecommendRequest | friend/recommend | 最小响应 | 读取本地推荐列表，默认空；不含匹配逻辑或远端查询 |
 | FriendRefuseRequest | friend/refuse_apply | 业务实现 | 删除单条或全部本地申请并保存；列表与提示同步读取，不联系远端 |
 | FriendRequestCancelRequest | friend_request_cancel | 业务实现 | 按 player_id 取消本地申请，全部拒绝仅清空收到的申请；目标不存在时 result=1，不同步远端 |
 | FriendRequestRequest | friend_request | 业务实现 | 向本地候选玩家发出申请并持久化；校验申请与关系容量、重复和已有关系，不发送远端请求或校验对方容量 |

@@ -1280,3 +1280,27 @@ sendContactReload.Dispatch("friend_request_cancel", arguments: new(Value: 0, Tex
 Check(sendContactReload.Dispatch("friend_request", arguments: new(EntityId: 2, Value: 1, Text: "candidate-b")).Body!["result"]!.GetValue<int>() == 0,
     "cancellation releases local request capacity");
 Console.WriteLine("Passed 5 outgoing contact request checks.");
+var applyContactSeed = JsonNode.Parse(seed)!.AsObject();
+applyContactSeed["_local_friend_recommendations"] = new JsonArray(new JsonObject { ["public_id"] = "candidate", ["player_name"] = "Local" });
+applyContactSeed["_local_friends"] = new JsonArray(new JsonObject { ["public_id"] = "existing" });
+var applyContactDirectory = directory + "-apply-contact";
+var applyContact = new OfflineServer(applyContactDirectory, applyContactSeed.ToJsonString(), "offline://resources/");
+applyContact.Dispatch("game_init");
+applyContact.Dispatch("login");
+Check(applyContact.Dispatch("friend/apply", arguments: new(Value: 1, Text: "candidate")).Status == 20007
+    && applyContact.Dispatch("friend/apply", arguments: new(Value: 2, Text: "existing")).Status == 409
+    && applyContact.Dispatch("friend/apply", arguments: new(Value: 2, Text: "missing")).Status == 404,
+    "application checks local capacity, existing contacts and candidate presence");
+Check(applyContact.Dispatch("friend/recommend").Body!["data"]!.AsArray().Count == 1
+    && applyContact.Dispatch("friend/apply", arguments: new(Value: 2, Text: "candidate")).Status == 0,
+    "application accepts a stored recommendation");
+var applyContactReload = new OfflineServer(applyContactDirectory, applyContactSeed.ToJsonString(), "offline://resources/");
+applyContactReload.Dispatch("game_init");
+var appliedUser = applyContactReload.Dispatch("login").Body!["user"]!;
+Check(appliedUser["_local_friend_outgoing"]!.AsArray().Count == 1
+    && applyContactReload.Dispatch("friend/apply", arguments: new(Value: 2, Text: "candidate")).Status == 409,
+    "application persists and rejects duplicate delivery after reload");
+Check(applyContactReload.Dispatch("friend/apply_list").Body!["data"]!.AsArray().Count == 0
+    && applyContactReload.Dispatch("friend/list").Body!["data"]!.AsArray().Count == 1,
+    "outgoing application does not create an incoming request or accepted relation");
+Console.WriteLine("Passed 4 public contact application checks.");
