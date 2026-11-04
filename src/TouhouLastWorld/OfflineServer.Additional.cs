@@ -20,10 +20,12 @@ public sealed partial class OfflineServer
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
-        or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply" || QueryTemplates.ContainsKey(api);
+        or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
+        or "friend/info" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "friend/info" => ContactInfo(arguments?.Text),
         "friend/refuse_apply" => RefuseContactApplications(arguments),
         "friend/accept_apply" => AcceptContactApplication(arguments),
         "friend/apply_list" => new(0, new() { ["data"] = user["_local_friend_applications"]?.DeepClone() ?? new JsonArray() }),
@@ -113,6 +115,19 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply ContactInfo(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return new(400, null, "Contact ID required.");
+        var friend = (user["_local_friends"] as JsonArray)?.FirstOrDefault(entry => entry?["public_id"]?.GetValue<string>() == id);
+        if (friend is null) return new(404, null, "Local contact not found.");
+        return new(0, new()
+        {
+            ["unit_get_count"] = friend["unit_get_count"]?.GetValue<int>() ?? 0,
+            ["quest_complete_count"] = friend["quest_complete_count"]?.GetValue<int>() ?? 0,
+            ["dispatch_complete_count"] = friend["dispatch_complete_count"]?.GetValue<int>() ?? 0
+        });
+    }
 
     private LocalReply AcceptContactApplication(LocalArguments? request)
     {

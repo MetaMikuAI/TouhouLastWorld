@@ -63,7 +63,7 @@
 | FriendGetHistoryRequest | 未确认 | 未实现 | — |
 | FriendGetRequest | 未确认 | 未实现 | — |
 | FriendGiveRequest | 未确认 | 未实现 | — |
-| FriendInfoRequest | 未确认 | 未实现 | — |
+| FriendInfoRequest | friend/info | 最小响应 | 已有关系返回本地三项累计计数，缺失值为零；不代表远端统计，未知关系返回未找到 |
 | FriendListRequest | friend/list | 业务实现 | 返回本地关系；申请提示按本地未处理申请计算，不同步远端 |
 | FriendPlayerSearchRequest | friend_player_search | 最小响应 | 本地无远端用户目录，返回未找到；不返回虚构资料 |
 | FriendRecommendRequest | friend/recommend | 最小响应 | 空推荐列表；不含匹配逻辑 |

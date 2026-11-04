@@ -991,3 +991,19 @@ Check(acceptedFriends.Count == 1 && acceptedFriends[0]!["public_id"]!.GetValue<s
 Check(acceptReload.Dispatch("friend/accept_apply", arguments: new(Value: 2, Text: "local-a")).Status == 404,
     "consumed application cannot create duplicate relationship");
 Console.WriteLine("Passed 4 contact acceptance checks.");
+Check(acceptReload.Dispatch("friend/info", arguments: new(Text: "missing")).Status == 404
+    && acceptReload.Dispatch("friend/info").Status == 400, "contact details require known local relation");
+Check(acceptReload.Dispatch("friend/info", arguments: new(Text: "local-a")).Body!["unit_get_count"]!.GetValue<int>() == 0,
+    "contact details use empty counters when unavailable");
+var contactInfoSeed = JsonNode.Parse(seed)!.AsObject();
+contactInfoSeed["_local_friends"] = new JsonArray(new JsonObject
+{
+    ["public_id"] = "local-known", ["unit_get_count"] = 7, ["quest_complete_count"] = 8, ["dispatch_complete_count"] = 9
+});
+var contactInfoServer = new OfflineServer(directory + "-contact-info", contactInfoSeed.ToJsonString(), "offline://resources/");
+contactInfoServer.Dispatch("game_init");
+contactInfoServer.Dispatch("login");
+var knownContact = contactInfoServer.Dispatch("friend/info", arguments: new(Text: "local-known")).Body!;
+Check(knownContact["unit_get_count"]!.GetValue<int>() == 7 && knownContact["quest_complete_count"]!.GetValue<int>() == 8
+    && knownContact["dispatch_complete_count"]!.GetValue<int>() == 9, "contact details preserve stored counters");
+Console.WriteLine("Passed 3 contact detail checks.");
