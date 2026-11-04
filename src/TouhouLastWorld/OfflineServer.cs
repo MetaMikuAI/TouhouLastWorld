@@ -7,7 +7,7 @@ namespace TouhouLastWorld;
 public sealed record LocalReply(int Status, JsonObject? Body, string Error = "");
 public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null);
 
-public sealed class OfflineServer
+public sealed partial class OfflineServer
 {
     private readonly string resourceRoot;
     private string? session;
@@ -46,7 +46,7 @@ public sealed class OfflineServer
             or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack"
             or "afk_top" or "unit_protection" or "unit_new_update" or "picture_protection" or "picture_new_update"
             or "mail_top" or "friend/list" or "unit_voice_autoset_update" or "friend/apply_list" or "friend/recommend"
-            or "get_shop_list"))
+            or "get_shop_list") && !SupportsAdditional(api))
             return new(501, null, $"Offline API not implemented: {api}");
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
@@ -74,7 +74,7 @@ public sealed class OfflineServer
             "unit_new_update" => ClearNewFlags(arguments, "unit", "unit_list", "user_unit_id"),
             "picture_new_update" => ClearNewFlags(arguments, "picture", "picture_list", "user_picture_id"),
             "unit_voice_autoset_update" => SetVoiceAutoset(arguments?.Value),
-            _ => null
+            _ => DispatchAdditional(api, arguments)
         };
         if (operation is { Status: not 0 }) return operation;
         JsonObject body = operation?.Body ?? (api switch

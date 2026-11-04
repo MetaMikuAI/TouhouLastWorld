@@ -202,7 +202,7 @@
 | TreasureInfoRequest | 未确认 | 未实现 | — |
 | TutorialFirstGachaConfirmRequest | 未确认 | 未实现 | — |
 | TutorialFirstGachaDoRequest | 未确认 | 未实现 | — |
-| TutorialUpdateRequest | 未确认 | 未实现 | — |
+| TutorialUpdateRequest | tutorial_update | 业务实现 | 校验并保存单调进度；不含阶段奖励 |
 | UnitAllocatePointsRequest | 未确认 | 未实现 | — |
 | UnitBGMUpdateRequest | 未确认 | 未实现 | — |
 | UnitDestinyValueUpRequest | 未确认 | 未实现 | — |

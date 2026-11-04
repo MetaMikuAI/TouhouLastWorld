@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../TouhouLastWorld/OfflineServer.cs" Link="OfflineServer.cs" />
+    <Compile Include="../TouhouLastWorld/OfflineServer.*.cs" />
     <Compile Include="../TouhouLastWorld/ResponseProtocol.cs" Link="ResponseProtocol.cs" />
   </ItemGroup>
 </Project>
