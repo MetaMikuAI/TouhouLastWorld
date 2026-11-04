@@ -935,3 +935,15 @@ Check(avatarsReload.Dispatch("avatar/list").Body!["avatar_list"]![0]!["is_previe
     && !avatarUser["isShowRedPoint"]!.GetValue<bool>() && avatarUser["avatar_id"]!.GetValue<int>() == 0,
     "avatar read state persists without changing selection");
 Console.WriteLine("Passed 3 avatar preview checks.");
+Check(avatarsReload.Dispatch("avatar/update", arguments: new(Value: 3)).Status == 403
+    && avatarsReload.Dispatch("avatar/update", arguments: new(Value: 99)).Status == 404,
+    "avatar selection rejects locked and unknown entries");
+var selectedAvatar = avatarsReload.Dispatch("avatar/update", arguments: new(Value: 2)).Body!["user_update"]!;
+Check(selectedAvatar["avatar_id"]!.GetValue<int>() == 2 && selectedAvatar["avatar_filename"]!.GetValue<string>() == "IconB",
+    "avatar selection returns saved ID and resource");
+var selectedAvatarReload = new OfflineServer(avatarDirectory, avatarSeed.ToJsonString(), "offline://resources/");
+selectedAvatarReload.Dispatch("game_init");
+var selectedAvatarUser = selectedAvatarReload.Dispatch("login").Body!["user"]!;
+Check(selectedAvatarUser["avatar_id"]!.GetValue<int>() == 2 && selectedAvatarUser["avatar_title"]!.GetValue<string>() == "B"
+    && !selectedAvatarUser["HeadListItemList"]![2]!["is_clear"]!.GetValue<bool>(), "avatar selection persists without unlocking other entries");
+Console.WriteLine("Passed 3 avatar selection checks.");

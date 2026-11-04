@@ -151,7 +151,7 @@
 | QuestHelperSelectRequest | 未确认 | 未实现 | — |
 | ReadUnitTalkRequest | read_unit_talk | 业务实现 | 保存正数对话 ID 的已读标记，重复提交幂等；不校验内容存在性，不生成解锁或奖励 |
 | ReincarnationReleaseRequest | 未确认 | 未实现 | — |
-| replaceAvatarRequest | 未确认 | 未实现 | — |
+| replaceAvatarRequest | avatar/update | 业务实现 | 仅选择本地已解锁条目，保存编号与资源描述；不授予解锁，不验证资源文件是否存在 |
 | RhythmGameEndRequest | rhythm_game_end | 业务实现 | 匹配当前曲目、校验难度 2–4，按曲目和难度分别保存分数、完成率及等级最大值；禁止重复结束，不复算成绩，恢复额度为零且无奖励 |
 | RhythmGameStartRequest | rhythm_game_start | 业务实现 | 校验曲目主数据并保存当前曲目；再次开始替换上次记录，不扣除资源 |
 | RhythmGameTopRequest | rhythm_game_top | 业务实现 | 返回本地最佳成绩；初始为空，曲目由客户端主数据加载 |
