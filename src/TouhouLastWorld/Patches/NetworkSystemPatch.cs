@@ -44,6 +44,8 @@ public partial class NetworkSystemPatch
             var query = request.TryCast<GetAutoReplayInfoRequest>();
             arguments = query == null ? null : new LocalArguments(ReplayMeasure: new(query.quest_type, query.target_id, query.difficulty));
         }
+        if (api == "get_multiple_spirits_weekly_replay_info")
+            arguments = new LocalArguments(EntityId: request.TryCast<GetVersusReplayInfoRequest>()?.multiple_spirits_weekly_master_id);
         if (api == "update_auto_replay_info")
         {
             var update = request.TryCast<UpdateAutoReplayInfoRequest>();

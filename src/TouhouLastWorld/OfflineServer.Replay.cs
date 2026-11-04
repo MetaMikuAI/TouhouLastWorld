@@ -5,6 +5,14 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply GetStoredReplay(long? target)
+    {
+        if (target is null or <= 0 or > int.MaxValue) return new(400, null, "Valid replay target required.");
+        var key = target.Value.ToString(CultureInfo.InvariantCulture);
+        return new(0, user["_local_weekly_replays"]?[key]?.DeepClone().AsObject()
+            ?? new JsonObject { ["level"] = 0, ["add_rules"] = "", ["replay_info"] = "" });
+    }
+
     private LocalReply ReplayMeasurement(LocalReplayMeasure? request, bool write)
     {
         if (request is null || request.QuestType is < 0 or > 4 || request.TargetId <= 0 || request.Difficulty < 0)

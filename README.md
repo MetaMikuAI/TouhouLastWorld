@@ -91,7 +91,7 @@
 | GetRaidGaugeRequest | 未确认 | 未实现 | — |
 | GetShrineOfficeShopListRequest | get_shrine_office_shop_list | 最小响应 | 空目录；不含兑换或购买 |
 | GetSwitchCodeRequest | 未确认 | 未实现 | — |
-| GetVersusReplayInfoRequest | 未确认 | 未实现 | — |
+| GetVersusReplayInfoRequest | get_multiple_spirits_weekly_replay_info | 业务实现 | 按目标读取本地重放；无记录返回空内容，客户端关闭重放模式 |
 | GGTapAdRequest | 未确认 | 未实现 | — |
 | GGTapAdSecRequest | 未确认 | 未实现 | — |
 | GoldBoxRenovationEndRequest | 未确认 | 未实现 | — |
