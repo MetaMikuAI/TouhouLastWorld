@@ -1909,3 +1909,35 @@ Check(rankPromotionReload.Dispatch("unit_rank_promote", arguments: new(rankMater
     && rankPromotionReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4850,
     "promotion survives restart and rejects stale rank without charging again");
 Console.WriteLine("Passed 4 rank promotion checks.");
+
+var awakeningSeed = JsonNode.Parse(seed)!;
+awakeningSeed["piece"] = 100;
+var awakeningDirectory = directory + "-awakening";
+var awakeningServer = new OfflineServer(awakeningDirectory, awakeningSeed.ToJsonString(), "offline://resources/");
+awakeningServer.Dispatch("game_init");
+awakeningServer.Dispatch("login");
+Check(awakeningServer.Dispatch("unit_rare_awaken", arguments: new(rankMaterialId, Awakening: new(1, 3, 20))).Status == 503
+    && awakeningServer.Dispatch("unit_rare_awaken", arguments: new(rankMaterialId, Awakening: new(1, 2, 101))).Status == 409
+    && awakeningServer.Dispatch("login").Body!["user"]!["piece"]!.GetValue<int>() == 100,
+    "awakening validates next step and balance without charging");
+var awakened = awakeningServer.Dispatch("unit_rare_awaken", arguments: new(rankMaterialId, Awakening: new(1, 2, 20))).Body!["user_update"]!;
+Check(awakened["piece"]!.GetValue<int>() == 80 && awakened["unit"]!["unit_list"]![0]!["rare"]!.GetValue<int>() == 2
+    && awakened["unit"]!["unit_list"]![0]!["rank"]!.GetValue<int>() == 1,
+    "awakening consumes configured pieces and changes only the selected growth stage");
+var awakeningReload = new OfflineServer(awakeningDirectory, seed, "offline://resources/");
+awakeningReload.Dispatch("game_init");
+awakeningReload.Dispatch("login");
+Check(awakeningReload.Dispatch("unit_rare_awaken", arguments: new(rankMaterialId, Awakening: new(1, 2, 20))).Status == 409
+    && awakeningReload.Dispatch("login").Body!["user"]!["piece"]!.GetValue<int>() == 80,
+    "awakening persists and rejects a stale retry");
+awakeningSeed["_local_idle"] = new JsonObject
+{
+    ["unit_slot_list"] = new JsonArray(new JsonObject { ["user_object_id"] = rankMaterialId, ["content"] = 4 })
+};
+var awakeningBusy = new OfflineServer(directory + "-awakening-busy", awakeningSeed.ToJsonString(), "offline://resources/");
+awakeningBusy.Dispatch("game_init");
+awakeningBusy.Dispatch("login");
+Check(awakeningBusy.Dispatch("unit_rare_awaken", arguments: new(rankMaterialId, Awakening: new(1, 2, 20))).Status == 409
+    && awakeningBusy.Dispatch("login").Body!["user"]!["piece"]!.GetValue<int>() == 100,
+    "awakening cannot overlap pending idle growth of the same kind");
+Console.WriteLine("Passed 4 awakening checks.");

@@ -39,6 +39,15 @@ public partial class NetworkSystemPatch
             arguments = ReadRankMaterial(request.TryCast<UnitRankPromoteItemSetRequest>());
         if (api == "unit_rank_promote")
             arguments = ReadRankPromotion(request.TryCast<UnitRankPromoteRequest>());
+        if (api == "unit_rare_awaken")
+        {
+            var awakening = request.TryCast<UnitRareAwakenRequest>();
+            var unit = awakening == null ? null : User.This()?.unit?.Find(awakening.user_unit_id);
+            var next = unit == null || unit.is_rare_max || unit.rare == int.MaxValue
+                ? null : MasterDB.This()?.UnitRareAwakenGrowth?.Find(unit.rare + 1);
+            arguments = new LocalArguments(awakening?.user_unit_id,
+                Awakening: unit == null || next == null ? null : new(unit.rare, next.rare, next.consume_piece));
+        }
         if (api == "mail_receive")
         {
             var setting = MasterDB.This()?.Setting;
