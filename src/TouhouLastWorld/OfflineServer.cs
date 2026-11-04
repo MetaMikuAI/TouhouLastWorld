@@ -46,6 +46,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalHistoryDefinitions? HistoryDefinitions = null, LocalUnitRecycle? UnitRecycle = null,
     LocalDispatchSettlement? DispatchSettlement = null, LocalRetryFix? RetryFix = null, LocalMissionClaim? MissionClaim = null,
     LocalDailyLoginMission? DailyLoginMission = null,
+    LocalQuestBattleStart? QuestBattleStart = null, LocalQuestBattleEnd? QuestBattleEnd = null,
     LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null,
     LocalPointExchange? PointExchange = null, LocalSeriesStart? SeriesStart = null, LocalSeriesEnd? SeriesEnd = null, LocalTowerStart? TowerStart = null, LocalTowerEnd? TowerEnd = null, LocalTreasureDraw? TreasureDraw = null, LocalEventDraw? EventDraw = null, LocalArenaStart? ArenaStart = null, LocalArenaEnd? ArenaEnd = null, LocalVersusStart? VersusStart = null, LocalVersusEnd? VersusEnd = null, LocalBatchSearch? Batch = null, LocalReroll? Reroll = null);
 
@@ -89,7 +90,7 @@ public sealed partial class OfflineServer
         else MigrateInitialData();
     }
 
-    public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
+    public LocalReply Dispatch(string api, int? count = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
     {
         if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user"
             or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack"
@@ -120,7 +121,6 @@ public sealed partial class OfflineServer
             return new(400, null, "Not enough crystal.");
         if (api == "gacha_do" && user["gold"]!.GetValue<int>() < count!.Value * 1500)
             return new(400, null, "Not enough gold.");
-        if (api == "battle_end" && battleResult is null) return new(400, null, "Battle result required.");
         if (api is "user_create" or "login") EnsureAccount();
         if (api == "login") lastLoginAt = DateTime.Now;
         var operation = api switch
@@ -130,6 +130,8 @@ public sealed partial class OfflineServer
             "unit_new_update" => ClearNewFlags(arguments, "unit", "unit_list", "user_unit_id"),
             "picture_new_update" => ClearNewFlags(arguments, "picture", "picture_list", "user_picture_id"),
             "unit_voice_autoset_update" => SetVoiceAutoset(arguments?.Value),
+            "battle_start" => StartQuestBattle(arguments?.QuestBattleStart),
+            "battle_end" => EndQuestBattle(arguments?.QuestBattleEnd),
             _ => DispatchAdditional(api, arguments)
         };
         if (operation is { Status: not 0 }) return operation;
@@ -165,13 +167,11 @@ public sealed partial class OfflineServer
                 ["friend_count"] = 0, ["friend_request_count"] = 0, ["put_battle_pass_badge"] = 0,
                 ["is_ranking_maintenance"] = 0, ["is_roguelite_free"] = 0
             },
-            "battle_start" => new(),
             "gacha_top" => new()
             {
                 ["gacha_list"] = GachaButtons(), ["gacha_point_exchange_count_list"] = user["_local_gacha_exchange_counts"]?.DeepClone() ?? new JsonArray(),
                 ["gacha_point_list"] = user["_local_gacha_points"]?.DeepClone() ?? new JsonArray(), ["special_gacha_list"] = new JsonArray()
             },
-            "battle_end" => FinishBattle(battleResult!.Value),
             "gacha_do" => DrawGacha(count!.Value),
             "version_get" => new()
             {
@@ -232,22 +232,6 @@ public sealed partial class OfflineServer
         foreach (var unit in selected) unit!["is_new"] = 0;
         if (selected.Length > 0) Save(updated);
         return new(0, new() { ["user_update"] = new JsonObject { [section] = user[section]!.DeepClone() } });
-    }
-
-    private JsonObject FinishBattle(int result)
-    {
-        var updated = user.DeepClone().AsObject();
-        var gold = updated["gold"]!.GetValue<int>() + (result == 1 ? 100 : 0);
-        var exp = updated["exp"]!.GetValue<int>() + (result == 1 ? 10 : 0);
-        updated["gold"] = gold;
-        updated["exp"] = exp;
-        Save(updated);
-        return new()
-        {
-            ["drop_list"] = new JsonArray(), ["destiny_drop_list"] = new JsonArray(),
-            ["battle_challenge_result"] = result == 1 ? 3 : 0,
-            ["user_update"] = new JsonObject { ["gold"] = gold, ["exp"] = exp }
-        };
     }
 
     private JsonObject DrawGacha(int count)

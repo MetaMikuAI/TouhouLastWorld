@@ -33,9 +33,10 @@ public partial class NetworkSystemPatch
         yield return null;
         var api = request.GetAPIName();
         var gacha = api == "gacha_do" ? request.TryCast<GachaDoRequest>() : null;
-        var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "battle_start") arguments = new(QuestBattleStart: ReadQuestBattleStart(request.TryCast<BattleStartRequest>()));
+        if (api == "battle_end") arguments = new(QuestBattleEnd: ReadQuestBattleEnd(request.TryCast<BattleEndRequest>()));
         if (api == "unit_recycle") arguments = ReadUnitRecycle(request.TryCast<UnitRecycleRequest>());
         if (api == "get_clear_history_playerinfo") arguments = ReadHistoryPlayer(request.TryCast<ClearHistoryPlayerInfoRequest>()?.player_id);
         if (api == "friend_get_history") arguments = ReadHistoryPlayer(request.TryCast<FriendGetHistoryRequest>()?.player_id);
@@ -729,7 +730,7 @@ public partial class NetworkSystemPatch
             var update = request.TryCast<PictureNewUpdateRequest>();
             arguments = new LocalArguments(Ids: update?.user_picture_id_list?.ToArray());
         }
-        var reply = Plugin.Server.Dispatch(api, gacha?.count, battle?.battle_end?.result, gacha?.gacha_id, gacha?.gacha_button_id, arguments);
+        var reply = Plugin.Server.Dispatch(api, gacha?.count, gacha?.gacha_id, gacha?.gacha_button_id, arguments);
         Log.Info($"Offline API: {api}; status={reply.Status}");
         network.m_recv.status = reply.Status;
         network.m_recv.now = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
@@ -746,9 +747,9 @@ public partial class NetworkSystemPatch
                 PopupSystem.This()?.CreateMessage(reply.Error);
                 yield break;
             }
-            if (api is "roguelite_reroll" or "batch_search" or "multiple_spirits_weekly_battle_end" or "multiple_spirits_weekly_battle_start" or "arena_battle_end" or "arena_battle_start" or "event_point_gacha_do" or "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
+            if (api is "battle_start" or "roguelite_reroll" or "batch_search" or "multiple_spirits_weekly_battle_end" or "multiple_spirits_weekly_battle_start" or "arena_battle_end" or "arena_battle_start" or "event_point_gacha_do" or "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
             {
-                if (api is "arena_battle_start" or "multiple_spirits_weekly_battle_start")
+                if (api is "battle_start" or "arena_battle_start" or "multiple_spirits_weekly_battle_start")
                 {
                     var formation = FindActivePanel<FormationBehaviour>();
                     if (formation != null) formation.m_isPlayingBattleDo = false;

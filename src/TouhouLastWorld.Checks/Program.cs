@@ -50,11 +50,30 @@ Check(manifest.Count == 1 && manifest[0]!["AppVersion"]!.GetValue<int>() == 92, 
 Console.WriteLine("Passed version manifest fallback check.");
 Check(fresh.Dispatch("gacha_do", 2).Status == 400, "invalid draw count");
 Check(fresh.Dispatch("battle_end").Status == 400, "missing battle result");
-Check(fresh.Dispatch("battle_start").Status == 0, "battle start");
-var win = fresh.Dispatch("battle_end", battleResult: 1).Body!;
-Check(win["user_update"]!["gold"]!.GetValue<int>() == 20100, "win rewards");
-var loss = fresh.Dispatch("battle_end", battleResult: 0).Body!;
-Check(loss["user_update"]!["gold"]!.GetValue<int>() == 20100, "loss has no reward");
+var admission = new LocalQuestBattleStart(101, 201, 0, 1, true, 5, [1L], [1L]);
+Check(fresh.Dispatch("battle_start", arguments: new(QuestBattleStart: admission with { Open = false })).Status == 409,
+    "locked quest does not start");
+foreach (var _ in Enumerable.Range(0, 2))
+{
+    var started = fresh.Dispatch("battle_start", arguments: new(QuestBattleStart: admission)).Body!;
+    Check(started["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 95, "battle entry charges once");
+}
+var rewards = new LocalBattleRewards(100, 100, 99999, 25, 10, [2, 1, 0],
+    [new(1, 0), new(2, 20), new(3, 40)], [new(1L, [new(1, 0), new(2, 10)])]);
+var settlement = new LocalQuestBattleEnd(201, 1, [], rewards);
+Check(fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: settlement with { BattleId = 202 })).Status == 409,
+    "settlement must match entry");
+var win = fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: settlement)).Body!;
+var battleUpdate = win["user_update"]!;
+Check(battleUpdate["gold"]!.GetValue<int>() == 20100 && battleUpdate["exp"]!.GetValue<long>() == 25
+    && battleUpdate["level"]!.GetValue<int>() == 2 && battleUpdate["unit"]!["unit_list"]![0]!["level"]!.GetValue<int>() == 2
+    && battleUpdate["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3
+    && win["battle_challenge_result"]!.GetValue<int>() == 3, "win uses master rewards and records progression");
+Check(fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: settlement)).Status == 409, "duplicate battle settlement");
+fresh.Dispatch("battle_start", arguments: new(QuestBattleStart: admission));
+var loss = fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: new(201, 0, [1L], null))).Body!;
+Check(loss["drop_list"]!.AsArray().Count == 0
+    && loss["user_update"]!["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3, "loss preserves best result");
 var draw = fresh.Dispatch("gacha_do", 10).Body!;
 Check(draw["gacha_drop_list"]!.AsArray().Count == 10, "ten draw results");
 Check(draw["user_update"]!["crystal"]!.GetValue<int>() == 0, "draw cost");
@@ -62,9 +81,14 @@ Check(fresh.Dispatch("gacha_do", 1).Status == 400, "insufficient currency");
 var gameRestart = new OfflineServer(directory + "-fresh", seed, "offline://resources/");
 gameRestart.Dispatch("game_init");
 var saved = gameRestart.Dispatch("login").Body!["user"]!;
-Check(saved["gold"]!.GetValue<int>() == 5100 && saved["crystal"]!.GetValue<int>() == 0, "gameplay changes survive restart");
+Check(saved["gold"]!.GetValue<int>() == 5100 && saved["crystal"]!.GetValue<int>() == 0
+    && saved["phantasm_point"]!["points"]!.GetValue<int>() == 90 && saved["exp"]!.GetValue<long>() == 25
+    && saved["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3, "gameplay changes survive restart");
 Check(saved["unit"]!["unit_list"]!.AsArray().Select(unit => unit!["user_unit_id"]!.GetValue<long>()).Distinct().Count() == 11, "unique saved unit ids");
-Console.WriteLine("Passed 10 battle/gacha persistence checks.");
+var npcAdmission = admission with { TeamNumber = 0, Participants = [long.MaxValue - 807], OwnedParticipants = [] };
+Check(gameRestart.Dispatch("battle_start", arguments: new(QuestBattleStart: npcAdmission)).Status == 0,
+    "fixed story party does not require a saved player team");
+Console.WriteLine("Passed battle/gacha persistence checks.");
 Check(version["master_path"]!.GetValue<string>() == "offline://resources/master", "master resource path");
 Check(version["assetbundle_path"]!.GetValue<string>() == "offline://resources/assetbundle/android", "bundle resource path");
 var resourcePaths = new LocalResourcePaths("https://cdn.example/resource", "https://cdn.example/master",
