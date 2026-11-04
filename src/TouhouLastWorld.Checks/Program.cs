@@ -96,6 +96,8 @@ legacy["avatar_filename"] = "";
 legacy["phantasm_box"]!["level"] = 0;
 legacy["gold_box"]!["level"] = 0;
 legacy["gold"] = 321;
+legacy["team"]!["team_list"]![0]!["user_unit_id_list"] = new JsonArray(1L);
+legacy["team"]!["team_list"]![0]!["season_enhancement_user_unit_id_list"] = new JsonArray();
 var migrationDir = directory + "-migration";
 Directory.CreateDirectory(migrationDir);
 File.WriteAllText(Path.Combine(migrationDir, "user.json"), legacy.ToJsonString());
@@ -107,10 +109,14 @@ Check(migratedUser["unit"]!["unit_list"]![0]!["unit_id"]!.GetValue<int>() == 100
 Check(migratedUser["gold"]!.GetValue<int>() == 321 && File.Exists(Path.Combine(migrationDir, "user.json.before-seed-fix")), "migration preserves balance and backup");
 Check(migratedUser["phantasm_box"]!["level"]!.GetValue<int>() == 1 && migratedUser["gold_box"]!["level"]!.GetValue<int>() == 1, "facility minimum levels");
 Check(migratedUser["avatar_filename"]!.GetValue<string>() == "Icon1001", "available avatar asset");
+var migratedTeam = migratedUser["team"]!["team_list"]![0]!;
+Check(migratedTeam["user_unit_id_list"]!.AsArray().Select(id => id!.GetValue<long>()).SequenceEqual(new long[] { 1, 0, 0, 0, 0, 0 })
+    && migratedTeam["season_enhancement_user_unit_id_list"]!.AsArray().Select(id => id!.GetValue<long>()).SequenceEqual(new long[6]),
+    "legacy team slots are padded and occupied slots are preserved");
 var afk = migrated.Dispatch("afk_top").Body!;
 Check(afk["unit_slot_list"]!.AsArray().Count == 0 && afk["picture_slot_list"]!.AsArray().Count == 0
     && afk["search_elapsed_time"]!.GetValue<int>() == 0 && afk["search_max_time"]!.GetValue<int>() > 0, "empty AFK summary has finite progress");
-Console.WriteLine("Passed 5 seed migration/AFK checks.");
+Console.WriteLine("Passed 6 seed migration/AFK checks.");
 var gachaServer = new OfflineServer(directory + "-gacha", fundedSeed.ToJsonString(), "offline://resources/");
 gachaServer.Dispatch("game_init");
 gachaServer.Dispatch("login");

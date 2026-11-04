@@ -36,10 +36,22 @@
         "number": 1,
         "name": "编队 1",
         "user_unit_id_list": [
-          1
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
         ],
         "use_cost": 0,
-        "season_enhancement_user_unit_id_list": []
+        "season_enhancement_user_unit_id_list": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
       }
     ]
   },

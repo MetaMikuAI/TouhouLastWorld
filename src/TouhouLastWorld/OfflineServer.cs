@@ -341,6 +341,16 @@ public sealed partial class OfflineServer
             updated[field]!["level"] = 1;
             changed = true;
         }
+        foreach (var team in updated["team"]!["team_list"]!.AsArray())
+        {
+            foreach (var field in new[] { "user_unit_id_list", "season_enhancement_user_unit_id_list" })
+            {
+                var ids = team![field] as JsonArray;
+                if (ids?.Count >= 6) continue;
+                team[field] = TeamSlots(ids?.Select(id => id!.GetValue<long>()).ToArray() ?? []);
+                changed = true;
+            }
+        }
         if (!changed) return;
         var backup = userPath + ".before-seed-fix";
         if (!File.Exists(backup)) File.Copy(userPath, backup);
