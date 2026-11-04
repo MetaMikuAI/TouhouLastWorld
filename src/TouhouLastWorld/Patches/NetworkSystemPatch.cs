@@ -35,6 +35,9 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "series_battle_team_update")
+            arguments = new LocalArguments(SeriesTeams: request.TryCast<SeriesBattleTeamUpdateRequest>()?.team_update_list?.ToArray()
+                .Select(team => new LocalSeriesTeam(team.team_no, team.user_unit_id_list?.ToArray())).ToArray());
         if (api == "comic_get_pages")
         {
             var pages = request.TryCast<ComicGetPagesRequest>();

@@ -175,7 +175,7 @@
 | SeriesBattleRankingTopRequest | series_battle_ranking_top | 最小响应 | 未开放、未入榜、零成绩；不创建赛程或成绩，界面仍依赖客户端活动主数据 |
 | SeriesBattleResetRequest | series_battle_reset | 业务实现 | 将当前流程恢复未开始状态并持久化；保留编队和存储回放，不结算奖励或退款 |
 | SeriesBattleStartRequest | 未确认 | 未实现 | — |
-| SeriesBattleTeamUpdateRequest | 未确认 | 未实现 | — |
+| SeriesBattleTeamUpdateRequest | series_battle_team_update | 业务实现 | 批量保存 80–84 号编队，校验持有成员、队内重复与六槽上限；进行中拒绝修改，整批持久化；不复算消耗或跨队限制 |
 | SeriesBattleUpdateReplayInfoRequest | update_series_battle_replay_info | 业务实现 | 校验关卡和 1–5 分区，保存原始重放；空内容清除对应分区，不验证战斗合法性 |
 | SetAgeRequest | set_age | 业务实现 | 校验并保存 1–3 档位；不涉及支付流程 |
 | ShopListRequest | get_shop_list | 最小响应 | 空目录与空推荐列表；不含订单处理 |

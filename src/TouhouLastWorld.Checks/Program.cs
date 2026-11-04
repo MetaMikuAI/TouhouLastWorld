@@ -787,3 +787,28 @@ var seriesOverview = seriesReload.Dispatch("series_battle_ranking_top").Body!;
 Check(seriesOverview["is_held"]!.GetValue<int>() == 0 && seriesOverview["ranking"]!.GetValue<int>() == 0
     && seriesOverview["score_info"]!.AsArray().Count == 0, "ranking overview remains inactive without scores");
 Console.WriteLine("Passed 1 ranking overview check.");
+var seriesTeamDirectory = directory + "-series-teams";
+var seriesTeams = new OfflineServer(seriesTeamDirectory, seed, "offline://resources/");
+seriesTeams.Dispatch("game_init");
+seriesTeams.Dispatch("login");
+Check(seriesTeams.Dispatch("series_battle_team_update", arguments: new(SeriesTeams: [new(1, [1])])).Status == 400
+    && seriesTeams.Dispatch("series_battle_team_update", arguments: new(SeriesTeams: [new(80, [1, 1])])).Status == 400,
+    "series update rejects ordinary slots and duplicate members");
+Check(seriesTeams.Dispatch("series_battle_team_update", arguments: new(SeriesTeams: [new(80, [1]), new(81, [999])])).Status == 404
+    && seriesTeams.Dispatch("login").Body!["user"]!["team"]!["team_list"]!.AsArray().Count == 1,
+    "invalid member rolls back entire series batch");
+Check(seriesTeams.Dispatch("series_battle_team_update", arguments: new(SeriesTeams: [new(80, [1]), new(81, [])])).Status == 0,
+    "series slots created together");
+var seriesTeamReload = new OfflineServer(seriesTeamDirectory, seed, "offline://resources/");
+seriesTeamReload.Dispatch("game_init");
+var savedSeriesTeams = seriesTeamReload.Dispatch("login").Body!["user"]!["team"]!["team_list"]!.AsArray();
+Check(savedSeriesTeams.Count == 3 && savedSeriesTeams[1]!["user_unit_id_list"]!.AsArray().Count == 6
+    && savedSeriesTeams[1]!["user_unit_id_list"]![0]!.GetValue<long>() == 1
+    && JsonNode.DeepEquals(savedSeriesTeams[0], JsonNode.Parse(seed)!["team"]!["team_list"]![0]),
+    "series teams persist and preserve ordinary team");
+var activeSeriesTeams = new OfflineServer(directory + "-active-series-teams", seriesSeed.ToJsonString(), "offline://resources/");
+activeSeriesTeams.Dispatch("game_init");
+activeSeriesTeams.Dispatch("login");
+Check(activeSeriesTeams.Dispatch("series_battle_team_update", arguments: new(SeriesTeams: [new(80, [1])])).Status == 409,
+    "active series roster cannot be replaced");
+Console.WriteLine("Passed 5 series team checks.");
