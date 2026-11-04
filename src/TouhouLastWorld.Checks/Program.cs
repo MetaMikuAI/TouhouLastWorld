@@ -2592,3 +2592,29 @@ passView["level"] = 80;
 Check(passRewardsReload.Dispatch("pass_card/show_reward", arguments: new(PassRewards: passViewRules)).Body!["user_pass_card"]!["level"]!.GetValue<int>() == 2,
     "reward overview returns an independent snapshot");
 Console.WriteLine("Passed 3 reward overview checks.");
+
+var freeItemSeed = JsonNode.Parse(seed)!;
+freeItemSeed["_local_shop_list"] = new JsonArray(new JsonObject
+{
+    ["type"] = 10, ["goods_list"] = new JsonArray(new JsonObject { ["master_id"] = 9, ["end_at"] = "" })
+});
+var freeItemDirectory = directory + "-free-item";
+var freeItemServer = new OfflineServer(freeItemDirectory, freeItemSeed.ToJsonString(), "offline://resources/");
+freeItemServer.Dispatch("game_init");
+freeItemServer.Dispatch("login");
+var freeItemRule = new LocalFreeItem(9, new(3, 0, 100, 100000));
+Check(freeItemServer.Dispatch("gain_free_item", arguments: new(FreeItem: freeItemRule with { Id = 10 })).Status == 503
+    && freeItemServer.Dispatch("gain_free_item", arguments: new(FreeItem: freeItemRule with { Reward = new(3, 0, 100, 1) })).Status == 409,
+    "free item rejects mismatched definitions and capacity overflow without consuming the daily claim");
+var freeItemReply = freeItemServer.Dispatch("gain_free_item", arguments: new(FreeItem: freeItemRule)).Body!["user_update"]!;
+Check(freeItemReply["gold"]!.GetValue<int>() == 5100
+    && !string.IsNullOrEmpty(freeItemReply["last_free_item_gain_at"]!.GetValue<string>())
+    && freeItemServer.Dispatch("get_shop_list").Body!["shop_list"]![0]!["goods_list"]![0]!["master_id"]!.GetValue<int>() == 9,
+    "free item uses the advertised local definition and persists the receipt time");
+var freeItemReload = new OfflineServer(freeItemDirectory, seed, "offline://resources/");
+freeItemReload.Dispatch("game_init");
+freeItemReload.Dispatch("login");
+Check(freeItemReload.Dispatch("gain_free_item", arguments: new(FreeItem: freeItemRule)).Status == 409
+    && freeItemReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
+    "free item cannot be received twice after restart");
+Console.WriteLine("Passed 3 free item checks.");

@@ -35,6 +35,21 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "gain_free_item" && request.TryCast<GainFreeItemRequest>() is not null)
+        {
+            var master = MasterDB.This();
+            var row = master?.FreeItem?.Find(Plugin.Server.FreeItemDefinitionId());
+            var setting = master?.Setting;
+            if (row != null && setting != null)
+            {
+                var capacity = row.object_type switch
+                {
+                    3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
+                    12 when master?.Item?.Find(row.object_id) != null => setting.ITEM_MAX, _ => 0
+                };
+                arguments = new LocalArguments(FreeItem: new(row.id, new(row.object_type, row.object_id, row.object_value, capacity)));
+            }
+        }
         if (api == "pass_card/buy_goods")
         {
             var change = request.TryCast<BuyGoodsRequest>();
@@ -585,6 +600,12 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
+            if (api == "gain_free_item")
+            {
+                PentopSystem.This()?.EnableEvent();
+                PopupSystem.This()?.CreateMessage(reply.Error);
+                yield break;
+            }
             if (api == "user_info_update")
             {
                 var profileResponse = response.TryCast<Comic.UserInfoUpdateResponse>();

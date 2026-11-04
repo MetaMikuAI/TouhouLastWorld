@@ -77,7 +77,7 @@
 | GachaPointExchangeRequest | 未确认 | 未实现 | — |
 | GachaRetryFixRequest | 未确认 | 未实现 | — |
 | GachaTopRequest | gacha_top | 最小响应 | 固定本地列表 |
-| GainFreeItemRequest | 未确认 | 未实现 | — |
+| GainFreeItemRequest | gain_free_item | 业务实现 | 领取本地商店唯一免费商品，按模块 UTC 日期限每日一次并保存；支持金币、晶体、物品，未配置或配置不明确时拒绝领取 |
 | GameInitRequest | game_init | 业务实现 | 本地会话与入口 |
 | GatherGoldRequest | gather_gold | 业务实现 | 收取本地已保存库存，按当前等级容量入账，超出部分保留；主页同步余量，不计算时间产出 |
 | GatherPhantasmPointRequest | gather_phantasm_point | 业务实现 | 收取本地已保存点数库存，按当前等级容量入账，超出部分保留；同步主页余量，不计算时间产出 |

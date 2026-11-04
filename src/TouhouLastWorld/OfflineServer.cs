@@ -37,7 +37,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalDestinyGrowth? DestinyGrowth = null, LocalPictureLimitBreak? PictureLimitBreak = null, LocalPictureRecycle? PictureRecycle = null,
     LocalItemExchange? ItemExchange = null, LocalContactDetails? ContactDetails = null, LocalDispatchStart? DispatchStart = null,
     LocalBookReward? BookReward = null, LocalCodeExchange? CodeExchange = null, LocalPassTask? PassTask = null,
-    LocalPassReward[]? PassRewards = null, LocalPassGoods? PassGoods = null);
+    LocalPassReward[]? PassRewards = null, LocalPassGoods? PassGoods = null, LocalFreeItem? FreeItem = null);
 
 public sealed partial class OfflineServer
 {
@@ -126,7 +126,7 @@ public sealed partial class OfflineServer
             "friend/list" => new() { ["data"] = new JsonArray(), ["request_tips"] = 0 },
             "friend/apply_list" => new() { ["data"] = new JsonArray() },
             "friend/recommend" => new() { ["data"] = new JsonArray() },
-            "get_shop_list" => new() { ["shop_list"] = new JsonArray(), ["feature_product_shop_list"] = new JsonArray() },
+            "get_shop_list" => new() { ["shop_list"] = user["_local_shop_list"]?.DeepClone() ?? new JsonArray(), ["feature_product_shop_list"] = new JsonArray() },
             "check_conditional_pack" => new()
             {
                 ["conditional_pack"] = new JsonArray(), ["is_ignore_check"] = 0
