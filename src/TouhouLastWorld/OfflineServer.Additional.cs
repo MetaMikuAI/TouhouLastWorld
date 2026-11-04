@@ -11,11 +11,12 @@ public sealed partial class OfflineServer
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
-        or "favorite_unit_update" or "update_home_motion_mode" || QueryTemplates.ContainsKey(api);
+        or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "read_unit_talk" => MarkTalkRead(arguments?.Value),
         "favorite_unit_update" => UpdateHome(arguments?.Home),
         "home_select_unit_update" => SelectHomeUnit(arguments?.Value),
         "unit_bgm_update" => SetUnitPreference(arguments, "select_bgm"),
@@ -53,6 +54,18 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply MarkTalkRead(int? id)
+    {
+        if (id is null or <= 0) return new(400, null, "Positive talk ID required.");
+        var updated = user.DeepClone().AsObject();
+        var read = updated["_local_read_talk_ids"] as JsonArray ?? new JsonArray();
+        if (read.Any(entry => entry!.GetValue<int>() == id.Value)) return new(0, new());
+        if (read.Parent is null) updated["_local_read_talk_ids"] = read;
+        read.Add(id.Value);
+        Save(updated);
+        return new(0, new());
+    }
 
     private LocalReply ContactOverview()
     {

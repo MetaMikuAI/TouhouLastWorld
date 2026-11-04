@@ -149,7 +149,7 @@
 | previewAvatarAPIAsyncRequest | 未确认 | 未实现 | — |
 | ProfileUserInfoUpdateRequest | user_info_update | 业务实现 | 三种派生请求更新名称或简介，基础文本校验、原子保存；不含远端文本审核 |
 | QuestHelperSelectRequest | 未确认 | 未实现 | — |
-| ReadUnitTalkRequest | 未确认 | 未实现 | — |
+| ReadUnitTalkRequest | read_unit_talk | 业务实现 | 保存正数对话 ID 的已读标记，重复提交幂等；不校验内容存在性，不生成解锁或奖励 |
 | ReincarnationReleaseRequest | 未确认 | 未实现 | — |
 | replaceAvatarRequest | 未确认 | 未实现 | — |
 | RhythmGameEndRequest | 未确认 | 未实现 | — |
