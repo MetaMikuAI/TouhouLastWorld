@@ -1204,3 +1204,32 @@ var weeklyAfterReset = weeklyOverview.Dispatch("weekly_arena_top").Body!;
 Check(weeklyAfterReset["weekly_battle_data"]!["battle_number2"]!["total_score"]!.GetValue<int>() == 0
     && weeklyAfterReset["total_battle_score"]!.GetValue<int>() == 30, "weekly overview reflects reset without lowering historical high score");
 Console.WriteLine("Passed 4 weekly overview checks.");
+Check(weeklyOverview.Dispatch("daily_arena_top").Status == 503, "daily overview requires stored configuration");
+var dailyOverviewSeed = JsonNode.Parse(seed)!.AsObject();
+dailyOverviewSeed["_local_daily_arena"] = new JsonObject
+{
+    ["custom_battle_id"] = 1, ["clear_diffculty"] = 2, ["reward_day_count"] = 1,
+    ["enemy_level"] = 20, ["last_clear_difficulty"] = 2,
+    ["enemy_info"] = new JsonArray(new JsonObject
+    {
+        ["enemy1"] = new JsonObject { ["enemy_id"] = 101, ["special_action_gauge_limit"] = 3 },
+        ["enemy2"] = new JsonObject { ["enemy_id"] = 0 },
+        ["enemy3"] = new JsonObject { ["enemy_id"] = 0 }
+    })
+};
+var dailyOverview = new OfflineServer(directory + "-daily-overview", dailyOverviewSeed.ToJsonString(), "offline://resources/");
+dailyOverview.Dispatch("game_init");
+dailyOverview.Dispatch("login");
+var dailySnapshot = dailyOverview.Dispatch("daily_arena_top").Body!;
+Check(dailySnapshot["clear_diffculty"]!.GetValue<int>() == 2 && dailySnapshot["reward_day_count"]!.GetValue<int>() == 1
+    && dailySnapshot["enemy_info"]![0]!["enemy1"]!["enemy_id"]!.GetValue<int>() == 101,
+    "daily overview preserves stored progress and enemy configuration");
+dailySnapshot["enemy_info"]![0]!["enemy1"]!["enemy_id"] = 0;
+Check(dailyOverview.Dispatch("daily_arena_top").Body!["enemy_info"]![0]!["enemy1"]!["enemy_id"]!.GetValue<int>() == 101,
+    "daily overview returns an isolated snapshot");
+dailyOverviewSeed["_local_daily_arena"]!["enemy_info"]![0]!["enemy2"] = null;
+var invalidDailyOverview = new OfflineServer(directory + "-daily-incomplete", dailyOverviewSeed.ToJsonString(), "offline://resources/");
+invalidDailyOverview.Dispatch("game_init");
+invalidDailyOverview.Dispatch("login");
+Check(invalidDailyOverview.Dispatch("daily_arena_top").Status == 503, "daily overview rejects absent enemy slots");
+Console.WriteLine("Passed 4 daily overview checks.");

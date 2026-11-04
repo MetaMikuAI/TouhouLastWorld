@@ -22,10 +22,11 @@ public sealed partial class OfflineServer
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_approve" or "reset_point_allocation" or "allocate_points"
-        or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
+        or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "daily_arena_top" => DailyOverview(),
         "weekly_arena_top" => WeeklyOverview(),
         "weekly_arena_battle_score_reset" => ResetWeeklyScore(arguments?.Value),
         "friend_approve" => ApproveContactRequest(arguments),
@@ -123,6 +124,21 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply DailyOverview()
+    {
+        if (user["_local_daily_arena"] is not JsonObject overview
+            || overview["custom_battle_id"]?.GetValue<int>() is not > 0
+            || overview["enemy_info"] is not JsonArray { Count: > 0 } waves)
+            return new(503, null, "Local daily configuration unavailable.");
+        if (waves.Any(wave => wave is not JsonObject || wave["enemy1"] is not JsonObject
+            || wave["enemy2"] is not JsonObject || wave["enemy3"] is not JsonObject))
+            return new(503, null, "Local daily enemy configuration incomplete.");
+        var body = new JsonObject { ["enemy_info"] = waves.DeepClone() };
+        foreach (var field in new[] { "custom_battle_id", "clear_diffculty", "reward_day_count", "enemy_level", "last_clear_difficulty" })
+            body[field] = overview[field]?.DeepClone() ?? JsonValue.Create(0);
+        return new(0, body);
+    }
 
     private LocalReply WeeklyOverview()
     {
