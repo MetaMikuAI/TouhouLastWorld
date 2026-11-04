@@ -10,11 +10,12 @@ public sealed partial class OfflineServer
         or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
-        or "friend_setting_helper" || QueryTemplates.ContainsKey(api);
+        or "friend_setting_helper" or "home_select_unit_update" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "home_select_unit_update" => SelectHomeUnit(arguments?.Value),
         "team_update" => UpdateTeam(arguments?.Team),
         "friend_setting_helper" => SetHelper(arguments),
         "friend_top" => ContactOverview(),

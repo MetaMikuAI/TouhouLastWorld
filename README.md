@@ -99,7 +99,7 @@
 | GoogleSwitchDoRequest | 未确认 | 未实现 | — |
 | GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
 | HomeBGMUpdateRequest | 未确认 | 未实现 | — |
-| HomeCustomSelectUnitUpdateRequest | 未确认 | 未实现 | — |
+| HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 |
 | HomeCustomSetUpdateRequest | 未确认 | 未实现 | — |
 | HomeRequest | home | 最小响应 | 空摘要 |
 | IdleSearchCompleteUpgradeRequest | 未确认 | 未实现 | — |

@@ -39,6 +39,8 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
+        if (api == "home_select_unit_update")
+            arguments = new LocalArguments(Value: request.TryCast<HomeCustomSelectUnitUpdateRequest>()?.select_unit_index);
         if (api == "friend_setting_helper")
         {
             var update = request.TryCast<FriendSettingHelperRequest>();
