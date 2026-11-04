@@ -2694,3 +2694,28 @@ treasureReply["info"]!["code"] = "changed";
 Check(treasureServer.Dispatch("fudai/fudai_info", arguments: new(Value: 99)).Body!["info"]!["code"]!.GetValue<string>() == "local-test",
     "treasure overview returns an independent snapshot");
 Console.WriteLine("Passed 3 treasure overview checks.");
+var ticketSeed = JsonNode.Parse(seed)!;
+ticketSeed["item"]!["item_list"]!.AsArray().Add(new JsonObject { ["item_id"] = 99991, ["num"] = 5 });
+var ticketDirectory = directory + "-ticket-exchange";
+var ticketServer = new OfflineServer(ticketDirectory, ticketSeed.ToJsonString(), "offline://resources/");
+ticketServer.Dispatch("game_init");
+ticketServer.Dispatch("login");
+var ticketRule = new LocalTicketExchange(2, 1, 99991, 2, 2, 100, 10, true, 0, 0, 0);
+Check(ticketServer.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: ticketRule with { Active = false })).Status == 409
+    && ticketServer.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: ticketRule with { Capacity = 1 })).Status == 409
+    && ticketServer.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: ticketRule with { Count = 3 })).Status == 409,
+    "ticket exchange enforces activity, capacity and sufficient materials");
+var ticketReply = ticketServer.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: ticketRule)).Body!;
+var ticketPictures = ticketReply["user_update"]!["picture"]!["picture_list"]!.AsArray();
+Check(ticketPictures.Count == 2 && ticketPictures.Select(row => row!["user_picture_id"]!.GetValue<long>()).Distinct().Count() == 2
+    && ticketReply["user_update"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 1
+    && ticketReply["user_update"]!["album"]!["picture_list"]!.AsArray().Count == 1
+    && ticketReply["reward_object"]!["unique_id"]!.GetValue<long>() == ticketPictures[0]!["user_picture_id"]!.GetValue<long>(),
+    "ticket exchange creates distinct equipment, consumes materials and records the album entry");
+var ticketReload = new OfflineServer(ticketDirectory, seed, "offline://resources/");
+ticketReload.Dispatch("game_init");
+ticketReload.Dispatch("login");
+Check(ticketReload.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: ticketRule with { Count = 1 })).Status == 409
+    && ticketReload.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 2,
+    "ticket exchange inventory and remaining materials survive restart");
+Console.WriteLine("Passed 3 ticket exchange checks.");
