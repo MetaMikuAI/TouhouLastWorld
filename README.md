@@ -86,7 +86,7 @@
 | GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
 | GetEventTotalPointRewardRequest | 未确认 | 未实现 | — |
 | GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 |
-| GetProfileSettingAPIRequest | 未确认 | 未实现 | — |
+| GetProfileSettingAPIRequest | get_profile_setting | 业务实现 | 读取本地布局，首次返回空字符串使用客户端默认值；成就列表为空 |
 | GetQuestClearedTeamInfoRequest | 未确认 | 未实现 | — |
 | GetRaidGaugeRequest | 未确认 | 未实现 | — |
 | GetShrineOfficeShopListRequest | get_shrine_office_shop_list | 最小响应 | 空目录；不含兑换或购买 |
