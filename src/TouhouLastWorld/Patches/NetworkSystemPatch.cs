@@ -44,6 +44,14 @@ public partial class NetworkSystemPatch
         if (api == "battle_pass_receive_reward") arguments = ReadBattlePassRewards();
         if (api == "get_series_battle_ranking_teaminfo") arguments = ReadRankingHistory(request.TryCast<SeriesBattleRankingGetTeamInfoRequest>());
         if (api == "mini_game_top") arguments = new(Ids: MasterDB.This()?.MiniGame?.GetAll()?.ToArray().Select(row => (long)row.id).ToArray());
+        if (api == "tower_battle_start")
+        {
+            var change = request.TryCast<TowerBattleStartRequest>();
+            var master = MasterDB.This();
+            var row = change == null ? null : master?.Tower?.Find(change.tower_master_id);
+            if (row != null && row.battle_id == change!.battle_id)
+                arguments = new(TowerStart: new(row.id, row.battle_id, row.floor, change.team_number));
+        }
         if (api == "series_battle_end") arguments = ReadSeriesEnd(request.TryCast<SeriesBattleEndRequest>());
         if (api == "series_battle_start") arguments = ReadSeriesStart(request.TryCast<SeriesBattleStartRequest>());
         if (api == "dispatch_end") arguments = ReadDispatchSettlement(request.TryCast<DispatchEndRequest>());
@@ -708,6 +716,15 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
+            if (api == "tower_battle_start")
+            {
+                var panel = UnityEngine.Object.FindObjectOfType<TowerFormationBehaviour>();
+                if (panel != null) panel.m_isPlayingBattleDo = false;
+                SceneSystem.This()?.IndicatorActive(false);
+                PentopSystem.This()?.EnableEvent();
+                PopupSystem.This()?.CreateMessage(reply.Error);
+                yield break;
+            }
             if (api is "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
             {
                 var panel = UnityEngine.Object.FindObjectOfType<MissionBehavior>();

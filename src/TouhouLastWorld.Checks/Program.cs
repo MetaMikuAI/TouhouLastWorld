@@ -3283,3 +3283,28 @@ Check(seriesEndFinal["user_update"]!["series_battle_status"]!["progress"]!.GetVa
     && seriesEndRepeat["user_update"]!["crystal"]!.GetValue<int>() == seriesStartSeed["crystal"]!.GetValue<int>() + 5,
     "series completion survives restart and first completion rewards are not repeated");
 Console.WriteLine("Passed 4 series settlement checks.");
+var towerStartSeed = JsonNode.Parse(seed)!;
+towerStartSeed["tower"]!["cleared_floor"] = 0;
+var towerStartTeam = towerStartSeed["team"]!["team_list"]!.AsArray()
+    .First(row => row!["user_unit_id_list"]!.AsArray().Any(id => id!.GetValue<long>() > 0))!["number"]!.GetValue<int>();
+var towerStartDirectory = directory + "-tower-start";
+var towerStartServer = new OfflineServer(towerStartDirectory, towerStartSeed.ToJsonString(), "offline://resources/");
+towerStartServer.Dispatch("game_init");
+towerStartServer.Dispatch("login");
+var towerStartRule = new LocalTowerStart(1, 101, 1, towerStartTeam);
+Check(towerStartServer.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { Floor = 2 })).Status == 409
+    && towerStartServer.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { TeamNumber = 99999 })).Status == 409
+    && towerStartServer.Dispatch("login").Body!["user"]!["_local_tower_pending"] is null,
+    "floor entry validates progress and team before persisting");
+Check(towerStartServer.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule)).Status == 0
+    && towerStartServer.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule)).Status == 0
+    && towerStartServer.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { BattleId = 102 })).Status == 409,
+    "floor entry retries are idempotent and preserve the pending target");
+var towerStartReload = new OfflineServer(towerStartDirectory, seed, "offline://resources/");
+towerStartReload.Dispatch("game_init");
+var towerStartSaved = towerStartReload.Dispatch("login").Body!["user"]!;
+Check(towerStartSaved["_local_tower_pending"]!["battle_id"]!.GetValue<int>() == 101
+    && towerStartSaved["tower"]!["cleared_floor"]!.GetValue<int>() == 0
+    && JsonNode.DeepEquals(towerStartSaved["unit"], towerStartSeed["unit"]),
+    "floor entry persists without changing completion or restoring units");
+Console.WriteLine("Passed 3 floor entry checks.");

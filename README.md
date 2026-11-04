@@ -188,7 +188,7 @@
 | SwitchUserInfoGetRequest | 未确认 | 未实现 | — |
 | TeamUpdateRequest | team_update | 业务实现 | 更新已有编队的名称、六个成员位及强化位，校验归属和重复；成本采用客户端值，不扩充槽位 |
 | TowerBattleEndRequest | 未确认 | 未实现 | — |
-| TowerBattleStartRequest | 未确认 | 未实现 | — |
+| TowerBattleStartRequest | tower_battle_start | 业务实现 | 校验主表、已开放楼层和本地队伍，保存待结算记录；重复进入幂等，不改变通关层数或恢复损伤，活动开放条件未接入 |
 | TowerTopRequest | tower_top | 最小响应 | 读取已保存楼层与进入标记；敌方续战信息为空、恢复次数为零，不推进楼层或生成战斗 |
 | TowerUnitInfoRequest | get_tower_unit_info | 最小响应 | 返回本地单位续战 CSV，校验列数、数值、归属及重复 ID；缺省为空，不生成或恢复状态 |
 | TowerUnitRecoveryRequest | tower_unit_recovery | 业务实现 | 按本地剩余次数扣费并清空累计损伤，一并保存；余额不足、次数耗尽或无损伤时不扣费，次数每日重置未实现 |
