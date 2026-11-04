@@ -72,7 +72,7 @@
 | FriendRequestRequest | 未确认 | 未实现 | — |
 | FriendSearchRequest | 未确认 | 未实现 | — |
 | FriendSettingHelperRequest | 未确认 | 未实现 | — |
-| FriendTopRequest | 未确认 | 未实现 | — |
+| FriendTopRequest | friend_top | 最小响应 | 联系人、申请和待确认列表为空；未设置助战 |
 | GachaDoRequest | gacha_do | 业务实现 | 仅固定本地池：扣费、入库、保存 |
 | GachaPointExchangeRequest | 未确认 | 未实现 | — |
 | GachaRetryFixRequest | 未确认 | 未实现 | — |
