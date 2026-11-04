@@ -1608,3 +1608,32 @@ Check(interruptedDeletion.Dispatch("check_user").Status == 401
     && !File.Exists(Path.Combine(deletionDirectory, "account.json.tmp")),
     "restart completes deletion committed before identity-file cleanup");
 Console.WriteLine("Passed 7 local account deletion checks.");
+
+var giftSeed = JsonNode.Parse(seed)!;
+giftSeed["_local_friends"] = new JsonArray(
+    new JsonObject { ["public_id"] = "A", ["is_give_gold"] = true },
+    new JsonObject { ["public_id"] = "B", ["is_give_gold"] = true });
+var giftDirectory = directory + "-contact-gifts";
+var giftServer = new OfflineServer(giftDirectory, giftSeed.ToJsonString(), "offline://resources/");
+giftServer.Dispatch("game_init");
+giftServer.Dispatch("login");
+Check(giftServer.Dispatch("friend/give", arguments: new(Value: 0)).Status == 400
+    && giftServer.Dispatch("friend/give", arguments: new(Value: 0, Text: "unknown")).Status == 404,
+    "gift sending requires a valid local target");
+Check(giftServer.Dispatch("friend/give", arguments: new(Value: 0, Text: "A")).Status == 0
+    && !giftServer.Dispatch("friend/list").Body!["data"]![0]!["is_give_gold"]!.GetValue<bool>()
+    && giftServer.Dispatch("friend/list").Body!["data"]![1]!["is_give_gold"]!.GetValue<bool>(),
+    "single gift changes only the selected contact");
+giftServer.Dispatch("friend/give", arguments: new(Value: 0, Text: "A"));
+giftServer.Dispatch("friend/give", arguments: new(Value: 1));
+var giftSaved = JsonNode.Parse(File.ReadAllText(Path.Combine(giftDirectory, "user.json")))!;
+Check(giftSaved["_local_friend_gifts_sent"]!.AsArray().Count == 2
+    && giftSaved["gold"]!.GetValue<int>() == JsonNode.Parse(seed)!["gold"]!.GetValue<int>(),
+    "batch gifts skip already sent targets and do not invent rewards");
+var giftReload = new OfflineServer(giftDirectory, seed, "offline://resources/");
+giftReload.Dispatch("game_init");
+giftReload.Dispatch("login");
+giftReload.Dispatch("friend/give", arguments: new(Value: 1));
+Check(JsonNode.Parse(File.ReadAllText(Path.Combine(giftDirectory, "user.json")))!["_local_friend_gifts_sent"]!.AsArray().Count == 2,
+    "gift flags and outgoing records survive restart without duplicate sends");
+Console.WriteLine("Passed 4 local gift checks.");

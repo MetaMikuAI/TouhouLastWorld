@@ -99,6 +99,11 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<FriendDeleteRequest>()?.delete_player_id);
         if (api == "friend/info")
             arguments = new LocalArguments(Text: request.TryCast<FriendInfoRequest>()?.public_id);
+        if (api == "friend/give")
+        {
+            var gift = request.TryCast<FriendGiveRequest>();
+            arguments = gift == null ? null : new LocalArguments(Value: gift.is_all ? 1 : 0, Text: gift.public_id);
+        }
         if (api == "friend/accept_apply")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX,
                 Text: request.TryCast<FriendAcceptRequest>()?.public_id);
