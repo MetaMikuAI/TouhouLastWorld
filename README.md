@@ -30,7 +30,7 @@
 | CheckVersionRequest | offline://version/check | 最小响应 | 原始文本入口返回当前安装版本；渠道未匹配时使用首条记录，不提供升级下载 |
 | ClearHistoryPlayerInfoRequest | 未确认 | 未实现 | — |
 | ClearHistoryRequest | get_clear_history | 最小响应 | 无最佳记录，排行及最近记录为空；不生成战绩 |
-| ClearHistoryTeamInfoRequest | 未确认 | 未实现 | — |
+| ClearHistoryTeamInfoRequest | get_clear_history_teaminfo | 业务实现 | 按完整查询条件读取本地历史队伍快照，校验角色、服装和装备定义；缺失或不完整时报错，快照生成未实现 |
 | CollectExpRequest | pass_card/collect_exp | 业务实现 | 按配置领取已完成任务经验，更新等级、次数与领奖提示并保存；任务进度生成未实现 |
 | CollectRewardRequest | pass_card/collect_reward | 业务实现 | 单项及批量发放等级奖励，校验等级、权益、库存并保存领取标记；支持金币、晶体、普通物品 |
 | Comic.UserInfoUpdateRequest | user_info_update | 业务实现 | 单独或同时更新两个名称；基础文本校验、原子保存，不含远端文本审核 |

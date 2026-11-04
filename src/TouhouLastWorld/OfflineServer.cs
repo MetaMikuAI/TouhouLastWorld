@@ -41,7 +41,8 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalEventRewards? EventRewards = null, LocalTicketExchange? TicketExchange = null,
     LocalAutomaticRelease? AutomaticRelease = null, LocalShopRefresh? ShopRefresh = null,
     LocalGoldExchange? GoldExchange = null, LocalIntroDefinitions? IntroDefinitions = null,
-    LocalIntroGrant? IntroGrant = null);
+    LocalIntroGrant? IntroGrant = null, LocalHistoryQuery? HistoryQuery = null,
+    LocalHistoryDefinitions? HistoryDefinitions = null);
 
 public sealed partial class OfflineServer
 {

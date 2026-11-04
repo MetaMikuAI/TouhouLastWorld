@@ -35,6 +35,19 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "get_clear_history_teaminfo")
+        {
+            var query = request.TryCast<ClearHistoryTeamInfoRequest>();
+            var master = MasterDB.This();
+            var units = master?.Unit?.ToList()?.ToArray();
+            var costumes = master?.Costume?.ToList()?.ToArray();
+            var pictures = master?.Picture?.ToList()?.ToArray();
+            if (query != null)
+                arguments = new LocalArguments(HistoryQuery: new(query.kind, query.uniq_id1, query.uniq_id2, query.type, query.player_id),
+                    HistoryDefinitions: units == null || costumes == null || pictures == null ? null
+                        : new(units.Select(row => row.id).ToArray(), costumes.ToDictionary(row => row.id, row => row.unit_id),
+                            pictures.Select(row => row.id).ToArray()));
+        }
         if (api == "first_draw_save" && request.TryCast<FirstGachaSaveRequest>() is not null)
         {
             var master = MasterDB.This();
@@ -663,7 +676,7 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api is "first_draw_data" or "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
+            if (api is "get_clear_history_teaminfo" or "first_draw_data" or "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
             {
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);

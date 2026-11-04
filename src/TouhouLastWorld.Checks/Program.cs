@@ -2864,3 +2864,24 @@ Check(tutorialRestore["unit"]!["unit_list"]!.AsArray().Count == 2
 Check(introConfirmedReload.Dispatch("tutorial_first_gacha_confirm").Body!["user_update"]!["unit"]!["unit_list"]!.AsArray().Count == 2,
     "tutorial confirmation does not grant additional inventory on repeated calls");
 Console.WriteLine("Passed 3 tutorial restoration checks.");
+var historySeed = JsonNode.Parse(seed)!;
+historySeed["_local_history_teams"] = new JsonArray(new JsonObject
+{
+    ["kind"] = 1, ["uniq_id1"] = 10, ["uniq_id2"] = 2, ["type"] = 0, ["player_id"] = "local-history",
+    ["units"] = new JsonArray(new JsonObject { ["unit_info"] = historySeed["unit"]!["unit_list"]![0]!.DeepClone() })
+});
+var historyServer = new OfflineServer(directory + "-history-details", historySeed.ToJsonString(), "offline://resources/");
+historyServer.Dispatch("game_init");
+historyServer.Dispatch("login");
+var historyQuery = new LocalHistoryQuery(1, 10, 2, 0, "local-history");
+var historyDefinitions = new LocalHistoryDefinitions(new[] { 1001 }, new() { [100101] = 1001 }, Array.Empty<int>());
+Check(historyServer.Dispatch("get_clear_history_teaminfo", arguments: new(HistoryQuery: historyQuery with { SecondId = 3 }, HistoryDefinitions: historyDefinitions)).Status == 404
+    && historyServer.Dispatch("get_clear_history_teaminfo", arguments: new(HistoryQuery: historyQuery, HistoryDefinitions: historyDefinitions with { Costumes = new() })).Status == 503,
+    "history details require an exact query match and available costume definition");
+var historyReply = historyServer.Dispatch("get_clear_history_teaminfo", arguments: new(HistoryQuery: historyQuery, HistoryDefinitions: historyDefinitions)).Body!;
+Check(historyReply["units"]!.AsArray().Count == 1 && historyReply["units"]![0]!["unit_info"]!["unit_id"]!.GetValue<int>() == 1001,
+    "history details return the stored unit snapshot");
+historyReply["units"]!.AsArray().Clear();
+Check(historyServer.Dispatch("get_clear_history_teaminfo", arguments: new(HistoryQuery: historyQuery, HistoryDefinitions: historyDefinitions)).Body!["units"]!.AsArray().Count == 1,
+    "history detail responses are independent snapshots");
+Console.WriteLine("Passed 3 history detail checks.");
