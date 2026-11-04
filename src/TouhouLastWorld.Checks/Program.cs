@@ -198,3 +198,30 @@ var afterLogout = flags.Dispatch("login").Body!;
 Check(afterLogout["user_id"]!.GetValue<string>() == localId
     && JsonNode.DeepEquals(afterLogout["user"], beforeLogout["user"]), "logout preserves identity and save");
 Console.WriteLine("Passed 9 query and session checks.");
+Check(flags.Dispatch("set_age", arguments: new(Value: 0)).Status == 400
+    && flags.Dispatch("set_age", arguments: new(Value: 4)).Status == 400, "age category bounds");
+Check(flags.Dispatch("set_age", arguments: new(Value: 2)).Body!["user_update"]!["age_limit_type"]!.GetValue<int>() == 2,
+    "age category update");
+Check(flags.Dispatch("friend/search").Status == 2000, "contact search uses missing result status");
+var playerSearch = flags.Dispatch("friend_player_search").Body!;
+Check(playerSearch["result"]!.GetValue<int>() != 0 && playerSearch["search_result"]!.AsArray().Count == 0,
+    "player search does not expose empty success result");
+Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(PlayerName: "Local", HeroName: "Second"))).Status == 0,
+    "combined name update");
+Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(Comment: "Profile"))).Status == 0,
+    "partial profile update");
+var profileBeforeInvalid = flags.Dispatch("login").Body!["user"]!.DeepClone();
+Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(PlayerName: "Changed", HeroName: " "))).Status == 1000,
+    "invalid name rejects whole update");
+Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(Comment: "bad\ntext"))).Status == 1000,
+    "control characters rejected");
+Check(JsonNode.DeepEquals(flags.Dispatch("login").Body!["user"], profileBeforeInvalid), "invalid profile has no partial writes");
+Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(Comment: ""))).Status == 0, "comment can be cleared");
+var profileReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "offline://resources/");
+profileReload.Dispatch("game_init");
+var persistedProfile = profileReload.Dispatch("login").Body!["user"]!;
+Check(persistedProfile["player_name"]!.GetValue<string>() == "Local"
+    && persistedProfile["hero_name"]!.GetValue<string>() == "Second"
+    && persistedProfile["comment"]!.GetValue<string>() == ""
+    && persistedProfile["age_limit_type"]!.GetValue<int>() == 2, "profile and category survive restart");
+Console.WriteLine("Passed 11 profile and search checks.");
