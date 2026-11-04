@@ -1431,3 +1431,24 @@ unavailableHelper["helper_unit_info"]!["unit_info"]!["unit_id"] = 1;
 Check(idleReload.Dispatch("friend_get_helper_detail").Body!["helper_unit_info"]!["unit_info"]!["unit_id"]!.GetValue<int>() == 0,
     "helper response mutation cannot alter subsequent queries");
 Console.WriteLine("Passed 2 unavailable helper response checks.");
+var clearedTeamSeed = JsonNode.Parse(seed)!.AsObject();
+clearedTeamSeed["_local_quest_cleared_teams"] = new JsonArray(new JsonObject
+{
+    ["quest_type"] = 2, ["target_id"] = 10, ["difficulty"] = 1,
+    ["quest_cleared_team"] = "Saved,1,2,0,0,0,0,", ["use_cost"] = 12,
+    ["season_enhancement_info"] = new JsonArray(0L, 2L, 0L, 0L, 0L, 0L)
+});
+var clearedTeamServer = new OfflineServer(directory + "-cleared-team", clearedTeamSeed.ToJsonString(), "offline://resources/");
+clearedTeamServer.Dispatch("game_init");
+clearedTeamServer.Dispatch("login");
+var clearQuery = new LocalArguments(ReplayMeasure: new(2, 10, 1));
+var clearReply = clearedTeamServer.Dispatch("get_quest_cleared_team_info", arguments: clearQuery).Body!;
+Check(clearReply["quest_cleared_team"]!.GetValue<string>() == "Saved,1,2,0,0,0,0,"
+    && clearReply["use_cost"]!.GetValue<int>() == 12 && clearReply["season_enhancement_info"]![1]!.GetValue<long>() == 2,
+    "cleared team query preserves stored encoding, cost and enhancement slots");
+Check(clearedTeamServer.Dispatch("get_quest_cleared_team_info", arguments: new(ReplayMeasure: new(2, 10, 0))).Body!["quest_cleared_team"]!.GetValue<string>() == ""
+    && clearedTeamServer.Dispatch("get_quest_cleared_team_info", arguments: new(ReplayMeasure: new(0, 10, 1))).Body!["season_enhancement_info"]!.AsArray().Count == 6,
+    "cleared team queries isolate difficulty and type with a six-slot empty fallback");
+Check(clearedTeamServer.Dispatch("get_quest_cleared_team_info", arguments: new(ReplayMeasure: new(3, 10, 0))).Status == 400,
+    "cleared team query rejects unknown types");
+Console.WriteLine("Passed 3 cleared team query checks.");

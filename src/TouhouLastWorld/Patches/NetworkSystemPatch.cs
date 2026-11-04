@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "get_quest_cleared_team_info")
+        {
+            var query = request.TryCast<GetQuestClearedTeamInfoRequest>();
+            arguments = query == null ? null : new LocalArguments(ReplayMeasure: new(query.quest_type, query.target_id, query.difficulty));
+        }
         if (api == "afk_set")
             arguments = new LocalArguments(Idle: ReadIdleSet(request.TryCast<IdleSearchSetRequest>()));
         if (api == "afk_complete_upgrade")

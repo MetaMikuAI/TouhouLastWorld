@@ -4,6 +4,32 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply ClearedTeam(LocalReplayMeasure? query)
+    {
+        if (query is null || query.QuestType is < 0 or > 2 || query.TargetId <= 0 || query.Difficulty < 0)
+            return new(400, null, "Invalid cleared team query.");
+        var record = (user["_local_quest_cleared_teams"] as JsonArray)?.FirstOrDefault(entry =>
+            entry?["quest_type"]?.GetValue<int>() == query.QuestType && entry["target_id"]?.GetValue<int>() == query.TargetId
+            && entry["difficulty"]?.GetValue<int>() == query.Difficulty);
+        if (record is null) return new(0, new()
+        {
+            ["quest_cleared_team"] = "", ["use_cost"] = 0, ["season_enhancement_info"] = TeamSlots([])
+        });
+        var encoded = record["quest_cleared_team"]?.GetValue<string>();
+        var cost = record["use_cost"]?.GetValue<int>();
+        var enhanced = record["season_enhancement_info"] as JsonArray;
+        if (encoded is null || cost is null or < 0 || enhanced is null || enhanced.Count != 6
+            || enhanced.Any(id => id is not JsonValue value || !value.TryGetValue<long>(out var number) || number < 0))
+            return new(503, null, "Stored cleared team is incomplete.");
+        var fields = encoded.TrimEnd(',').Split(',');
+        if (fields.Length > 7 || fields.Skip(1).Any(id => !long.TryParse(id, out var number) || number < 0))
+            return new(503, null, "Stored cleared team encoding is invalid.");
+        return new(0, new()
+        {
+            ["quest_cleared_team"] = encoded, ["use_cost"] = cost.Value, ["season_enhancement_info"] = enhanced.DeepClone()
+        });
+    }
+
     private LocalReply UpdateSeriesTeams(LocalSeriesTeam[]? requests)
     {
         if (requests is null || requests.Length > 5 || requests.Select(team => team.Number).Distinct().Count() != requests.Length)
