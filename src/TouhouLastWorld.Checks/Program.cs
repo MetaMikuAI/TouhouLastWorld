@@ -642,3 +642,9 @@ Check(dispatchUser["dispatch"]!["dispatch_list"]![0]!["user_dispatch_id"]!.GetVa
 Check(JsonNode.DeepEquals(dispatchSeed["unit"], dispatchUser["unit"])
     && JsonNode.DeepEquals(dispatchSeed["orb"], dispatchUser["orb"]), "dispatch cancellation does not fabricate rewards");
 Console.WriteLine("Passed 5 dispatch cancellation checks.");
+var weeklyInfo = dispatchReload.Dispatch("multiple_spirits_weekly_top").Body!;
+Check(weeklyInfo["clear_info"]!.AsArray().Count == 0, "weekly progress starts empty");
+weeklyInfo["clear_info"]!.AsArray().Add(new JsonObject());
+Check(dispatchReload.Dispatch("multiple_spirits_weekly_top").Body!["clear_info"]!.AsArray().Count == 0,
+    "weekly response template remains isolated");
+Console.WriteLine("Passed 2 weekly query checks.");
