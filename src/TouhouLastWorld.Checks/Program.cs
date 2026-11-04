@@ -172,3 +172,29 @@ var progressReload = new OfflineServer(flagDirectory, flagSeed.ToJsonString(), "
 progressReload.Dispatch("game_init");
 Check(progressReload.Dispatch("login").Body!["user"]!["progress_value"]!.GetValue<int>() == 10000, "progress persists");
 Console.WriteLine("Passed 23 query and progress checks.");
+var music = flags.Dispatch("music_list").Body!;
+Check(music["collect"]!.AsArray().Count == 0 && music["unlock"]!.AsArray().Count == 0, "empty music lists");
+foreach (var route in new[] { "pass_card/show_task", "pass_card/show_shop" })
+{
+    var pass = flags.Dispatch(route).Body!["user_pass_card"]!;
+    Check(pass["is_vip"]!.GetValue<int>() == 0 && pass["tasks"]!.AsArray().Count == 0
+        && pass["pass_card_goods"]!.AsArray().Count == 0, "inactive pass contract: " + route);
+}
+var history = flags.Dispatch("get_clear_history").Body!;
+Check(history.ContainsKey("best") && history["best"] is null && history["ranking"]!.AsArray().Count == 0
+    && history["justnow"]!.AsArray().Count == 0, "absent history contract");
+var contacts = flags.Dispatch("friend_top").Body!;
+Check(new[] { "friend_list", "friend_request_list", "friend_approval_pending_list", "new_approve_list" }
+    .All(field => contacts[field]!.AsArray().Count == 0), "empty contact overview");
+var beforeLogout = flags.Dispatch("login").Body!;
+var localId = beforeLogout["user_id"]!.GetValue<string>();
+Check(flags.Dispatch("logout", arguments: new(Text: "unknown")).Status == 403
+    && flags.Dispatch("check_user").Status == 0, "identity mismatch preserves session");
+var logout = flags.Dispatch("logout", arguments: new(Text: localId));
+Check(logout.Status == 0 && logout.Body!["session_id"]!.GetValue<string>() == beforeLogout["session_id"]!.GetValue<string>(), "logout replies in current session");
+Check(flags.Dispatch("check_user").Status == 401 && flags.Dispatch("login").Status == 401, "logout invalidates session");
+flags.Dispatch("game_init");
+var afterLogout = flags.Dispatch("login").Body!;
+Check(afterLogout["user_id"]!.GetValue<string>() == localId
+    && JsonNode.DeepEquals(afterLogout["user"], beforeLogout["user"]), "logout preserves identity and save");
+Console.WriteLine("Passed 9 query and session checks.");
