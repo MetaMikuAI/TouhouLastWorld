@@ -648,3 +648,10 @@ weeklyInfo["clear_info"]!.AsArray().Add(new JsonObject());
 Check(dispatchReload.Dispatch("multiple_spirits_weekly_top").Body!["clear_info"]!.AsArray().Count == 0,
     "weekly response template remains isolated");
 Console.WriteLine("Passed 2 weekly query checks.");
+var passOverview = dispatchReload.Dispatch("battle_pass_top").Body!;
+Check(new[] { "unlock_list", "clear_list", "received_list" }.All(field => passOverview["battle_pass_mission"]![field]!.AsArray().Count == 0),
+    "pass mission groups are nonnull empty lists");
+Check(new[] { "normal_received_reward_level", "premium_received_reward_level_1", "premium_received_reward_level_2" }
+    .All(field => passOverview[field]!.GetValue<int>() == 0), "no pass reward levels fabricated");
+Check(dispatchReload.Dispatch("rhythm_game_top").Body!["clear_info"]!.AsArray().Count == 0, "score overview starts empty");
+Console.WriteLine("Passed 3 overview query checks.");
