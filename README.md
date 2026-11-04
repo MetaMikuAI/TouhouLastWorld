@@ -84,7 +84,7 @@
 | GetAutoReplayInfoRequest | get_auto_replay_info | 业务实现 | 按目标读取已保存测量值；无记录返回零，不重算战斗 |
 | GetDispatchListRequest | get_dispatch_list | 业务实现 | 合并本地候选与已启动任务；未配置候选时为空，不生成候选 |
 | GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
-| GetEventTotalPointRewardRequest | 未确认 | 未实现 | — |
+| GetEventTotalPointRewardRequest | get_event_total_point_reward | 业务实现 | 按本地累计积分领取当前档固定奖励并推进、保存进度；支持金币、晶体、物品，随机奖励和积分生成未实现 |
 | GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 |
 | GetProfileSettingAPIRequest | get_profile_setting | 业务实现 | 读取本地布局，首次返回空字符串使用客户端默认值；成就列表为空 |
 | GetQuestClearedTeamInfoRequest | get_quest_cleared_team_info | 最小响应 | 按类型、目标和难度读取已存队伍；缺省空队伍，不自动记录通关 |

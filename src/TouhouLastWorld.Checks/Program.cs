@@ -2618,3 +2618,38 @@ Check(freeItemReload.Dispatch("gain_free_item", arguments: new(FreeItem: freeIte
     && freeItemReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
     "free item cannot be received twice after restart");
 Console.WriteLine("Passed 3 free item checks.");
+
+var pointRewardSeed = JsonNode.Parse(seed)!;
+pointRewardSeed["_local_event_overview"] = new JsonObject
+{
+    ["event_point_gacha_list"] = new JsonArray(), ["event_special_mission"] = new JsonArray(),
+    ["event_total_point_reward"] = new JsonArray(new JsonObject
+    {
+        ["event_id"] = 7, ["total_point"] = 100, ["step_number"] = 1, ["next_reward_group_id"] = 11
+    })
+};
+var pointRewardDirectory = directory + "-point-reward";
+var pointRewardServer = new OfflineServer(pointRewardDirectory, pointRewardSeed.ToJsonString(), "offline://resources/");
+pointRewardServer.Dispatch("game_init");
+pointRewardServer.Dispatch("login");
+var pointRewardRule = new LocalEventRewards(7, new[]
+{
+    new LocalEventRewardGroup(11, 1, 100, 0, new[] { new LocalInventoryReward(3, 0, 100, 100000) }),
+    new LocalEventRewardGroup(12, 2, 200, 0, new[] { new LocalInventoryReward(6, 0, 1, 100000) })
+});
+Check(pointRewardServer.Dispatch("get_event_total_point_reward", arguments: new(Value: 7, EventRewards: pointRewardRule with
+    { Groups = new[] { pointRewardRule.Groups[0] with { Rewards = new[] { new LocalInventoryReward(3, 0, 100, 1) } } } })).Status == 409,
+    "point reward preserves progress when inventory capacity is insufficient");
+var pointRewardReply = pointRewardServer.Dispatch("get_event_total_point_reward", arguments: new(Value: 7, EventRewards: pointRewardRule)).Body!;
+Check(pointRewardReply["user_update"]!["gold"]!.GetValue<int>() == 5100
+    && pointRewardReply["next_reward_group_id"]!.GetValue<int>() == 12
+    && pointRewardReply["step_number"]!.GetValue<int>() == 2 && pointRewardReply["total_point"]!.GetValue<int>() == 100
+    && pointRewardReply["reward"]!["object_value"]!.GetValue<int>() == 100,
+    "point reward grants the current fixed reward and advances without spending accumulated points");
+var pointRewardReload = new OfflineServer(pointRewardDirectory, seed, "offline://resources/");
+pointRewardReload.Dispatch("game_init");
+pointRewardReload.Dispatch("login");
+Check(pointRewardReload.Dispatch("get_event_total_point_reward", arguments: new(Value: 7, EventRewards: pointRewardRule)).Status == 409
+    && pointRewardReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
+    "point reward progress survives restart and enforces the next threshold");
+Console.WriteLine("Passed 3 accumulated point reward checks.");
