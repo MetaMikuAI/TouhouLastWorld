@@ -40,7 +40,7 @@
 | DeleteAccountRequest | delete_account | 业务实现 | 删除本地身份、存档内容及模块旧备份，会话失效；中断后继续清理，重新建号使用新身份，不操作外部账号 |
 | DispatchBulkEndRequest | dispatch_bulk_end | 最小响应 | 无已完成任务时返回空结算；存在到期任务时保留任务并报未支持，奖励结算未实现 |
 | DispatchCancelRequest | dispatch_cancel | 业务实现 | 删除本地任务并返回客户端删除标记；不发放奖励，本地不退款；不存在的任务返回未找到 |
-| DispatchEndRequest | 未确认 | 未实现 | — |
+| DispatchEndRequest | dispatch_end | 业务实现 | 结算已到期任务的本地配置结果，校验成员、记录及主表奖励种类，发放金币/晶体/物品并移除任务；整批回滚，随机结果、经验和活动结算未实现 |
 | DispatchStartRequest | dispatch_start | 业务实现 | 启动已配置的本地候选任务，校验成员、等级、职业、容量、有效期并扣点计时；候选生成与奖励结算未实现 |
 | EpisodeEndRequest | episode_end | 业务实现 | 校验主数据剧情类型，持久化 scenario_status 并同步进度；重复完成不新增记录，保留战斗状态；不校验开放条件、不结算奖励或推进教程 |
 | EventAnniversaryInfoGetAPIRequest | anniversary_info_get | 最小响应 | 返回未填写邮箱；不提交报名或发放奖励 |

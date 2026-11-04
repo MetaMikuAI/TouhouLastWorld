@@ -2,6 +2,26 @@ namespace TouhouLastWorld.Patches;
 
 public partial class NetworkSystemPatch
 {
+    private static LocalArguments? ReadDispatchSettlement(DispatchEndRequest? request)
+    {
+        if (request == null) return null;
+        var arguments = new LocalArguments(request.user_dispatch_id);
+        var master = MasterDB.This();
+        var row = master?.Dispatch?.Find(Plugin.Server.ActiveDispatchDefinitionId(request.user_dispatch_id));
+        var rewards = master?.DispatchReward?.ToList()?.ToArray();
+        var memos = master?.DispatchMemo?.ToList()?.ToArray();
+        var setting = master?.Setting;
+        if (row == null || rewards == null || memos == null || setting == null) return arguments;
+        var groups = new[] { row.reward_group1_id, row.reward_group2_id, row.reward_group3_id, row.reward_group4_id, row.reward_group5_id };
+        return arguments with { DispatchSettlement = new(row.id, memos.Where(memo => memo.dispatch_id == row.id).Select(memo => memo.id).ToArray(),
+            rewards.Where(reward => groups.Contains(reward.dispatch_reward_group_id)).Select(reward =>
+                new LocalInventoryReward(reward.object_type, reward.object_id, 0, reward.object_type switch
+                {
+                    3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
+                    12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX, _ => 0
+                })).ToArray()) };
+    }
+
     private static LocalArguments? ReadDispatchStart(DispatchStartRequest? request)
     {
         if (request == null) return null;

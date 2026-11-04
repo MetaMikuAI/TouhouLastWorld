@@ -2925,3 +2925,42 @@ Check(newUnitAfterRecycle == 3
     && unitRecycleReload.Dispatch("unit_recycle", arguments: new(Ids: new[] { 2L }, UnitRecycle: unitRecycleRule)).Status == 404,
     "recycled unit identifiers are not reused after restart and stale retries cannot remove a new unit");
 Console.WriteLine("Passed 5 unit recycle checks.");
+var dispatchEndSeed = JsonNode.Parse(seed)!;
+dispatchEndSeed["dispatch"]!["dispatch_list"] = new JsonArray(new JsonObject { ["user_dispatch_id"] = 90L,
+    ["dispatch_id"] = 10, ["end_time"] = "2000-01-01 00:00:00", ["user_unit_id_list"] = new JsonArray(JsonValue.Create(1L)) });
+dispatchEndSeed["_local_dispatch_offers"] = new JsonArray(new JsonObject { ["user_dispatch_id"] = 90L, ["dispatch_id"] = 10 });
+dispatchEndSeed["_local_dispatch_settlements"] = new JsonArray(new JsonObject
+{
+    ["user_dispatch_id"] = 90L, ["dispatch_id"] = 10,
+    ["result"] = new JsonArray(new JsonObject { ["user_unit_id"] = 1L, ["dispatch_memo_id"] = 7, ["performance"] = 1 }),
+    ["reward"] = new JsonArray(new JsonObject { ["object_type"] = 3, ["object_id"] = 0, ["amount"] = 100 },
+        new JsonObject { ["object_type"] = 12, ["object_id"] = 99990, ["amount"] = 3 })
+});
+var dispatchEndDirectory = directory + "-dispatch-end";
+var dispatchEndServer = new OfflineServer(dispatchEndDirectory, dispatchEndSeed.ToJsonString(), "offline://resources/");
+dispatchEndServer.Dispatch("game_init");
+dispatchEndServer.Dispatch("login");
+var dispatchEndRule = new LocalDispatchSettlement(10, new[] { 7 }, new[] { new LocalInventoryReward(3, 0, 0, 10000), new LocalInventoryReward(12, 99990, 0, 100) });
+Check(dispatchEndServer.Dispatch("dispatch_end", arguments: new(90, DispatchSettlement: dispatchEndRule with { MemoIds = Array.Empty<int>() })).Status == 503
+    && dispatchEndServer.Dispatch("dispatch_end", arguments: new(90, DispatchSettlement: dispatchEndRule with { Rewards = new[] { dispatchEndRule.Rewards[0], dispatchEndRule.Rewards[1] with { Capacity = 2 } } })).Status == 409
+    && dispatchEndServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000,
+    "dispatch settlement validates memo definitions and rolls back rewards on capacity failure");
+var dispatchEnded = dispatchEndServer.Dispatch("dispatch_end", arguments: new(90, DispatchSettlement: dispatchEndRule)).Body!;
+Check(dispatchEnded["remove_user_dispatch_id"]!.GetValue<long>() == 90
+    && dispatchEnded["reward"]!.AsArray().Count == 2 && dispatchEnded["result"]![0]!["performance"]!.GetValue<int>() == 1
+    && dispatchEnded["user_update"]!["gold"]!.GetValue<int>() == 5100
+    && dispatchEnded["user_update"]!["dispatch"]!["dispatch_list"]!.AsArray().Count == 0,
+    "dispatch settlement grants its configured outcome and removes the completed task");
+var dispatchEndReload = new OfflineServer(dispatchEndDirectory, seed, "offline://resources/");
+dispatchEndReload.Dispatch("game_init");
+dispatchEndReload.Dispatch("login");
+Check(dispatchEndReload.Dispatch("dispatch_end", arguments: new(90, DispatchSettlement: dispatchEndRule)).Status == 404
+    && dispatchEndReload.Dispatch("get_dispatch_list").Body!["dispatch_list"]!.AsArray().Count == 0,
+    "dispatch settlement persists and cannot grant or restart the consumed offer again");
+dispatchEndSeed["dispatch"]!["dispatch_list"]![0]!["end_time"] = "2999-01-01 00:00:00";
+var unfinishedDispatch = new OfflineServer(directory + "-dispatch-unfinished", dispatchEndSeed.ToJsonString(), "offline://resources/");
+unfinishedDispatch.Dispatch("game_init");
+unfinishedDispatch.Dispatch("login");
+Check(unfinishedDispatch.Dispatch("dispatch_end", arguments: new(90, DispatchSettlement: dispatchEndRule)).Status == 409,
+    "dispatch cannot settle before its finish time");
+Console.WriteLine("Passed 4 dispatch settlement checks.");

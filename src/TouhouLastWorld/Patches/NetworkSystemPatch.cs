@@ -36,6 +36,7 @@ public partial class NetworkSystemPatch
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
         if (api == "unit_recycle") arguments = ReadUnitRecycle(request.TryCast<UnitRecycleRequest>());
+        if (api == "dispatch_end") arguments = ReadDispatchSettlement(request.TryCast<DispatchEndRequest>());
         if (api == "get_clear_history_teaminfo")
         {
             var query = request.TryCast<ClearHistoryTeamInfoRequest>();
@@ -677,8 +678,13 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api is "unit_recycle" or "get_clear_history_teaminfo" or "first_draw_data" or "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
+            if (api is "dispatch_end" or "unit_recycle" or "get_clear_history_teaminfo" or "first_draw_data" or "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
             {
+                if (api == "dispatch_end" && ErrandBehaviour.This() is { } errand)
+                {
+                    errand.m_isPlayingEndApi = false;
+                    errand.m_doUpdate = true;
+                }
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);
                 yield break;
