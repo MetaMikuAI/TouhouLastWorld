@@ -220,7 +220,7 @@
 | UnitRecycleRequest | 未确认 | 未实现 | — |
 | UnitResetPointAllocationRequest | 未确认 | 未实现 | — |
 | UnitSpecActualizeRequest | 未确认 | 未实现 | — |
-| UnitVoiceAutosetUpdateRequest | 未确认 | 未实现 | — |
+| UnitVoiceAutosetUpdateRequest | unit_voice_autoset_update | 业务实现 | 开关校验与保存；不含自动分配内容 |
 | UnitVoiceUpdateRequest | 未确认 | 未实现 | — |
 | UpdateAutoReplayInfoRequest | 未确认 | 未实现 | — |
 | UpdateGoldExchangeShopListRequest | 未确认 | 未实现 | — |

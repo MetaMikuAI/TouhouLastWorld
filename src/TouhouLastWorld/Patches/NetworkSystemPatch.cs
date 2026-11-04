@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "unit_voice_autoset_update")
+            arguments = new LocalArguments(Value: request.TryCast<UnitVoiceAutosetUpdateRequest>()?.autoset_flag);
         if (api == "picture_protection")
         {
             var update = request.TryCast<PictureProtectionRequest>();

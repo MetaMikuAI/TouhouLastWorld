@@ -42,7 +42,7 @@ public sealed class OfflineServer
 
     public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
     {
-        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection" or "unit_new_update" or "picture_protection" or "picture_new_update" or "mail_top" or "friend/list"))
+        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection" or "unit_new_update" or "picture_protection" or "picture_new_update" or "mail_top" or "friend/list" or "unit_voice_autoset_update"))
             return new(501, null, $"Offline API not implemented: {api}");
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
@@ -69,6 +69,7 @@ public sealed class OfflineServer
             "picture_protection" => SetProtection(arguments, "picture", "picture_list", "user_picture_id"),
             "unit_new_update" => ClearNewFlags(arguments, "unit", "unit_list", "user_unit_id"),
             "picture_new_update" => ClearNewFlags(arguments, "picture", "picture_list", "user_picture_id"),
+            "unit_voice_autoset_update" => SetVoiceAutoset(arguments?.Value),
             _ => null
         };
         if (operation is { Status: not 0 }) return operation;
@@ -136,6 +137,15 @@ public sealed class OfflineServer
         body["encryption_key"] = InitialKey;
         body["response_time"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         return new(0, body);
+    }
+
+    private LocalReply SetVoiceAutoset(int? value)
+    {
+        if (value is not (0 or 1)) return new(400, null, "Autoset flag 0 or 1 required.");
+        var updated = user.DeepClone().AsObject();
+        updated["unit_voice_autoset"] = value.Value;
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["unit_voice_autoset"] = value.Value } });
     }
 
     private LocalReply SetProtection(LocalArguments? arguments, string section, string list, string idField)
