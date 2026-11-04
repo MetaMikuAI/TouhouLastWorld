@@ -3206,3 +3206,18 @@ Check(pointExchangeReload.Dispatch("gacha_point_exchange", arguments: new(PointE
     && pointExchangeOverview["gacha_point_exchange_count_list"]![0]!["count"]!.GetValue<int>() == 1,
     "point exchange limits and overview balances survive restart");
 Console.WriteLine("Passed 3 point exchange checks.");
+Check(relationReload.Dispatch("user_twitter_info_update", arguments: new(Text: " ")).Status == 400
+    && relationReload.Dispatch("user_twitter_info_update", arguments: new(Text: "invalid\nidentity")).Status == 400
+    && relationReload.Dispatch("user_twitter_info_update", arguments: new(Text: "local-updated")).Body!["user_update"]!["twitter_info"]!["is_related"]!.GetValue<int>() == 1,
+    "local relation update validates and saves its identity");
+Check(relationReload.Dispatch("user_twitter_info_update", arguments: new(Text: "local-updated")).Status == 0
+    && relationReload.Dispatch("user_twitter_info_update", arguments: new(Text: "replacement")).Status == 409
+    && relationReload.Dispatch("user_twitter_info_delete", arguments: new(Text: "replacement")).Status == 409,
+    "local relation retries preserve the saved identity and reject replacement");
+var relationUpdateReload = new OfflineServer(relationDirectory, seed, "offline://resources/");
+relationUpdateReload.Dispatch("game_init");
+relationUpdateReload.Dispatch("login");
+Check(relationUpdateReload.Dispatch("login").Body!["user"]!["_local_twitter_user_id"]!.GetValue<string>() == "local-updated"
+    && relationUpdateReload.Dispatch("user_twitter_info_delete", arguments: new(Text: "local-updated")).Status == 0,
+    "updated local relation survives restart and can be cleared");
+Console.WriteLine("Passed 3 local relation update checks.");

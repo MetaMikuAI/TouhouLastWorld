@@ -245,6 +245,8 @@ public partial class NetworkSystemPatch
             if (change != null) arguments = new LocalArguments(Value: change.execute_num,
                 ReplayMeasure: new(change.quest_type, change.target_id, change.difficulty));
         }
+        if (api == "user_twitter_info_update")
+            arguments = new LocalArguments(Text: request.TryCast<UserTwitterInfoUpdateRequest>()?.twitter_user_id);
         if (api == "user_twitter_info_delete")
             arguments = new LocalArguments(Text: request.TryCast<UserTwitterInfoDeleteRequest>()?.twitter_user_id);
         if (api == "lecture_room_unit_trust_up")

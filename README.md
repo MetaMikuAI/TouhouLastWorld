@@ -235,7 +235,7 @@
 | UserGoogleInfoDeleteRequest | user_google_info_delete | 业务实现 | 清除并保存本地 Google 关联标记；不验证令牌、不撤销外部授权 |
 | UserGoogleInfoUpdateRequest | 未确认 | 未实现 | — |
 | UserTwitterInfoDeleteRequest | user_twitter_info_delete | 业务实现 | 清除当前本地存档的关联标记与已保存编号；校验已有编号，不撤销外部平台授权 |
-| UserTwitterInfoUpdateRequest | 未确认 | 未实现 | — |
+| UserTwitterInfoUpdateRequest | user_twitter_info_update | 业务实现 | 保存当前存档的本地编号与关联标记；重复编号可重试，更换前须解除，不验证外部授权或迁移账号 |
 | VersionGetRequest | version_get | 最小响应 | 固定版本与资源路径 |
 | VersusBattleEndRequest | 未确认 | 未实现 | — |
 | VersusBattleStartRequest | 未确认 | 未实现 | — |
