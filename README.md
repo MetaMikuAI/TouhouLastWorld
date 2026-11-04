@@ -217,7 +217,7 @@
 | UnitRankPromoteItemSetRequest | unit_rank_promote_item_set | 业务实现 | 按当前阶数和槽位配置扣除物品或金币、保存材料槽；校验归属和重复填充，暂不支持装备实例材料 |
 | UnitRankPromoteRequest | unit_rank_promote | 业务实现 | 校验归属、阶数与等级，扣除升阶金币及未填槽位的物品或金币，一次保存升阶并重置六槽；已填槽位不重复扣费，暂不支持未填的装备实例材料 |
 | UnitRareAwakenRequest | unit_rare_awaken | 业务实现 | 按下一阶配置消耗碎片并保存觉醒阶数；校验归属、当前阶数及同类挂机互斥，属性仍由客户端配置计算 |
-| UnitRecycleRequest | 未确认 | 未实现 | — |
+| UnitRecycleRequest | unit_recycle | 业务实现 | 按主表回收未保护、未占用角色，汇总金币、点数、碎片及物品，卸下装备并保存；拒绝超容量整批操作，保留至少一个角色及图鉴 |
 | UnitResetPointAllocationRequest | reset_point_allocation | 业务实现 | 清空九类分配并返还已用点数；首次或主数据免费期不扣款，其余扣金币；本地无分配时不收费，不重算历史点数来源 |
 | UnitSpecActualizeRequest | unit_spec_actualize | 业务实现 | 按六项基础材料类型和转生消耗系数增加属性；校验库存、整除数量与当前上限，批量一次保存 |
 | UnitVoiceAutosetUpdateRequest | unit_voice_autoset_update | 业务实现 | 开关校验与保存；不含自动分配内容 |

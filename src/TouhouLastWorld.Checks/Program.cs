@@ -2885,3 +2885,42 @@ historyReply["units"]!.AsArray().Clear();
 Check(historyServer.Dispatch("get_clear_history_teaminfo", arguments: new(HistoryQuery: historyQuery, HistoryDefinitions: historyDefinitions)).Body!["units"]!.AsArray().Count == 1,
     "history detail responses are independent snapshots");
 Console.WriteLine("Passed 3 history detail checks.");
+var unitRecycleSeed = JsonNode.Parse(seed)!;
+var recyclableUnit = unitRecycleSeed["unit"]!["unit_list"]![0]!.DeepClone();
+recyclableUnit["user_unit_id"] = 2L;
+unitRecycleSeed["unit"]!["unit_list"]!.AsArray().Add(recyclableUnit);
+unitRecycleSeed["picture"]!["picture_list"]!.AsArray().Add(new JsonObject { ["user_picture_id"] = 1L,
+    ["picture_id"] = 100, ["equip_user_unit_id"] = 2L });
+var unitRecycleDirectory = directory + "-unit-recycle";
+var unitRecycleServer = new OfflineServer(unitRecycleDirectory, unitRecycleSeed.ToJsonString(), "offline://resources/");
+unitRecycleServer.Dispatch("game_init");
+unitRecycleServer.Dispatch("login");
+var unitRecycleEntry = new LocalUnitRecycleEntry(2, 1001, 1, 0,
+    new[] { new LocalRecycleGain(3, 0, 100), new LocalRecycleGain(2, 0, 10), new LocalRecycleGain(5, 0, 2), new LocalRecycleGain(12, 99990, 3) });
+var unitRecycleRule = new LocalUnitRecycle(new[] { unitRecycleEntry }, 10000, 1000, 100);
+Check(unitRecycleServer.Dispatch("unit_recycle", arguments: new(Ids: new[] { 2L, 2L }, UnitRecycle: unitRecycleRule)).Status == 400
+    && unitRecycleServer.Dispatch("unit_recycle", arguments: new(Ids: new[] { 1L }, UnitRecycle: unitRecycleRule with { Entries = new[] { unitRecycleEntry with { Id = 1 } } })).Status == 409,
+    "unit recycle rejects duplicates and assigned units");
+Check(unitRecycleServer.Dispatch("unit_recycle", arguments: new(Ids: new[] { 2L }, UnitRecycle: unitRecycleRule with { ItemMax = 2 })).Status == 409
+    && unitRecycleServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000
+    && unitRecycleServer.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]!.AsArray().Count == 2,
+    "unit recycle rolls back earlier rewards when a later reward exceeds capacity");
+unitRecycleServer.Dispatch("unit_protection", arguments: new(2, 1));
+Check(unitRecycleServer.Dispatch("unit_recycle", arguments: new(Ids: new[] { 2L }, UnitRecycle: unitRecycleRule)).Status == 409,
+    "unit recycle preserves protected units");
+unitRecycleServer.Dispatch("unit_protection", arguments: new(2, 0));
+var unitRecycled = unitRecycleServer.Dispatch("unit_recycle", arguments: new(Ids: new[] { 2L }, UnitRecycle: unitRecycleRule)).Body!;
+Check(unitRecycled["remove_user_unit_id_list"]![0]!.GetValue<long>() == 2
+    && unitRecycled["gain_object_list"]!.AsArray().Count == 4
+    && unitRecycled["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 110
+    && unitRecycled["user_update"]!["piece"]!.GetValue<int>() == 2
+    && unitRecycled["user_update"]!["picture"]!["picture_list"]![0]!["equip_user_unit_id"]!.GetValue<long>() == 0,
+    "unit recycle grants configured rewards and releases equipment");
+var unitRecycleReload = new OfflineServer(unitRecycleDirectory, seed, "offline://resources/");
+unitRecycleReload.Dispatch("game_init");
+unitRecycleReload.Dispatch("login");
+var newUnitAfterRecycle = unitRecycleReload.Dispatch("gacha_do", count: 1).Body!["gacha_drop_list"]![0]!["unique_id"]!.GetValue<long>();
+Check(newUnitAfterRecycle == 3
+    && unitRecycleReload.Dispatch("unit_recycle", arguments: new(Ids: new[] { 2L }, UnitRecycle: unitRecycleRule)).Status == 404,
+    "recycled unit identifiers are not reused after restart and stale retries cannot remove a new unit");
+Console.WriteLine("Passed 5 unit recycle checks.");

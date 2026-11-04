@@ -42,7 +42,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalAutomaticRelease? AutomaticRelease = null, LocalShopRefresh? ShopRefresh = null,
     LocalGoldExchange? GoldExchange = null, LocalIntroDefinitions? IntroDefinitions = null,
     LocalIntroGrant? IntroGrant = null, LocalHistoryQuery? HistoryQuery = null,
-    LocalHistoryDefinitions? HistoryDefinitions = null);
+    LocalHistoryDefinitions? HistoryDefinitions = null, LocalUnitRecycle? UnitRecycle = null);
 
 public sealed partial class OfflineServer
 {
@@ -101,6 +101,8 @@ public sealed partial class OfflineServer
             count = expectedCount;
         }
         if (api == "gacha_do" && count is not (1 or 10)) return new(400, null, "Local gacha requires count=1 or count=10.");
+        if (api == "gacha_do" && LastUnitId >= long.MaxValue - count!.Value)
+            return new(409, null, "Unit identifier limit exceeded.");
         if (api == "gacha_do" && user["crystal"]!.GetValue<int>() < count!.Value * 5)
             return new(400, null, "Not enough crystal.");
         if (api == "gacha_do" && user["gold"]!.GetValue<int>() < count!.Value * 1500)
@@ -240,7 +242,7 @@ public sealed partial class OfflineServer
         var updated = user.DeepClone().AsObject();
         var units = updated["unit"]!["unit_list"]!.AsArray();
         var unitId = unitTemplate["unit_id"]!.GetValue<int>();
-        var nextId = units.Select(unit => unit!["user_unit_id"]!.GetValue<long>()).DefaultIfEmpty().Max() + 1;
+        var nextId = LastUnitId + 1;
         var drops = new JsonArray();
         for (var index = 0; index < count; index++)
         {
@@ -258,6 +260,7 @@ public sealed partial class OfflineServer
         var beforeCrystal = updated["crystal"]!.GetValue<int>();
         updated["crystal"] = beforeCrystal - count * 5;
         updated["gold"] = updated["gold"]!.GetValue<int>() - count * 1500;
+        updated["_local_unit_sequence"] = nextId + count - 1;
         Save(updated);
         return new()
         {
@@ -267,6 +270,9 @@ public sealed partial class OfflineServer
             ["user_update"] = new JsonObject { ["gold"] = user["gold"]!.DeepClone(), ["crystal"] = user["crystal"]!.DeepClone(), ["unit"] = user["unit"]!.DeepClone() }
         };
     }
+
+    private long LastUnitId => Math.Max(user["_local_unit_sequence"]?.GetValue<long>() ?? 0,
+        user["unit"]!["unit_list"]!.AsArray().Select(unit => unit!["user_unit_id"]!.GetValue<long>()).DefaultIfEmpty().Max());
 
     private static JsonArray GachaButtons() => new(
         new JsonObject { ["gacha_button_id"] = 102, ["count"] = 0 },
