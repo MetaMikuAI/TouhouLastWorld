@@ -414,3 +414,19 @@ Check(mailReload.Dispatch("mail_top").Body!["mail"]!.AsArray().Count == 1, "mail
 Check(mailUser["_local_read_talk_ids"]!.AsArray().Count == 1
     && mailUser["_local_read_talk_ids"]![0]!.GetValue<int>() == 12, "read marker persists without duplicates");
 Console.WriteLine("Passed 7 mail and talk checks.");
+Check(mailbox.Dispatch("unit_voice_update", arguments: new(1001, -1)).Status == 400, "negative voice selection rejected");
+Check(mailbox.Dispatch("unit_voice_update", arguments: new(999999, 1)).Status == 404, "unknown collection unit rejected");
+var voiceAlbum = mailbox.Dispatch("unit_voice_update", arguments: new(1001, 23)).Body!["user_update"]!["album"]!;
+Check(voiceAlbum["unit_list"]![0]!["voice_set_id"]!.GetValue<int>() == 23, "voice selection stored in album");
+Check(mailbox.Dispatch("unit_voice_update", arguments: new(1001, 0)).Status == 0, "default voice selection accepted");
+var voiceReload = new OfflineServer(mailDirectory, mailSeed.ToJsonString(), "offline://resources/");
+voiceReload.Dispatch("game_init");
+var voiceUser = voiceReload.Dispatch("login").Body!["user"]!;
+Check(voiceUser["album"]!["unit_list"]!.AsArray().Count == 1
+    && voiceUser["album"]!["unit_list"]![0]!["voice_set_id"]!.GetValue<int>() == 0, "voice preference persists without duplicate entries");
+var beforeTelemetry = voiceUser.DeepClone();
+Check(voiceReload.Dispatch("transcribe_kpi", arguments: new(Value: 1)).Status == 0
+    && voiceReload.Dispatch("transcribe_kpi", arguments: new(Value: 2)).Status == 0, "known telemetry events accepted");
+Check(voiceReload.Dispatch("transcribe_kpi", arguments: new(Value: 3)).Status == 400, "unknown telemetry event rejected");
+Check(JsonNode.DeepEquals(beforeTelemetry, voiceReload.Dispatch("login").Body!["user"]), "telemetry does not mutate user state");
+Console.WriteLine("Passed 8 voice and telemetry checks.");
