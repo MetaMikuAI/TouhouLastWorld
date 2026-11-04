@@ -42,7 +42,7 @@ public sealed class OfflineServer
 
     public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
     {
-        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection" or "unit_new_update"))
+        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection" or "unit_new_update" or "picture_protection"))
             return new(501, null, $"Offline API not implemented: {api}");
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
@@ -65,7 +65,8 @@ public sealed class OfflineServer
         if (api is "user_create" or "login") EnsureAccount();
         var operation = api switch
         {
-            "unit_protection" => SetProtection(arguments),
+            "unit_protection" => SetProtection(arguments, "unit", "unit_list", "user_unit_id"),
+            "picture_protection" => SetProtection(arguments, "picture", "picture_list", "user_picture_id"),
             "unit_new_update" => ClearNewFlags(arguments),
             _ => null
         };
@@ -134,17 +135,17 @@ public sealed class OfflineServer
         return new(0, body);
     }
 
-    private LocalReply SetProtection(LocalArguments? arguments)
+    private LocalReply SetProtection(LocalArguments? arguments, string section, string list, string idField)
     {
         if (arguments?.EntityId is not > 0 || arguments.Value is not (0 or 1))
             return new(400, null, "Positive entity ID and protection flag 0 or 1 required.");
         var updated = user.DeepClone().AsObject();
-        var unit = updated["unit"]!["unit_list"]!.AsArray()
-            .FirstOrDefault(item => item!["user_unit_id"]!.GetValue<long>() == arguments.EntityId);
+        var unit = updated[section]![list]!.AsArray()
+            .FirstOrDefault(item => item![idField]!.GetValue<long>() == arguments.EntityId);
         if (unit is null) return new(404, null, "Entity not found.");
         unit["is_protection"] = arguments.Value.Value;
         Save(updated);
-        return new(0, new() { ["user_update"] = new JsonObject { ["unit"] = user["unit"]!.DeepClone() } });
+        return new(0, new() { ["user_update"] = new JsonObject { [section] = user[section]!.DeepClone() } });
     }
 
     private LocalReply ClearNewFlags(LocalArguments? arguments)

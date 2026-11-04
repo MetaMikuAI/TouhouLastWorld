@@ -141,7 +141,7 @@
 | PictureFrameRequest | 未确认 | 未实现 | — |
 | PictureNewUpdateRequest | 未确认 | 未实现 | — |
 | PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
-| PictureProtectionRequest | 未确认 | 未实现 | — |
+| PictureProtectionRequest | picture_protection | 业务实现 | 保护标记校验、更新与保存 |
 | PictureRecycleRequest | 未确认 | 未实现 | — |
 | PictureSpecActualizeChemicalRequest | 未确认 | 未实现 | — |
 | PictureSpecActualizeRequest | 未确认 | 未实现 | — |

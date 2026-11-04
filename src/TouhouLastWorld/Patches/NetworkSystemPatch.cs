@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "picture_protection")
+        {
+            var update = request.TryCast<PictureProtectionRequest>();
+            arguments = update == null ? null : new LocalArguments(update.user_picture_id, update.is_protection);
+        }
         if (api == "unit_new_update")
         {
             var update = request.TryCast<UnitNewUpdateRequest>();
