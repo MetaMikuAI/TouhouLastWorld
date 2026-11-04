@@ -223,7 +223,7 @@
 | UnitVoiceAutosetUpdateRequest | unit_voice_autoset_update | 业务实现 | 开关校验与保存；不含自动分配内容 |
 | UnitVoiceUpdateRequest | unit_voice_update | 业务实现 | 保存已收录或持有条目的语音偏好；不校验语音资源与解锁条件 |
 | UpdateAutoReplayInfoRequest | update_auto_replay_info | 业务实现 | 按任务类型、目标及难度保存客户端测量值；非负校验，不重算战斗 |
-| UpdateGoldExchangeShopListRequest | 未确认 | 未实现 | — |
+| UpdateGoldExchangeShopListRequest | update_gold_exchange_shop_list | 业务实现 | 按刷新次数扣费并切换至已配置的本地商品批次，保存商品与次数；随机生成及每日次数重置未实现 |
 | UpdateHomeMotionModeRequest | update_home_motion_mode | 业务实现 | 校验成员归属并保存非负动作模式；不校验动作资源或解锁条件 |
 | UpdateProfileSetting2APIRequest | update_profile_setting2 | 业务实现 | 本地文本检查，拒绝缺失值和控制字符；允许清空，保存由布局接口完成，不含远端审核 |
 | UpdateProfileSettingAPIRequest | update_profile_setting | 业务实现 | 校验布局 JSON 字段类型并原样保存；不校验素材所有权，不授予素材 |

@@ -2742,3 +2742,35 @@ releaseReload.Dispatch("login");
 Check(releaseReload.Dispatch("unit_reincarnation_release", arguments: new(releaseUnitId, 2, AutomaticRelease: releaseRule)).Body!["user_update"]!["unit"]!["unit_list"]![0]!["release_functions"]!.AsArray().Count == 2,
     "automatic release persists and duplicate requests are idempotent");
 Console.WriteLine("Passed 3 automatic release checks.");
+var refreshSeed = JsonNode.Parse(seed)!;
+refreshSeed["orb"]!["free"] = 5L;
+refreshSeed["orb"]!["purchased"] = 10L;
+refreshSeed["_local_shop_list"] = new JsonArray(new JsonObject
+{
+    ["type"] = 3, ["manual_update_count"] = 0, ["goods_list"] = new JsonArray()
+});
+refreshSeed["_local_gold_shop_batches"] = new JsonArray(new JsonArray(new JsonObject
+{
+    ["master_id"] = 10, ["shop_item_id"] = 100, ["stock"] = 2, ["end_at"] = ""
+}));
+var refreshDirectory = directory + "-shop-refresh";
+var refreshServer = new OfflineServer(refreshDirectory, refreshSeed.ToJsonString(), "offline://resources/");
+refreshServer.Dispatch("game_init");
+refreshServer.Dispatch("login");
+var refreshRule = new LocalShopRefresh(new[] { 10 }, new[] { 10 });
+Check(refreshServer.Dispatch("update_gold_exchange_shop_list", arguments: new(ShopRefresh: refreshRule with { ActiveGoods = Array.Empty<int>() })).Status == 503
+    && refreshServer.Dispatch("update_gold_exchange_shop_list", arguments: new(ShopRefresh: refreshRule with { Costs = new[] { 20 } })).Status == 409,
+    "shop refresh preserves its batch when goods are unavailable or balance is insufficient");
+var refreshReply = refreshServer.Dispatch("update_gold_exchange_shop_list", arguments: new(ShopRefresh: refreshRule)).Body!;
+Check(refreshReply["exchange_shop"]!["manual_update_count"]!.GetValue<int>() == 1
+    && refreshReply["exchange_shop"]!["goods_list"]![0]!["master_id"]!.GetValue<int>() == 10
+    && refreshReply["user_update"]!["orb"]!["free"]!.GetValue<long>() == 0
+    && refreshReply["user_update"]!["orb"]!["purchased"]!.GetValue<long>() == 5,
+    "shop refresh replaces goods, charges the configured price and increments its count");
+var refreshReload = new OfflineServer(refreshDirectory, seed, "offline://resources/");
+refreshReload.Dispatch("game_init");
+refreshReload.Dispatch("login");
+Check(refreshReload.Dispatch("update_gold_exchange_shop_list", arguments: new(ShopRefresh: refreshRule)).Status == 409
+    && refreshReload.Dispatch("get_shop_list").Body!["shop_list"]![0]!["goods_list"]![0]!["shop_item_id"]!.GetValue<int>() == 100,
+    "refreshed goods and the refresh limit survive restart");
+Console.WriteLine("Passed 3 shop refresh checks.");

@@ -35,6 +35,17 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "update_gold_exchange_shop_list" && request.TryCast<UpdateGoldExchangeShopListRequest>() is not null)
+        {
+            var master = MasterDB.This();
+            var costs = master?.GoldExchangeUpdate?.ToList()?.ToArray().OrderBy(row => row.id).ToArray();
+            var goods = master?.GoldExchange?.ToList()?.ToArray();
+            var time = GameSystem.This()?.Time;
+            if (costs != null && goods != null && time != null
+                && costs.Select((row, index) => row.id == index + 1).All(valid => valid))
+                arguments = new LocalArguments(ShopRefresh: new(costs.Select(row => row.consume_orb).ToArray(),
+                    goods.Where(row => string.IsNullOrWhiteSpace(row.end_at) || time.IsActiveDate(row.start_at, row.end_at)).Select(row => row.id).ToArray()));
+        }
         if (api == "unit_reincarnation_release") arguments = ReadAutomaticRelease(request.TryCast<ReincarnationReleaseRequest>());
         if (api == "votive_picture_exchange") arguments = ReadTicketExchange(request.TryCast<VotivePictureExchangeRequest>());
         if (api == "fudai/fudai_info" && request.TryCast<TreasureInfoRequest>() is not null)
@@ -608,7 +619,7 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api is "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
+            if (api is "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
             {
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);
