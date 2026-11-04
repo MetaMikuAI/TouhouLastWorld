@@ -125,7 +125,7 @@
 | MissionEndRequest | mission_end | 业务实现 | 单个或批量领取本地已完成任务，按主表发放固定金币/晶体/物品并保存领取记录；整批回滚，随机奖励、任务进度生成与周期重置未实现 |
 | MissionTopRequest | mission_top | 最小响应 | 返回本地未完成、待领取列表及对应分类，默认空；任务进度生成未实现 |
 | MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 最小响应 | 空周进度列表；不生成通关记录、奖励或排名 |
-| MusicLikeRequest | 未确认 | 未实现 | — |
+| MusicLikeRequest | music_collect | 未实现 | 请求 bgm_id/status，响应 is_success；status 取值含义待调用逻辑确认 |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 |
 | NewsRequest | 未确认 | 未实现 | — |
 | PaymentEndCnRequest | 未确认 | 未实现 | — |
