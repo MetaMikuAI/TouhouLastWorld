@@ -47,7 +47,7 @@
 | EventAnniversaryInfoUpdateAPIRequest | anniversary_info_update | 业务实现 | 本地保存邮箱及申请状态，读取可回显；不提交外部活动 |
 | EventPersonalInfoGetAPIRequest | personal_info_get | 最小响应 | 返回未填写联系信息；不提交报名或发放奖励 |
 | EventPersonalInfoUpdateAPIRequest | personal_info_update | 业务实现 | 本地保存联系资料及申请状态，读取可回显；不提交外部活动 |
-| EventPointGachaDoAPIRequest | 未确认 | 未实现 | — |
+| EventPointGachaDoAPIRequest | event_point_gacha_do | 业务实现 | 按本地预配置顺序扣积分、消耗奖池次数并发放金币/晶体/物品，校验前阶段目标奖励与容量；整批回滚，随机顺序生成及其他奖励类型未实现 |
 | EventTopRequest | event_top | 最小响应 | 读取本地抽取、任务、累计积分快照；缺失返回 503，不推进任务、不结算奖励、不验证当前主数据覆盖范围 |
 | ExchangeCodeRequest | get_exchange_code_reward | 业务实现 | 兑换本地配置的代码，校验账号、同组及重复领取，原子发放金币、晶体、物品；不识别外部代码 |
 | ExchangeRequest | exchange | 业务实现 | 仅金币商店：按商品配置扣费、发放金币/晶体/物品并扣库存，校验有效期与容量；其他商店及奖励类型未实现 |

@@ -3372,3 +3372,41 @@ Check(treasureDrawRetry.Status == 0 && treasureDrawRetry.Body!["gift_id"]!.GetVa
     && treasureDrawRetry.Body["code"]!.GetValue<string>() == "prepared-local-result",
     "reward claim retries return the original receipt after restart");
 Console.WriteLine("Passed 3 prepared reward claim checks.");
+
+var eventDrawSeed = JsonNode.Parse(seed)!;
+eventDrawSeed["event_info"] = new JsonArray(new JsonObject { ["event_id"] = 7, ["event_point"] = 100, ["event_total_point"] = 100 });
+eventDrawSeed["_local_event_overview"] = new JsonObject { ["event_point_gacha_list"] = new JsonArray(),
+    ["event_special_mission"] = new JsonArray(), ["event_total_point_reward"] = new JsonArray() };
+eventDrawSeed["_local_event_draw_sequences"] = new JsonObject { ["11"] = new JsonArray(101, 102), ["12"] = new JsonArray(103) };
+var eventDrawDirectory = directory + "-event-draw";
+var eventDrawServer = new OfflineServer(eventDrawDirectory, eventDrawSeed.ToJsonString(), "offline://resources/");
+eventDrawServer.Dispatch("game_init");
+eventDrawServer.Dispatch("login");
+var eventDrawPools = new[] {
+    new LocalEventPool(11, 1, 10, 2, [new(101, 1, false, new(3, 0, 5, 100000)), new(102, 1, true, new(6, 0, 2, 100000))]),
+    new LocalEventPool(12, 2, 10, 1, [new(103, 1, true, new(3, 0, 10, 100000))]) };
+var eventDrawRule = new LocalEventDraw(7, 11, 2, true, eventDrawPools);
+Check(eventDrawServer.Dispatch("event_point_gacha_do", arguments: new(EventDraw: eventDrawRule with { GachaId = 12, Count = 1 })).Status == 409
+    && eventDrawServer.Dispatch("event_point_gacha_do", arguments: new(EventDraw: eventDrawRule with { Count = 3 })).Status == 409,
+    "locked stages and depleted pool requests reject before spending");
+var eventDrawCappedPools = eventDrawPools.ToArray();
+eventDrawCappedPools[0] = eventDrawPools[0] with { Drops = [eventDrawPools[0].Drops[0], new(102, 1, true, new(6, 0, 2, 1))] };
+Check(eventDrawServer.Dispatch("event_point_gacha_do", arguments: new(EventDraw: eventDrawRule with { Pools = eventDrawCappedPools })).Status == 409,
+    "later reward capacity failure rejects the whole draw batch");
+var eventDrawReply = eventDrawServer.Dispatch("event_point_gacha_do", arguments: new(EventDraw: eventDrawRule));
+Check(eventDrawReply.Status == 0 && eventDrawReply.Body!["drop_list"]!.AsArray().Count == 1
+    && eventDrawReply.Body["target_drop_list"]!.AsArray().Count == 1
+    && eventDrawReply.Body["user_update"]!["event_info"]![0]!["event_point"]!.GetValue<int>() == 80
+    && eventDrawReply.Body["user_update"]!["event_info"]![0]!["event_total_point"]!.GetValue<int>() == 100
+    && eventDrawReply.Body["user_update"]!["gold"]!.GetValue<int>() == eventDrawSeed["gold"]!.GetValue<int>() + 5,
+    "draw batch consumes once after rollback and returns both reward categories");
+var eventDrawReload = new OfflineServer(eventDrawDirectory, seed, "offline://resources/");
+eventDrawReload.Dispatch("game_init");
+eventDrawReload.Dispatch("login");
+Check(eventDrawReload.Dispatch("event_point_gacha_do", arguments: new(EventDraw: eventDrawRule with { Count = 1 })).Status == 409,
+    "exhausted pool remains exhausted after restart");
+var eventDrawNext = eventDrawReload.Dispatch("event_point_gacha_do", arguments: new(EventDraw: eventDrawRule with { GachaId = 12, Count = 1 }));
+Check(eventDrawNext.Status == 0 && eventDrawNext.Body!["user_update"]!["event_info"]![0]!["event_point"]!.GetValue<int>() == 70
+    && eventDrawNext.Body["event_point_gacha_list"]![1]!["drop_count_list"]![0]!["drop_count"]!.GetValue<int>() == 1,
+    "completed target rewards unlock the next stage with persistent counts");
+Console.WriteLine("Passed 5 event draw settlement checks.");

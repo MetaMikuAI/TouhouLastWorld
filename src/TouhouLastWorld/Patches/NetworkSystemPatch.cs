@@ -156,6 +156,7 @@ public partial class NetworkSystemPatch
                 arguments = new LocalArguments(TreasureDraw: new(row.id,
                     time.IsActiveDate(row.start_at, row.end_at), gifts.Select(gift => gift.id).ToArray()));
         }
+        if (api == "event_point_gacha_do") arguments = ReadEventDraw(request.TryCast<EventPointGachaDoAPIRequest>());
         if (api == "get_event_total_point_reward")
             arguments = ReadEventRewards(request.TryCast<GetEventTotalPointRewardRequest>()?.event_id);
         if (api == "get_event_total_point_reward_all")
@@ -736,7 +737,7 @@ public partial class NetworkSystemPatch
                 PopupSystem.This()?.CreateMessage(reply.Error);
                 yield break;
             }
-            if (api is "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
+            if (api is "event_point_gacha_do" or "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
             {
                 var panel = UnityEngine.Object.FindObjectOfType<MissionBehavior>();
                 if ((api is "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward") && panel != null) panel.m_rcvflg = false;
