@@ -2309,3 +2309,19 @@ Check(exchangeReload.Dispatch("item_exchange", arguments: new(1, int.MaxValue, I
     && exchangeReload.Dispatch("item_exchange", arguments: new(1, 1, ItemExchange: exchangeRule)).Body!["user_update"]!["item"]!["item_list"]![1]!["num"]!.GetValue<int>() == 3,
     "item exchange persists, handles large quantities and accumulates existing target");
 Console.WriteLine("Passed 3 item exchange checks.");
+
+var applicationDirectory = directory + "-application";
+var applicationServer = new OfflineServer(applicationDirectory, seed, "offline://resources/");
+applicationServer.Dispatch("game_init");
+applicationServer.Dispatch("login");
+Check(applicationServer.Dispatch("anniversary_info_update", arguments: new(Value: 0, Text: "local@example.invalid")).Status == 400
+    && applicationServer.Dispatch("anniversary_info_update", arguments: new(Value: 1, Text: "invalid")).Status == 400,
+    "local application requires consent and a mail address");
+Check(applicationServer.Dispatch("anniversary_info_update", arguments: new(Value: 1, Text: " local@example.invalid ")).Body!["user_update"]!["anniversary_present"]!["applied"]!.GetValue<int>() == 1,
+    "local application updates the display state");
+var applicationReload = new OfflineServer(applicationDirectory, seed, "offline://resources/");
+applicationReload.Dispatch("game_init");
+applicationReload.Dispatch("login");
+Check(applicationReload.Dispatch("anniversary_info_get").Body!["mail_address"]!.GetValue<string>() == "local@example.invalid",
+    "local application address persists and can be read");
+Console.WriteLine("Passed 3 local application checks.");
