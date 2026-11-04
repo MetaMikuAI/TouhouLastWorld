@@ -2022,3 +2022,28 @@ Check(extraStatReload.Dispatch("unit_extra_spec_actualize", arguments: new(rankM
     && extraStatReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["strong_fragrant_wood"]!["type_6"]!.GetValue<int>() == 4,
     "extra strengthening persists and rejects stale snapshots");
 Console.WriteLine("Passed 3 extra strengthening checks.");
+
+var unlockSeed = JsonNode.Parse(seed)!;
+unlockSeed["item"]!["item_list"]!.AsArray().Add(new JsonObject { ["item_id"] = 410, ["num"] = 5 });
+unlockSeed["unit"]!["unit_list"]![0]!["strong_fragrant_wood"]!["type_6"] = 10;
+var unlockDirectory = directory + "-stat-unlock";
+var unlockServer = new OfflineServer(unlockDirectory, unlockSeed.ToJsonString(), "offline://resources/");
+unlockServer.Dispatch("game_init");
+unlockServer.Dispatch("login");
+Check(unlockServer.Dispatch("limitbreak_strong_fragrantwood", arguments: new(rankMaterialId, 6, StatUnlock: new(0, 1, 3, 10, false))).Status == 403
+    && unlockServer.Dispatch("limitbreak_strong_fragrantwood", arguments: new(rankMaterialId, 6, StatUnlock: new(0, 1, 3, 20, true))).Status == 409
+    && unlockServer.Dispatch("limitbreak_strong_fragrantwood", arguments: new(rankMaterialId, 6, StatUnlock: new(0, 1, 6, 10, true))).Status == 409,
+    "stat unlock checks feature gate, current cap and materials");
+var unlocked = unlockServer.Dispatch("limitbreak_strong_fragrantwood", arguments: new(rankMaterialId, 6, StatUnlock: new(0, 1, 3, 10, true))).Body!["user_update"]!;
+Check(unlocked["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2
+    && unlocked["unit"]!["unit_list"]![0]!["strong_fragrant_wood_limit_info"]!["type_6"]!.GetValue<int>() == 1
+    && unlocked["unit"]!["unit_list"]![0]!["strong_fragrant_wood_limit_info"]!["type_1"]!.GetValue<int>() == 0
+    && unlocked["unit"]!["unit_list"]![0]!["strong_fragrant_wood"]!["type_6"]!.GetValue<int>() == 10,
+    "stat unlock charges once and changes only the selected limit stage");
+var unlockReload = new OfflineServer(unlockDirectory, seed, "offline://resources/");
+unlockReload.Dispatch("game_init");
+unlockReload.Dispatch("login");
+Check(unlockReload.Dispatch("limitbreak_strong_fragrantwood", arguments: new(rankMaterialId, 6, StatUnlock: new(0, 1, 3, 10, true))).Status == 409
+    && unlockReload.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2,
+    "stat unlock persists and rejects duplicate advancement");
+Console.WriteLine("Passed 3 stat unlock checks.");

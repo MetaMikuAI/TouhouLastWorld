@@ -43,6 +43,8 @@ public partial class NetworkSystemPatch
             arguments = ReadStrengthening(request.TryCast<UnitSpecActualizeRequest>());
         if (api == "unit_extra_spec_actualize")
             arguments = ReadExtraStrengthening(request.TryCast<UnitExtraSpecActualizeRequest>());
+        if (api == "limitbreak_strong_fragrantwood")
+            arguments = ReadStatUnlock(request.TryCast<UnitLimitbreakStrongFragrantWoodRequest>());
         if (api == "unit_level_limitbreak")
         {
             var change = request.TryCast<UnitLevelLimitbreakRequest>();

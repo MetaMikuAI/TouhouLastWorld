@@ -211,7 +211,7 @@
 | UnitEquipPictureResetRequest | unit_equip_picture_reset | 业务实现 | 清空持有实例的 5 个装备槽与装备反向引用；保留装备、保护状态及其他实例配置 |
 | UnitExtraSpecActualizeRequest | unit_extra_spec_actualize | 业务实现 | 独立保存六项额外属性、按一比一消耗对应材料；使用当前解锁上限及生命系数，整批校验后保存 |
 | UnitLevelLimitbreakRequest | unit_level_limitbreak | 业务实现 | 通用物品材料路径：按配置校验等级与数量，扣除金币和物品、提升突破阶数并增加命运值；暂不支持同名单位材料 |
-| UnitLimitbreakStrongFragrantWoodRequest | 未确认 | 未实现 | — |
+| UnitLimitbreakStrongFragrantWoodRequest | limitbreak_strong_fragrantwood | 业务实现 | 按下一阶配置消耗解锁材料并保存单项上限阶数；检查功能开关、当前阶数和属性上限，属性值不变 |
 | UnitNewUpdateRequest | unit_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
 | UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 |
 | UnitRankPromoteItemSetRequest | unit_rank_promote_item_set | 业务实现 | 按当前阶数和槽位配置扣除物品或金币、保存材料槽；校验归属和重复填充，暂不支持装备实例材料 |
