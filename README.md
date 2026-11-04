@@ -21,7 +21,7 @@
 | BattlePassMissionEndRequest | 未确认 | 未实现 | — |
 | BattlePassReceiveRewardRequest | 未确认 | 未实现 | — |
 | BattlePassTopRequest | 未确认 | 未实现 | — |
-| BattleReplayInfoRequest | 未确认 | 未实现 | — |
+| BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 |
 | BattleStartRequest | battle_start | 最小响应 | 空响应 |
 | BootRequest | 未确认 | 未实现 | — |
 | BuyGoodsRequest | 未确认 | 未实现 | — |

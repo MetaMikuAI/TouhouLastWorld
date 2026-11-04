@@ -39,6 +39,12 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
+        if (api is "get_replay_info" or "update_replay_info")
+        {
+            var replay = request.TryCast<BattleReplayInfoRequest>();
+            arguments = replay == null ? null : new LocalArguments(Text: request.TryCast<UpdateReplayInfoRequest>()?.replay_info,
+                ReplayMeasure: new(replay.quest_type, replay.target_id, replay.difficulty));
+        }
         if (api == "get_series_battle_replay_info")
         {
             var query = request.TryCast<SeriesBattleGetReplayInfoRequest>();
