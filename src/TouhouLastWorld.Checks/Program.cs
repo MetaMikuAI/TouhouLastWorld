@@ -620,3 +620,25 @@ Check(costumeUser["unit"]!["unit_list"]![0]!["equip_costume_id"]!.GetValue<int>(
 Check(costumeReload.Dispatch("unit_equip_costume", arguments: new(Costumes: [new(1, 100101, 1001, true)])).Status == 0,
     "default costume can be restored");
 Console.WriteLine("Passed 6 costume checks.");
+var dispatchSeed = JsonNode.Parse(seed)!.AsObject();
+dispatchSeed["dispatch"]!["dispatch_list"] = new JsonArray(
+    new JsonObject { ["user_dispatch_id"] = 10L, ["dispatch_id"] = 1, ["user_unit_id_list"] = new JsonArray(1L) },
+    new JsonObject { ["user_dispatch_id"] = 11L, ["dispatch_id"] = 2, ["user_unit_id_list"] = new JsonArray(2L) });
+var dispatchDirectory = directory + "-dispatch";
+var dispatches = new OfflineServer(dispatchDirectory, dispatchSeed.ToJsonString(), "offline://resources/");
+dispatches.Dispatch("game_init");
+dispatches.Dispatch("login");
+Check(dispatches.Dispatch("dispatch_cancel", arguments: new(EntityId: 0)).Status == 400, "invalid dispatch ID rejected");
+Check(dispatches.Dispatch("dispatch_cancel", arguments: new(EntityId: 99)).Status == 404, "unknown dispatch rejected");
+var cancelledDispatch = dispatches.Dispatch("dispatch_cancel", arguments: new(EntityId: 10)).Body!;
+Check(cancelledDispatch["remove_user_dispatch_id"]!.GetValue<long>() == 10
+    && cancelledDispatch["user_update"]!["dispatch"]!["dispatch_list"]!.AsArray().Count == 1,
+    "dispatch cancellation includes native deletion marker");
+var dispatchReload = new OfflineServer(dispatchDirectory, dispatchSeed.ToJsonString(), "offline://resources/");
+dispatchReload.Dispatch("game_init");
+var dispatchUser = dispatchReload.Dispatch("login").Body!["user"]!;
+Check(dispatchUser["dispatch"]!["dispatch_list"]![0]!["user_dispatch_id"]!.GetValue<long>() == 11,
+    "dispatch cancellation persists and preserves unrelated task");
+Check(JsonNode.DeepEquals(dispatchSeed["unit"], dispatchUser["unit"])
+    && JsonNode.DeepEquals(dispatchSeed["orb"], dispatchUser["orb"]), "dispatch cancellation does not fabricate rewards");
+Console.WriteLine("Passed 5 dispatch cancellation checks.");

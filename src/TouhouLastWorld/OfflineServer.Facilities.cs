@@ -8,6 +8,23 @@ public sealed partial class OfflineServer
     public int LectureFoodExpansionRank => user["lecture_room"]!["food"]!["expansion_rank"]!.GetValue<int>();
     public int TrainingExpansionRank => user["training_room"]!["expansion_rank"]!.GetValue<int>();
 
+    private LocalReply CancelDispatch(long? id)
+    {
+        if (id is null or <= 0) return new(400, null, "Positive dispatch ID required.");
+        var updated = user.DeepClone().AsObject();
+        var dispatch = updated["dispatch"]!.AsObject();
+        var entries = dispatch["dispatch_list"]!.AsArray();
+        var entry = entries.FirstOrDefault(value => value!["user_dispatch_id"]!.GetValue<long>() == id);
+        if (entry is null) return new(404, null, "Dispatch task not found.");
+        entries.Remove(entry);
+        Save(updated);
+        return new(0, new()
+        {
+            ["remove_user_dispatch_id"] = id.Value,
+            ["user_update"] = new JsonObject { ["dispatch"] = dispatch.DeepClone() }
+        });
+    }
+
     private LocalReply CancelTraining(int? slot)
     {
         if (slot is null or <= 0) return new(400, null, "Positive training slot required.");

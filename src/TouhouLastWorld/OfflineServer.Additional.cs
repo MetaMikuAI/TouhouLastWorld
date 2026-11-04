@@ -16,7 +16,7 @@ public sealed partial class OfflineServer
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
         or "lecture_room_food_expansion" or "training_room_expansion" or "training_room_update"
         or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture"
-        or "unit_equip_costume" || QueryTemplates.ContainsKey(api);
+        or "unit_equip_costume" or "dispatch_cancel" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
@@ -30,6 +30,7 @@ public sealed partial class OfflineServer
         "lecture_room_food_expansion" => ExpandFacility(arguments, "lecture_room", "food"),
         "training_room_expansion" => ExpandFacility(arguments, "training_room"),
         "training_room_cancel" => CancelTraining(arguments?.Value),
+        "dispatch_cancel" => CancelDispatch(arguments?.EntityId),
         "unit_equip_picture_reset" => ResetEquipment(arguments?.EntityId),
         "unit_equip_picture" => SetEquipment(arguments),
         "unit_equip_costume" => SetCostumes(arguments?.Costumes),

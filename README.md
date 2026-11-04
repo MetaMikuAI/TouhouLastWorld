@@ -39,7 +39,7 @@
 | DailyArenaTopRequest | 未确认 | 未实现 | — |
 | DeleteAccountRequest | 未确认 | 未实现 | — |
 | DispatchBulkEndRequest | 未确认 | 未实现 | — |
-| DispatchCancelRequest | 未确认 | 未实现 | — |
+| DispatchCancelRequest | dispatch_cancel | 业务实现 | 删除本地任务并返回客户端删除标记；不发放奖励，本地不退款；不存在的任务返回未找到 |
 | DispatchEndRequest | 未确认 | 未实现 | — |
 | DispatchStartRequest | 未确认 | 未实现 | — |
 | EpisodeEndRequest | 未确认 | 未实现 | — |

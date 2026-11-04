@@ -43,6 +43,8 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<ReadUnitTalkRequest>()?.talk_id);
         if (api == "training_room_cancel")
             arguments = new LocalArguments(Value: request.TryCast<TrainingRoomCancelRequest>()?.slot_number);
+        if (api == "dispatch_cancel")
+            arguments = new LocalArguments(EntityId: request.TryCast<DispatchCancelRequest>()?.user_dispatch_id);
         if (api == "unit_equip_picture_reset")
             arguments = new LocalArguments(EntityId: request.TryCast<UnitEquipPictureResetRequest>()?.user_unit_id);
         if (api == "unit_equip_costume")
