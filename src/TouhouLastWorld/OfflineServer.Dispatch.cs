@@ -9,6 +9,22 @@ public sealed record LocalDispatchStart(int DispatchId, int Seconds, int Cost, i
 
 public sealed partial class OfflineServer
 {
+    private LocalReply EndDispatchBatch()
+    {
+        foreach (var task in user["dispatch"]!["dispatch_list"]!.AsArray())
+        {
+            if (!DateTimeOffset.TryParse(task?["end_time"]?.GetValue<string>(), CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal, out var finish))
+                return new(409, null, "Invalid dispatch finish time.");
+            if (finish <= DateTimeOffset.UtcNow)
+                return new(503, null, "Dispatch reward settlement unavailable.");
+        }
+        return new(0, new()
+        {
+            ["remove_user_dispatch_ids"] = new JsonArray(), ["result_dict_list"] = new JsonArray()
+        });
+    }
+
     public int DispatchDefinitionId(long id) => user["_local_dispatch_offers"]?.AsArray()
         .FirstOrDefault(entry => entry?["user_dispatch_id"]?.GetValue<long>() == id)?["dispatch_id"]?.GetValue<int>() ?? 0;
 

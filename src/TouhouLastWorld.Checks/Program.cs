@@ -2372,3 +2372,23 @@ dispatchStartReload.Dispatch("dispatch_cancel", arguments: new(701));
 Check(dispatchStartReload.Dispatch("get_dispatch_list").Body!["dispatch_list"]![0]!["user_unit_id_list"]!.AsArray().Count == 0,
     "cancelled dispatch returns to the candidate state");
 Console.WriteLine("Passed 4 dispatch start checks.");
+
+Check(dispatchStartReload.Dispatch("dispatch_bulk_end").Body!["result_dict_list"]!.AsArray().Count == 0,
+    "dispatch bulk settlement accepts no tasks");
+dispatchStartReload.Dispatch("dispatch_start", arguments: dispatchStartArgs);
+Check(dispatchStartReload.Dispatch("dispatch_bulk_end").Body!["remove_user_dispatch_ids"]!.AsArray().Count == 0
+    && dispatchStartReload.Dispatch("login").Body!["user"]!["dispatch"]!["dispatch_list"]!.AsArray().Count == 1,
+    "dispatch bulk settlement preserves running tasks");
+var expiredDispatchSeed = dispatchStartSeed.DeepClone();
+expiredDispatchSeed["dispatch"]!["dispatch_list"] = new JsonArray(new JsonObject
+{
+    ["user_dispatch_id"] = 701L, ["dispatch_id"] = 7, ["end_time"] = "2000-01-01 00:00:00",
+    ["user_unit_id_list"] = new JsonArray(JsonValue.Create(dispatchMemberId))
+});
+var expiredDispatchServer = new OfflineServer(directory + "-dispatch-expired", expiredDispatchSeed.ToJsonString(), "offline://resources/");
+expiredDispatchServer.Dispatch("game_init");
+expiredDispatchServer.Dispatch("login");
+Check(expiredDispatchServer.Dispatch("dispatch_bulk_end").Status == 503
+    && expiredDispatchServer.Dispatch("login").Body!["user"]!["dispatch"]!["dispatch_list"]!.AsArray().Count == 1,
+    "dispatch bulk settlement never discards finished tasks without rewards");
+Console.WriteLine("Passed 3 dispatch bulk boundary checks.");
