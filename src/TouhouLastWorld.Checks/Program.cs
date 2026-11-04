@@ -1502,6 +1502,15 @@ Check(repeatedMail["user_update"]!["gold"]!.GetValue<int>() == receivedMail["use
 Check(receiptReload.Dispatch("mail_receive", arguments: new(Ids: [99], MailRules: mailRules)).Status == 404
     && receiptReload.Dispatch("mail_receive", arguments: new(Ids: [])).Status == 0, "mail claims distinguish missing IDs and an empty selection");
 Console.WriteLine("Passed 5 mail receipt checks.");
+var bootDirectory = directory + "-boot";
+var bootServer = new OfflineServer(bootDirectory, seed, "offline://resources/");
+Check(bootServer.Dispatch("boot").Status == 401, "boot notification requires initialization");
+var bootSession = bootServer.Dispatch("game_init").Body!["session_id"]!.GetValue<string>();
+var bootReply = bootServer.Dispatch("boot");
+Check(bootReply.Status == 0 && bootReply.Body!["session_id"]!.GetValue<string>() == bootSession
+    && bootReply.Body["user_update"] is null && !File.Exists(Path.Combine(bootDirectory, "account.json")),
+    "boot notification preserves the initialized session without creating an account");
+Console.WriteLine("Passed 2 boot notification checks.");
 if (OperatingSystem.IsWindows())
 {
     var lockedDirectory = directory + "-locked-save";

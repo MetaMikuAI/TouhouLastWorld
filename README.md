@@ -23,7 +23,7 @@
 | BattlePassTopRequest | battle_pass_top | 最小响应 | 三类任务列表为空、领取等级为 0；不开放活动、不生成任务或奖励 |
 | BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 |
 | BattleStartRequest | battle_start | 最小响应 | 空响应 |
-| BootRequest | 未确认 | 未实现 | — |
+| BootRequest | boot | 最小响应 | 初始化后确认启动；无需建号，不收集广告标识，不变更账号 |
 | BuyGoodsRequest | 未确认 | 未实现 | — |
 | CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 |
 | CheckUserRequest | check_user | 业务实现 | 本地身份存在性检查 |

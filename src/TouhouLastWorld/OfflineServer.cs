@@ -76,7 +76,7 @@ public sealed partial class OfflineServer
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
         if (api == "check_user" && account is null) return new(401, null, "Offline account required.");
-        if (api is not ("game_init" or "version_get" or "user_create" or "login") && account is null)
+        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "boot") && account is null)
             return new(401, null, "Offline account required.");
         if (api == "gacha_do" && gachaId is not null)
         {
