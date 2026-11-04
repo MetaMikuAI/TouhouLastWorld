@@ -154,7 +154,7 @@
 | replaceAvatarRequest | 未确认 | 未实现 | — |
 | RhythmGameEndRequest | 未确认 | 未实现 | — |
 | RhythmGameStartRequest | 未确认 | 未实现 | — |
-| RhythmGameTopRequest | 未确认 | 未实现 | — |
+| RhythmGameTopRequest | rhythm_game_top | 最小响应 | 空成绩列表；曲目由客户端主数据加载，不生成分数或奖励 |
 | RogueLiteBattleEndRequest | 未确认 | 未实现 | — |
 | RogueLiteBattleStartRequest | 未确认 | 未实现 | — |
 | RogueliteDeckCallRequest | 未确认 | 未实现 | — |
