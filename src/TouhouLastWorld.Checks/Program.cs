@@ -2417,3 +2417,36 @@ Check(bookProgress["complete_ls"]!.AsArray().Count == 0 && bookProgress["reward"
     && bookReload.Dispatch("picture_book/get_reward", arguments: new(Value: 11, BookReward: bookRule)).Status == 409,
     "book reward persists the received marker and prevents duplicate rewards");
 Console.WriteLine("Passed 3 book reward checks.");
+
+var codeSeed = JsonNode.Parse(seed)!;
+var localCodeHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("sample-local-code")));
+codeSeed["_local_exchange_codes"] = new JsonObject
+{
+    [localCodeHash] = new JsonObject
+    {
+        ["received"] = false, ["group"] = "sample",
+        ["rewards"] = new JsonArray(new JsonObject { ["object_type"] = 3, ["object_id"] = 0, ["object_value"] = 100 })
+    }
+};
+var codeDirectory = directory + "-exchange-code";
+var codeServer = new OfflineServer(codeDirectory, codeSeed.ToJsonString(), "offline://resources/");
+codeServer.Dispatch("game_init");
+var codeLogin = codeServer.Dispatch("login").Body!;
+var localCodeRequest = new LocalCodeExchange("sample-local-code", codeLogin["user_id"]!.GetValue<string>(), codeLogin["device_id"]!.GetValue<string>());
+var localCodeArgs = new LocalArguments(CodeExchange: localCodeRequest, MailRules: new(100000, 100000, 1000, Array.Empty<int>()));
+Check(codeServer.Dispatch("get_exchange_code_reward", arguments: localCodeArgs with { CodeExchange = localCodeRequest with { Code = "unknown" } }).Body!["code"]!.GetValue<int>() == 1002
+    && codeServer.Dispatch("get_exchange_code_reward", arguments: localCodeArgs with { CodeExchange = localCodeRequest with { UserId = "other" } }).Body!["status"]!.GetValue<bool>() == false,
+    "code redemption rejects unknown codes and mismatched identity through the native failure fields");
+Check(codeServer.Dispatch("get_exchange_code_reward", arguments: localCodeArgs with { MailRules = new(1, 1, 1, Array.Empty<int>()) }).Body!["code"]!.GetValue<int>() == 1000,
+    "code redemption failure does not consume the code");
+var redeemedCode = codeServer.Dispatch("get_exchange_code_reward", arguments: localCodeArgs).Body!;
+Check(redeemedCode["status"]!.GetValue<bool>() && redeemedCode["code"]!.GetValue<int>() == 0
+    && redeemedCode["user_update"]!["gold"]!.GetValue<int>() == 5100,
+    "code redemption grants the configured reward and reports success");
+var codeReload = new OfflineServer(codeDirectory, seed, "offline://resources/");
+codeReload.Dispatch("game_init");
+codeReload.Dispatch("login");
+Check(codeReload.Dispatch("get_exchange_code_reward", arguments: localCodeArgs).Body!["code"]!.GetValue<int>() == 1001
+    && codeReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
+    "code redemption persists and cannot grant twice");
+Console.WriteLine("Passed 4 local code redemption checks.");

@@ -35,6 +35,15 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "get_exchange_code_reward")
+        {
+            var change = request.TryCast<ExchangeCodeRequest>();
+            var master = MasterDB.This();
+            var setting = master?.Setting;
+            arguments = new LocalArguments(CodeExchange: change == null ? null : new(change.exchange_code, change.user_id, change.device_id),
+                MailRules: setting == null ? null : new(setting.GOLD_MAX, setting.CRYSTAL_MAX, setting.ITEM_MAX,
+                    master?.Item?.ToList()?.ToArray().Select(item => item.id).ToArray()));
+        }
         if (api == "picture_book/get_reward")
         {
             var change = request.TryCast<PictureBookReciveRequest>();
