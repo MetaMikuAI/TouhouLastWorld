@@ -20,15 +20,16 @@ public sealed partial class OfflineServer
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
         or "comic_read_end" or "comic_get_pages" or "series_battle_reset" or "series_battle_team_update"
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
-        or "avatar/preview" or "avatar/update" or "friend/refuse_apply" || QueryTemplates.ContainsKey(api);
+        or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "friend/refuse_apply" => RefuseContactApplications(arguments),
+        "friend/accept_apply" => AcceptContactApplication(arguments),
         "friend/apply_list" => new(0, new() { ["data"] = user["_local_friend_applications"]?.DeepClone() ?? new JsonArray() }),
         "friend/list" => new(0, new()
         {
-            ["data"] = new JsonArray(),
+            ["data"] = user["_local_friends"]?.DeepClone() ?? new JsonArray(),
             ["request_tips"] = user["_local_friend_applications"] is JsonArray { Count: > 0 } ? 1 : 0
         }),
         "avatar/list" => new(0, new() { ["avatar_list"] = user["HeadListItemList"]?.DeepClone() ?? new JsonArray() }),
@@ -112,6 +113,28 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply AcceptContactApplication(LocalArguments? request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Text)) return new(400, null, "Contact ID required.");
+        if (request.Value is null or <= 0) return new(503, null, "Contact capacity unavailable.");
+        var updated = user.DeepClone().AsObject();
+        var applications = updated["_local_friend_applications"] as JsonArray;
+        var entry = applications?.FirstOrDefault(value => value?["public_id"]?.GetValue<string>() == request.Text);
+        if (entry is null) return new(404, null, "Local contact application not found.");
+        var friends = updated["_local_friends"] as JsonArray ?? new JsonArray();
+        if (friends.Any(value => value?["public_id"]?.GetValue<string>() == request.Text))
+            return new(409, null, "Local contact already exists.");
+        if (friends.Count >= request.Value) return new(20007, null, "Local contact list is full.");
+        var friend = entry.DeepClone().AsObject();
+        friend["profile"] = "";
+        friend["intimacy"] = 0;
+        friends.Add(friend);
+        applications!.Remove(entry);
+        if (friends.Parent is null) updated["_local_friends"] = friends;
+        Save(updated);
+        return new(0, new());
+    }
 
     private LocalReply RefuseContactApplications(LocalArguments? request)
     {

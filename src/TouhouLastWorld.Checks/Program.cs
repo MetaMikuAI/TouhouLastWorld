@@ -971,3 +971,23 @@ Check(contactsReload.Dispatch("friend/apply_list").Body!["data"]!.AsArray().Coun
     && contactsReload.Dispatch("friend/list").Body!["request_tips"]!.GetValue<int>() == 0,
     "bulk refusal clears applications and indicator");
 Console.WriteLine("Passed 4 contact refusal checks.");
+var acceptDirectory = directory + "-accept-contact";
+var acceptContact = new OfflineServer(acceptDirectory, contactSeed.ToJsonString(), "offline://resources/");
+acceptContact.Dispatch("game_init");
+acceptContact.Dispatch("login");
+Check(acceptContact.Dispatch("friend/accept_apply", arguments: new(Value: 1, Text: "missing")).Status == 404
+    && acceptContact.Dispatch("friend/accept_apply", arguments: new(Text: "local-a")).Status == 503,
+    "contact acceptance requires existing application and capacity");
+Check(acceptContact.Dispatch("friend/accept_apply", arguments: new(Value: 1, Text: "local-a")).Status == 0
+    && acceptContact.Dispatch("friend/accept_apply", arguments: new(Value: 1, Text: "local-b")).Status == 20007,
+    "contact capacity enforced without consuming blocked application");
+var acceptReload = new OfflineServer(acceptDirectory, contactSeed.ToJsonString(), "offline://resources/");
+acceptReload.Dispatch("game_init");
+acceptReload.Dispatch("login");
+var acceptedFriends = acceptReload.Dispatch("friend/list").Body!["data"]!.AsArray();
+Check(acceptedFriends.Count == 1 && acceptedFriends[0]!["public_id"]!.GetValue<string>() == "local-a"
+    && acceptReload.Dispatch("friend/apply_list").Body!["data"]![0]!["public_id"]!.GetValue<string>() == "local-b",
+    "contact acceptance persists both sides of local transition");
+Check(acceptReload.Dispatch("friend/accept_apply", arguments: new(Value: 2, Text: "local-a")).Status == 404,
+    "consumed application cannot create duplicate relationship");
+Console.WriteLine("Passed 4 contact acceptance checks.");

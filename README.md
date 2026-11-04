@@ -53,7 +53,7 @@
 | ExchangeRequest | 未确认 | 未实现 | — |
 | FirstGachaDrawRequest | 未确认 | 未实现 | — |
 | FirstGachaSaveRequest | 未确认 | 未实现 | — |
-| FriendAcceptRequest | 未确认 | 未实现 | — |
+| FriendAcceptRequest | friend/accept_apply | 业务实现 | 按主数据容量将本地申请转为关系并保存；亲密度初始为零，不同步远端或校验对方容量 |
 | FriendApplyListRequest | friend/apply_list | 业务实现 | 返回已保存的本地申请；不从远端获取 |
 | FriendApplyRequest | 未确认 | 未实现 | — |
 | FriendApproveRequest | 未确认 | 未实现 | — |
@@ -64,7 +64,7 @@
 | FriendGetRequest | 未确认 | 未实现 | — |
 | FriendGiveRequest | 未确认 | 未实现 | — |
 | FriendInfoRequest | 未确认 | 未实现 | — |
-| FriendListRequest | friend/list | 最小响应 | 空关系列表；申请提示按本地未处理申请计算 |
+| FriendListRequest | friend/list | 业务实现 | 返回本地关系；申请提示按本地未处理申请计算，不同步远端 |
 | FriendPlayerSearchRequest | friend_player_search | 最小响应 | 本地无远端用户目录，返回未找到；不返回虚构资料 |
 | FriendRecommendRequest | friend/recommend | 最小响应 | 空推荐列表；不含匹配逻辑 |
 | FriendRefuseRequest | friend/refuse_apply | 业务实现 | 删除单条或全部本地申请并保存；列表与提示同步读取，不联系远端 |

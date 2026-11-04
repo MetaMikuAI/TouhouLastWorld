@@ -35,6 +35,9 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "friend/accept_apply")
+            arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX,
+                Text: request.TryCast<FriendAcceptRequest>()?.public_id);
         if (api == "friend/refuse_apply")
         {
             var refusal = request.TryCast<FriendRefuseRequest>();
