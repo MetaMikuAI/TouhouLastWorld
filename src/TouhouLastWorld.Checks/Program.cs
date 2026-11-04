@@ -1777,3 +1777,25 @@ Check(instantBox.Dispatch("gold_box_renovation_end", arguments: new(2, 1)).Body!
     && instantBox.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
     "zero-duration configuration completes through the same start and end flow");
 Console.WriteLine("Passed 4 renovation start checks.");
+
+var pointRenovationSeed = JsonNode.Parse(seed)!;
+pointRenovationSeed["phantasm_box"]!["renovation_finish_time"] = DateTimeOffset.UtcNow.AddMinutes(-1).ToString("O");
+pointRenovationSeed["gold_box"]!["renovation_finish_time"] = DateTimeOffset.UtcNow.AddHours(1).ToString("O");
+var pointRenovationDirectory = directory + "-point-renovation";
+var pointRenovationServer = new OfflineServer(pointRenovationDirectory, pointRenovationSeed.ToJsonString(), "offline://resources/");
+pointRenovationServer.Dispatch("game_init");
+pointRenovationServer.Dispatch("login");
+Check(pointRenovationServer.Dispatch("phantasm_box_renovation_end", arguments: new(3, 1)).Status == 503,
+    "point renovation requires matching next-level configuration");
+var pointRenovated = pointRenovationServer.Dispatch("phantasm_box_renovation_end", arguments: new(2, 1)).Body!;
+Check(pointRenovated["user_update"]!["phantasm_box"]!["level"]!.GetValue<int>() == 2
+    && pointRenovated["user_update"]!["phantasm_box"]!["renovation_finish_time"]!.GetValue<string>() == ""
+    && pointRenovationServer.Dispatch("login").Body!["user"]!["gold_box"]!.ToJsonString() == pointRenovationSeed["gold_box"]!.ToJsonString(),
+    "point renovation completes only the selected facility");
+var pointRenovationReload = new OfflineServer(pointRenovationDirectory, seed, "offline://resources/");
+pointRenovationReload.Dispatch("game_init");
+pointRenovationReload.Dispatch("login");
+Check(pointRenovationReload.Dispatch("phantasm_box_renovation_end", arguments: new(3, 2)).Status == 409
+    && pointRenovationReload.Dispatch("login").Body!["user"]!["phantasm_box"]!["level"]!.GetValue<int>() == 2,
+    "point renovation cannot be completed twice after restart");
+Console.WriteLine("Passed 3 point renovation completion checks.");

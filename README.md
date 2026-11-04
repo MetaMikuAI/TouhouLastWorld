@@ -133,7 +133,7 @@
 | PaymentEndRequest | 未确认 | 未实现 | — |
 | PaymentResumeRequest | 未确认 | 未实现 | — |
 | PaymentStartRequest | 未确认 | 未实现 | — |
-| PhantasmBoxRenovationEndRequest | 未确认 | 未实现 | — |
+| PhantasmBoxRenovationEndRequest | phantasm_box_renovation_end | 业务实现 | 校验已保存升级时间及下一等级配置，到期升一级并清除计时，重复结算不升级；不调整时间产出 |
 | PhantasmBoxRenovationStartRequest | 未确认 | 未实现 | — |
 | PhantasmPointBuyRequest | 未确认 | 未实现 | — |
 | PictureBookReciveRequest | 未确认 | 未实现 | — |

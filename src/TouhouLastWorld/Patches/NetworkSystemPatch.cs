@@ -63,6 +63,12 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(EntityId: level.HasValue ? MasterDB.This()?.PlayerExp?.Find(level.Value)?.phantasm_point_max : null,
                 Value: level);
         }
+        if (api == "phantasm_box_renovation_end")
+        {
+            var level = User.This()?.phantasm_box?.level;
+            var next = level is > 0 and < int.MaxValue ? MasterDB.This()?.PhantasmBox?.Find(level.Value + 1) : null;
+            arguments = new LocalArguments(EntityId: next?.level, Value: level);
+        }
         if (api == "get_quest_cleared_team_info")
         {
             var query = request.TryCast<GetQuestClearedTeamInfoRequest>();
