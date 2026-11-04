@@ -226,7 +226,7 @@
 | UpdateGoldExchangeShopListRequest | 未确认 | 未实现 | — |
 | UpdateHomeMotionModeRequest | 未确认 | 未实现 | — |
 | UpdateProfileSetting2APIRequest | 未确认 | 未实现 | — |
-| UpdateProfileSettingAPIRequest | 未确认 | 未实现 | — |
+| UpdateProfileSettingAPIRequest | update_profile_setting | 业务实现 | 校验布局 JSON 字段类型并原样保存；不校验素材所有权，不授予素材 |
 | UpdateVersusReplayInfoRequest | 未确认 | 未实现 | — |
 | UpdateVoiceVersionRequest | 未确认 | 未实现 | — |
 | UserAppleInfoDeleteRequest | 未确认 | 未实现 | — |
