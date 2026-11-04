@@ -60,7 +60,7 @@
 | FriendDeleteRequest | friend_delete | 业务实现 | 按 player_id 删除旧版本地关系并返回剩余列表；不存在时 result=1，不同步远端或新版 public_id 关系 |
 | FriendGetCandidateListRequest | friend_get_candidate_list | 最小响应 | 读取本地候选列表，默认空；不含候选匹配或远端查询 |
 | FriendGetHelperDetailRequest | friend_get_helper_detail | 最小响应 | 无可用援助；返回零编号触发未选中分支，不生成对象或装备 |
-| FriendGetHistoryRequest | 未确认 | 未实现 | — |
+| FriendGetHistoryRequest | friend_get_history | 业务实现 | 读取本地资料快照中的展示对象、累计计数和奖杯，校验资源定义；缺失时报错并关闭详情，累计统计生成未实现 |
 | FriendGetRequest | friend/receive | 业务实现 | 领取本地收件记录中的明确金币数量，更新标记并防重复；每日 UTC 最多 30 份，校验金币容量，不生成收件或奖励数量 |
 | FriendGiveRequest | friend/give | 业务实现 | 单个或批量清除本地可赠送标记并保存待投递记录；重复调用不重复入队，不投递远端、不生成奖励或每日重置 |
 | FriendInfoRequest | friend/info | 最小响应 | 已有关系返回本地三项累计计数，缺失值为零；不代表远端统计，未知关系返回未找到 |

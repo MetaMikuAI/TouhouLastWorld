@@ -37,6 +37,7 @@ public partial class NetworkSystemPatch
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
         if (api == "unit_recycle") arguments = ReadUnitRecycle(request.TryCast<UnitRecycleRequest>());
         if (api == "get_clear_history_playerinfo") arguments = ReadHistoryPlayer(request.TryCast<ClearHistoryPlayerInfoRequest>()?.player_id);
+        if (api == "friend_get_history") arguments = ReadHistoryPlayer(request.TryCast<FriendGetHistoryRequest>()?.player_id);
         if (api == "dispatch_end") arguments = ReadDispatchSettlement(request.TryCast<DispatchEndRequest>());
         if (api == "retry_gacha_fix")
         {
@@ -696,6 +697,19 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
+            if (api == "friend_get_history")
+            {
+                var panel = UnityEngine.Object.FindObjectOfType<FriendPlayerDetailPanel>();
+                if (panel != null)
+                {
+                    panel.m_friendBehavior?.ShowLRPanel();
+                    panel.m_detailBG?.SetActive(false);
+                    panel.gameObject.SetActive(false);
+                }
+                PentopSystem.This()?.EnableEvent();
+                PopupSystem.This()?.CreateMessage(reply.Error);
+                yield break;
+            }
             if (api is "get_clear_history_playerinfo" or "retry_gacha_fix" or "dispatch_end" or "unit_recycle" or "get_clear_history_teaminfo" or "first_draw_data" or "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
             {
                 if (api == "dispatch_end" && ErrandBehaviour.This() is { } errand)

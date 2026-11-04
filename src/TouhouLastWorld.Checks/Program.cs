@@ -3013,3 +3013,9 @@ historyPlayerReply["unit_get_count"] = 999;
 Check(historyPlayerServer.Dispatch("get_clear_history_playerinfo", arguments: new(Text: "local-profile", HistoryDefinitions: historyDefinitions)).Body!["unit_get_count"]!.GetValue<int>() == 5,
     "player history returns an independent snapshot");
 Console.WriteLine("Passed 3 player history checks.");
+var friendHistoryReply = historyPlayerServer.Dispatch("friend_get_history", arguments: new(Text: "local-profile", HistoryDefinitions: historyDefinitions)).Body!;
+Check(friendHistoryReply["unit_get_count"]!.GetValue<int>() == 5
+    && friendHistoryReply["bronze_trophy_count"]!.GetValue<int>() == 1 && !friendHistoryReply.ContainsKey("player_name")
+    && historyPlayerServer.Dispatch("friend_get_history", arguments: new(Text: "missing", HistoryDefinitions: historyDefinitions)).Status == 404,
+    "friend history returns only stored summary fields and rejects missing profiles");
+Console.WriteLine("Passed 1 friend history check.");
