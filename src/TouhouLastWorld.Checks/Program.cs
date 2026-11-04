@@ -2255,3 +2255,17 @@ Check(appleRelationReload.Dispatch("login").Body!["user"]!["apple_relation"]!.Ge
     && appleRelationReload.Dispatch("user_apple_info_delete").Status == 0,
     "local Apple unlink persists and is repeatable");
 Console.WriteLine("Passed 2 local Apple relation checks.");
+
+var googleRelationDirectory = directory + "-google-relation";
+var googleRelationServer = new OfflineServer(googleRelationDirectory, appleRelationSeed.ToJsonString(), "offline://resources/");
+googleRelationServer.Dispatch("game_init");
+googleRelationServer.Dispatch("login");
+Check(googleRelationServer.Dispatch("user_google_info_delete").Body!["user_update"]!["google_relation"]!.GetValue<int>() == 0
+    && googleRelationServer.Dispatch("login").Body!["user"]!["apple_relation"]!.GetValue<int>() == 1,
+    "local Google unlink clears only its own relation");
+var googleRelationReload = new OfflineServer(googleRelationDirectory, seed, "offline://resources/");
+googleRelationReload.Dispatch("game_init");
+Check(googleRelationReload.Dispatch("login").Body!["user"]!["google_relation"]!.GetValue<int>() == 0
+    && googleRelationReload.Dispatch("user_google_info_delete").Status == 0,
+    "local Google unlink persists and is repeatable");
+Console.WriteLine("Passed 2 local Google relation checks.");
