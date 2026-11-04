@@ -2171,7 +2171,7 @@ var pictureRecycleServer = new OfflineServer(pictureRecycleDirectory, pictureBre
 pictureRecycleServer.Dispatch("game_init");
 pictureRecycleServer.Dispatch("login");
 var pictureRecycleRule = new LocalPictureRecycle(
-    [new(701, 71, 0, 1, [new(3, 0, 100), new(12, 72, 3)]), new(702, 71, 0, 0, [new(3, 0, 200), new(5, 0, 5)])],
+    [new(701, 71, 0, 1, [new(3, 0, 100), new(12, 72, 3)]), new(702, 71, 0, 0, [new(3, 0, 200), new(5, 0, 5), new(2, 0, 10)])],
     10000, 10000, 9999);
 Check(pictureRecycleServer.Dispatch("picture_recycle", arguments: new(Ids: [701, 702], PictureRecycle: pictureRecycleRule with { GoldMax = 5100 })).Status == 409
     && pictureRecycleServer.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 3,
@@ -2180,10 +2180,11 @@ Check(pictureRecycleServer.Dispatch("picture_recycle", arguments: new(Ids: [701,
     { Entries = [pictureRecycleRule.Entries[0], pictureRecycleRule.Entries[1] with { Gains = [new(10, 99, 1)] }] })).Status == 503,
     "recycle rejects unsupported rewards before consuming equipment");
 var pictureRecycled = pictureRecycleServer.Dispatch("picture_recycle", arguments: new(Ids: [701, 702], PictureRecycle: pictureRecycleRule)).Body!;
-Check(pictureRecycled["gain_object_list"]!.AsArray().Count == 3
+Check(pictureRecycled["gain_object_list"]!.AsArray().Count == 4
     && pictureRecycled["gain_object_list"]![0]!["value"]!.GetValue<int>() == 300
     && pictureRecycled["remove_user_picture_id_list"]!.AsArray().Count == 2
     && pictureRecycled["user_update"]!["gold"]!.GetValue<int>() == 5300
+    && pictureRecycled["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 110
     && pictureRecycled["user_update"]!["item"]!["item_list"]!.AsArray().Any(item => item!["item_id"]!.GetValue<int>() == 72 && item["num"]!.GetValue<int>() == 3)
     && pictureRecycled["user_update"]!["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"]!.GetValue<long>() == 0,
     "recycle aggregates rewards, removes equipment and clears assignment");

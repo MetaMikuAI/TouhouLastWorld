@@ -50,12 +50,13 @@ public sealed partial class OfflineServer
             }
             else
             {
-                var key = group.Key.Type == 3 ? "gold" : group.Key.Type == 2 ? "phantasm_point" : "piece";
+                var key = group.Key.Type == 3 ? "gold" : group.Key.Type == 2 ? "points" : "piece";
+                var owner = group.Key.Type == 2 ? updated["phantasm_point"]!.AsObject() : updated;
                 var maximum = group.Key.Type == 3 ? rule.GoldMax : group.Key.Type == 2 ? rule.PointMax : int.MaxValue;
                 if (maximum <= 0 || group.Key.Id != 0) return new(503, null, "Currency definition unavailable.");
-                var total = updated[key]!.GetValue<int>() + amount;
+                var total = owner[key]!.GetValue<int>() + amount;
                 if (total > maximum) return new(409, null, "Currency capacity exceeded.");
-                updated[key] = (int)total;
+                owner[key] = (int)total;
             }
             gains.Add(new JsonObject { ["type"] = group.Key.Type, ["id"] = group.Key.Id, ["value"] = (int)amount });
         }
