@@ -1,242 +1,244 @@
 # TouhouLastWorld
 
-已识别 236 个直接继承请求基类的请求类型，已实现 12 个接口。未确认的接口名不作推定；已实现表示存在处理器，不代表完整业务验证。
+业务实现：包含范围内的校验、状态变更或持久化。最小响应：仅提供基础结构或固定数据。未实现返回 501。分类不代表实机验证。
 
-| 请求类型 | 接口 | 状态 |
-| --- | --- | --- |
-| AchievementNewUpdateRequest | 未确认 | 未实现 |
-| AchievementSelectRequest | 未确认 | 未实现 |
-| AchievementTopRequest | 未确认 | 未实现 |
-| AddLevelRequest | 未确认 | 未实现 |
-| AppleSwitchDoRequest | 未确认 | 未实现 |
-| AppleSwitchUserInfoGetRequest | 未确认 | 未实现 |
-| ArenaBattleEndRequest | 未确认 | 未实现 |
-| ArenaBattleStartRequest | 未确认 | 未实现 |
-| AutoReplayEndRequest | 未确认 | 未实现 |
-| AutoReplayStartRequest | 未确认 | 未实现 |
-| BatchSearchRequest | 未确认 | 未实现 |
-| BattleEndRequest | battle_end | 已实现 |
-| BattlePassMissionEndRequest | 未确认 | 未实现 |
-| BattlePassReceiveRewardRequest | 未确认 | 未实现 |
-| BattlePassTopRequest | 未确认 | 未实现 |
-| BattleReplayInfoRequest | 未确认 | 未实现 |
-| BattleStartRequest | battle_start | 已实现 |
-| BootRequest | 未确认 | 未实现 |
-| BuyGoodsRequest | 未确认 | 未实现 |
-| CheckConditionalPackRequest | check_conditional_pack | 已实现 |
-| CheckUserRequest | check_user | 已实现 |
-| CheckVersionRequest | 未确认 | 未实现 |
-| ClearHistoryPlayerInfoRequest | 未确认 | 未实现 |
-| ClearHistoryRequest | 未确认 | 未实现 |
-| ClearHistoryTeamInfoRequest | 未确认 | 未实现 |
-| CollectExpRequest | 未确认 | 未实现 |
-| CollectRewardRequest | 未确认 | 未实现 |
-| Comic.UserInfoUpdateRequest | 未确认 | 未实现 |
-| ComicGetPagesRequest | 未确认 | 未实现 |
-| ComicReadEndRequest | 未确认 | 未实现 |
-| DailyArenaTopRequest | 未确认 | 未实现 |
-| DeleteAccountRequest | 未确认 | 未实现 |
-| DispatchBulkEndRequest | 未确认 | 未实现 |
-| DispatchCancelRequest | 未确认 | 未实现 |
-| DispatchEndRequest | 未确认 | 未实现 |
-| DispatchStartRequest | 未确认 | 未实现 |
-| EpisodeEndRequest | 未确认 | 未实现 |
-| EventAnniversaryInfoGetAPIRequest | 未确认 | 未实现 |
-| EventAnniversaryInfoUpdateAPIRequest | 未确认 | 未实现 |
-| EventPersonalInfoGetAPIRequest | 未确认 | 未实现 |
-| EventPersonalInfoUpdateAPIRequest | 未确认 | 未实现 |
-| EventPointGachaDoAPIRequest | 未确认 | 未实现 |
-| EventTopRequest | 未确认 | 未实现 |
-| ExchangeCodeRequest | 未确认 | 未实现 |
-| ExchangeRequest | 未确认 | 未实现 |
-| FirstGachaDrawRequest | 未确认 | 未实现 |
-| FirstGachaSaveRequest | 未确认 | 未实现 |
-| FriendAcceptRequest | 未确认 | 未实现 |
-| FriendApplyListRequest | 未确认 | 未实现 |
-| FriendApplyRequest | 未确认 | 未实现 |
-| FriendApproveRequest | 未确认 | 未实现 |
-| FriendDeleteRequest | 未确认 | 未实现 |
-| FriendGetCandidateListRequest | 未确认 | 未实现 |
-| FriendGetHelperDetailRequest | 未确认 | 未实现 |
-| FriendGetHistoryRequest | 未确认 | 未实现 |
-| FriendGetRequest | 未确认 | 未实现 |
-| FriendGiveRequest | 未确认 | 未实现 |
-| FriendInfoRequest | 未确认 | 未实现 |
-| FriendListRequest | 未确认 | 未实现 |
-| FriendPlayerSearchRequest | 未确认 | 未实现 |
-| FriendRecommendRequest | 未确认 | 未实现 |
-| FriendRefuseRequest | 未确认 | 未实现 |
-| FriendRequestCancelRequest | 未确认 | 未实现 |
-| FriendRequestRequest | 未确认 | 未实现 |
-| FriendSearchRequest | 未确认 | 未实现 |
-| FriendSettingHelperRequest | 未确认 | 未实现 |
-| FriendTopRequest | 未确认 | 未实现 |
-| GachaDoRequest | gacha_do | 已实现 |
-| GachaPointExchangeRequest | 未确认 | 未实现 |
-| GachaRetryFixRequest | 未确认 | 未实现 |
-| GachaTopRequest | gacha_top | 已实现 |
-| GainFreeItemRequest | 未确认 | 未实现 |
-| GameInitRequest | game_init | 已实现 |
-| GatherGoldRequest | 未确认 | 未实现 |
-| GatherPhantasmPointRequest | 未确认 | 未实现 |
-| GetAutoReplayInfoRequest | 未确认 | 未实现 |
-| GetDispatchListRequest | 未确认 | 未实现 |
-| GetEventTotalPointRewardAllRequest | 未确认 | 未实现 |
-| GetEventTotalPointRewardRequest | 未确认 | 未实现 |
-| GetHistoryRequest | 未确认 | 未实现 |
-| GetProfileSettingAPIRequest | 未确认 | 未实现 |
-| GetQuestClearedTeamInfoRequest | 未确认 | 未实现 |
-| GetRaidGaugeRequest | 未确认 | 未实现 |
-| GetShrineOfficeShopListRequest | 未确认 | 未实现 |
-| GetSwitchCodeRequest | 未确认 | 未实现 |
-| GetVersusReplayInfoRequest | 未确认 | 未实现 |
-| GGTapAdRequest | 未确认 | 未实现 |
-| GGTapAdSecRequest | 未确认 | 未实现 |
-| GoldBoxRenovationEndRequest | 未确认 | 未实现 |
-| GoldBoxRenovationStartRequest | 未确认 | 未实现 |
-| GoogleSwitchDoRequest | 未确认 | 未实现 |
-| GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 |
-| HomeBGMUpdateRequest | 未确认 | 未实现 |
-| HomeCustomSelectUnitUpdateRequest | 未确认 | 未实现 |
-| HomeCustomSetUpdateRequest | 未确认 | 未实现 |
-| HomeRequest | home | 已实现 |
-| IdleSearchCompleteUpgradeRequest | 未确认 | 未实现 |
-| IdleSearchReceiveDropRequest | 未确认 | 未实现 |
-| IdleSearchSetRequest | 未确认 | 未实现 |
-| IdleSearchTopRequest | afk_top | 已实现 |
-| ItemExchangeRequest | 未确认 | 未实现 |
-| LectureRoomFoodAdditionRequest | 未确认 | 未实现 |
-| LectureRoomFoodDistributionRequest | 未确认 | 未实现 |
-| LectureRoomFoodExpansionRequest | 未确认 | 未实现 |
-| LectureRoomUnitExpansionRequest | 未确认 | 未实现 |
-| LectureRoomUnitRemoveRequest | 未确认 | 未实现 |
-| LectureRoomUnitSetRequest | 未确认 | 未实现 |
-| LectureRoomUnitTrustUpRequest | 未确认 | 未实现 |
-| LectureRoomUpdateRequest | 未确认 | 未实现 |
-| LevelGiftRequest | 未确认 | 未实现 |
-| LoginRequest | login | 已实现 |
-| LogoutRequest | 未确认 | 未实现 |
-| MailDeleteRequest | 未确认 | 未实现 |
-| MailReceiveRequest | 未确认 | 未实现 |
-| MailTopRequest | 未确认 | 未实现 |
-| MiniGameRequest | 未确认 | 未实现 |
-| MissionEndRequest | 未确认 | 未实现 |
-| MissionTopRequest | 未确认 | 未实现 |
-| MultipleSpiritsWeeklyTopRequest | 未确认 | 未实现 |
-| MusicLikeRequest | 未确认 | 未实现 |
-| MusicShowRequest | 未确认 | 未实现 |
-| NewsRequest | 未确认 | 未实现 |
-| PaymentEndCnRequest | 未确认 | 未实现 |
-| PaymentEndNewRequest | 未确认 | 未实现 |
-| PaymentEndRequest | 未确认 | 未实现 |
-| PaymentResumeRequest | 未确认 | 未实现 |
-| PaymentStartRequest | 未确认 | 未实现 |
-| PhantasmBoxRenovationEndRequest | 未确认 | 未实现 |
-| PhantasmBoxRenovationStartRequest | 未确认 | 未实现 |
-| PhantasmPointBuyRequest | 未确认 | 未实现 |
-| PictureBookReciveRequest | 未确认 | 未实现 |
-| PictureBookRequest | 未确认 | 未实现 |
-| PictureFrameRequest | 未确认 | 未实现 |
-| PictureNewUpdateRequest | 未确认 | 未实现 |
-| PicturePotentialLimitbreakRequest | 未确认 | 未实现 |
-| PictureProtectionRequest | 未确认 | 未实现 |
-| PictureRecycleRequest | 未确认 | 未实现 |
-| PictureSpecActualizeChemicalRequest | 未确认 | 未实现 |
-| PictureSpecActualizeRequest | 未确认 | 未实现 |
-| PopupAdWindowRequest | 未确认 | 未实现 |
-| previewAvatarAPIAsyncRequest | 未确认 | 未实现 |
-| ProfileUserInfoUpdateRequest | 未确认 | 未实现 |
-| QuestHelperSelectRequest | 未确认 | 未实现 |
-| ReadUnitTalkRequest | 未确认 | 未实现 |
-| ReincarnationReleaseRequest | 未确认 | 未实现 |
-| replaceAvatarRequest | 未确认 | 未实现 |
-| RhythmGameEndRequest | 未确认 | 未实现 |
-| RhythmGameStartRequest | 未确认 | 未实现 |
-| RhythmGameTopRequest | 未确认 | 未实现 |
-| RogueLiteBattleEndRequest | 未确认 | 未实现 |
-| RogueLiteBattleStartRequest | 未确认 | 未实现 |
-| RogueliteDeckCallRequest | 未确认 | 未实现 |
-| RogueliteDeckSaveRequest | 未确认 | 未实现 |
-| RogueLiteEventEndRequest | 未确认 | 未实现 |
-| RogueLiteMapEndRequest | 未确认 | 未实现 |
-| RogueLiteMapStartRequest | 未确认 | 未实现 |
-| RogueLiteRerollRequest | 未确认 | 未实现 |
-| RogueLiteTopRequest | 未确认 | 未实现 |
-| SeriesBattleEndRequest | 未确认 | 未实现 |
-| SeriesBattleGetReplayInfoRequest | 未确认 | 未实现 |
-| SeriesBattleRankingEndRequest | 未确认 | 未实现 |
-| SeriesBattleRankingGetListRequest | 未确认 | 未实现 |
-| SeriesBattleRankingGetTeamInfoRequest | 未确认 | 未实现 |
-| SeriesBattleRankingResetRequest | 未确认 | 未实现 |
-| SeriesBattleRankingScoreSimulateRequest | 未确认 | 未实现 |
-| SeriesBattleRankingStartRequest | 未确认 | 未实现 |
-| SeriesBattleRankingTopRequest | 未确认 | 未实现 |
-| SeriesBattleResetRequest | 未确认 | 未实现 |
-| SeriesBattleStartRequest | 未确认 | 未实现 |
-| SeriesBattleTeamUpdateRequest | 未确认 | 未实现 |
-| SeriesBattleUpdateReplayInfoRequest | 未确认 | 未实现 |
-| SetAgeRequest | 未确认 | 未实现 |
-| ShopListRequest | 未确认 | 未实现 |
-| ShopOrderRequest | 未确认 | 未实现 |
-| ShowRewardRequest | 未确认 | 未实现 |
-| ShowShopRequest | 未确认 | 未实现 |
-| ShowTaskRequest | 未确认 | 未实现 |
-| SweepRequest | 未确认 | 未实现 |
-| SwitchDoRequest | 未确认 | 未实现 |
-| SwitchUserInfoGetRequest | 未确认 | 未实现 |
-| TeamUpdateRequest | 未确认 | 未实现 |
-| TowerBattleEndRequest | 未确认 | 未实现 |
-| TowerBattleStartRequest | 未确认 | 未实现 |
-| TowerTopRequest | 未确认 | 未实现 |
-| TowerUnitInfoRequest | 未确认 | 未实现 |
-| TowerUnitRecoveryRequest | 未确认 | 未实现 |
-| TrainingRoomCancelRequest | 未确认 | 未实现 |
-| TrainingRoomExpansionRequest | 未确认 | 未实现 |
-| TrainingRoomShortenedFinishTimeRequest | 未确认 | 未实现 |
-| TrainingRoomStartRequest | 未确认 | 未实现 |
-| TrainingRoomUpdateRequest | 未确认 | 未实现 |
-| TranscribeKpiRequest | 未确认 | 未实现 |
-| TreasureGachaRequest | 未确认 | 未实现 |
-| TreasureInfoRequest | 未确认 | 未实现 |
-| TutorialFirstGachaConfirmRequest | 未确认 | 未实现 |
-| TutorialFirstGachaDoRequest | 未确认 | 未实现 |
-| TutorialUpdateRequest | 未确认 | 未实现 |
-| UnitAllocatePointsRequest | 未确认 | 未实现 |
-| UnitBGMUpdateRequest | 未确认 | 未实现 |
-| UnitDestinyValueUpRequest | 未确认 | 未实现 |
-| UnitEquipCostumeRequest | 未确认 | 未实现 |
-| UnitEquipPictureRequest | 未确认 | 未实现 |
-| UnitEquipPictureResetRequest | 未确认 | 未实现 |
-| UnitExtraSpecActualizeRequest | 未确认 | 未实现 |
-| UnitLevelLimitbreakRequest | 未确认 | 未实现 |
-| UnitLimitbreakStrongFragrantWoodRequest | 未确认 | 未实现 |
-| UnitNewUpdateRequest | 未确认 | 未实现 |
-| UnitProtectionRequest | 未确认 | 未实现 |
-| UnitRankPromoteItemSetRequest | 未确认 | 未实现 |
-| UnitRankPromoteRequest | 未确认 | 未实现 |
-| UnitRareAwakenRequest | 未确认 | 未实现 |
-| UnitRecycleRequest | 未确认 | 未实现 |
-| UnitResetPointAllocationRequest | 未确认 | 未实现 |
-| UnitSpecActualizeRequest | 未确认 | 未实现 |
-| UnitVoiceAutosetUpdateRequest | 未确认 | 未实现 |
-| UnitVoiceUpdateRequest | 未确认 | 未实现 |
-| UpdateAutoReplayInfoRequest | 未确认 | 未实现 |
-| UpdateGoldExchangeShopListRequest | 未确认 | 未实现 |
-| UpdateHomeMotionModeRequest | 未确认 | 未实现 |
-| UpdateProfileSetting2APIRequest | 未确认 | 未实现 |
-| UpdateProfileSettingAPIRequest | 未确认 | 未实现 |
-| UpdateVersusReplayInfoRequest | 未确认 | 未实现 |
-| UpdateVoiceVersionRequest | 未确认 | 未实现 |
-| UserAppleInfoDeleteRequest | 未确认 | 未实现 |
-| UserAppleInfoUpdateRequest | 未确认 | 未实现 |
-| UserCreateRequest | user_create | 已实现 |
-| UserGoogleInfoDeleteRequest | 未确认 | 未实现 |
-| UserGoogleInfoUpdateRequest | 未确认 | 未实现 |
-| UserTwitterInfoDeleteRequest | 未确认 | 未实现 |
-| UserTwitterInfoUpdateRequest | 未确认 | 未实现 |
-| VersionGetRequest | version_get | 已实现 |
-| VersusBattleEndRequest | 未确认 | 未实现 |
-| VersusBattleStartRequest | 未确认 | 未实现 |
-| VotivePictureExchangeRequest | 未确认 | 未实现 |
-| WeeklyArenaBattleScoreResetRequest | 未确认 | 未实现 |
-| WeeklyArenaTopRequest | 未确认 | 未实现 |
+当前清单覆盖 236 个直接继承请求基类的请求类型，接口名未确认时不作推定。
+
+| 请求类型 | 接口 | 实现 | 范围 |
+| --- | --- | --- | --- |
+| AchievementNewUpdateRequest | 未确认 | 未实现 | — |
+| AchievementSelectRequest | 未确认 | 未实现 | — |
+| AchievementTopRequest | 未确认 | 未实现 | — |
+| AddLevelRequest | 未确认 | 未实现 | — |
+| AppleSwitchDoRequest | 未确认 | 未实现 | — |
+| AppleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
+| ArenaBattleEndRequest | 未确认 | 未实现 | — |
+| ArenaBattleStartRequest | 未确认 | 未实现 | — |
+| AutoReplayEndRequest | 未确认 | 未实现 | — |
+| AutoReplayStartRequest | 未确认 | 未实现 | — |
+| BatchSearchRequest | 未确认 | 未实现 | — |
+| BattleEndRequest | battle_end | 最小响应 | 固定奖励，不含完整结算 |
+| BattlePassMissionEndRequest | 未确认 | 未实现 | — |
+| BattlePassReceiveRewardRequest | 未确认 | 未实现 | — |
+| BattlePassTopRequest | 未确认 | 未实现 | — |
+| BattleReplayInfoRequest | 未确认 | 未实现 | — |
+| BattleStartRequest | battle_start | 最小响应 | 空响应 |
+| BootRequest | 未确认 | 未实现 | — |
+| BuyGoodsRequest | 未确认 | 未实现 | — |
+| CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 |
+| CheckUserRequest | check_user | 业务实现 | 本地身份存在性检查 |
+| CheckVersionRequest | 未确认 | 未实现 | — |
+| ClearHistoryPlayerInfoRequest | 未确认 | 未实现 | — |
+| ClearHistoryRequest | 未确认 | 未实现 | — |
+| ClearHistoryTeamInfoRequest | 未确认 | 未实现 | — |
+| CollectExpRequest | 未确认 | 未实现 | — |
+| CollectRewardRequest | 未确认 | 未实现 | — |
+| Comic.UserInfoUpdateRequest | 未确认 | 未实现 | — |
+| ComicGetPagesRequest | 未确认 | 未实现 | — |
+| ComicReadEndRequest | 未确认 | 未实现 | — |
+| DailyArenaTopRequest | 未确认 | 未实现 | — |
+| DeleteAccountRequest | 未确认 | 未实现 | — |
+| DispatchBulkEndRequest | 未确认 | 未实现 | — |
+| DispatchCancelRequest | 未确认 | 未实现 | — |
+| DispatchEndRequest | 未确认 | 未实现 | — |
+| DispatchStartRequest | 未确认 | 未实现 | — |
+| EpisodeEndRequest | 未确认 | 未实现 | — |
+| EventAnniversaryInfoGetAPIRequest | 未确认 | 未实现 | — |
+| EventAnniversaryInfoUpdateAPIRequest | 未确认 | 未实现 | — |
+| EventPersonalInfoGetAPIRequest | 未确认 | 未实现 | — |
+| EventPersonalInfoUpdateAPIRequest | 未确认 | 未实现 | — |
+| EventPointGachaDoAPIRequest | 未确认 | 未实现 | — |
+| EventTopRequest | 未确认 | 未实现 | — |
+| ExchangeCodeRequest | 未确认 | 未实现 | — |
+| ExchangeRequest | 未确认 | 未实现 | — |
+| FirstGachaDrawRequest | 未确认 | 未实现 | — |
+| FirstGachaSaveRequest | 未确认 | 未实现 | — |
+| FriendAcceptRequest | 未确认 | 未实现 | — |
+| FriendApplyListRequest | 未确认 | 未实现 | — |
+| FriendApplyRequest | 未确认 | 未实现 | — |
+| FriendApproveRequest | 未确认 | 未实现 | — |
+| FriendDeleteRequest | 未确认 | 未实现 | — |
+| FriendGetCandidateListRequest | 未确认 | 未实现 | — |
+| FriendGetHelperDetailRequest | 未确认 | 未实现 | — |
+| FriendGetHistoryRequest | 未确认 | 未实现 | — |
+| FriendGetRequest | 未确认 | 未实现 | — |
+| FriendGiveRequest | 未确认 | 未实现 | — |
+| FriendInfoRequest | 未确认 | 未实现 | — |
+| FriendListRequest | 未确认 | 未实现 | — |
+| FriendPlayerSearchRequest | 未确认 | 未实现 | — |
+| FriendRecommendRequest | 未确认 | 未实现 | — |
+| FriendRefuseRequest | 未确认 | 未实现 | — |
+| FriendRequestCancelRequest | 未确认 | 未实现 | — |
+| FriendRequestRequest | 未确认 | 未实现 | — |
+| FriendSearchRequest | 未确认 | 未实现 | — |
+| FriendSettingHelperRequest | 未确认 | 未实现 | — |
+| FriendTopRequest | 未确认 | 未实现 | — |
+| GachaDoRequest | gacha_do | 业务实现 | 仅固定本地池：扣费、入库、保存 |
+| GachaPointExchangeRequest | 未确认 | 未实现 | — |
+| GachaRetryFixRequest | 未确认 | 未实现 | — |
+| GachaTopRequest | gacha_top | 最小响应 | 固定本地列表 |
+| GainFreeItemRequest | 未确认 | 未实现 | — |
+| GameInitRequest | game_init | 业务实现 | 本地会话与入口 |
+| GatherGoldRequest | 未确认 | 未实现 | — |
+| GatherPhantasmPointRequest | 未确认 | 未实现 | — |
+| GetAutoReplayInfoRequest | 未确认 | 未实现 | — |
+| GetDispatchListRequest | 未确认 | 未实现 | — |
+| GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
+| GetEventTotalPointRewardRequest | 未确认 | 未实现 | — |
+| GetHistoryRequest | 未确认 | 未实现 | — |
+| GetProfileSettingAPIRequest | 未确认 | 未实现 | — |
+| GetQuestClearedTeamInfoRequest | 未确认 | 未实现 | — |
+| GetRaidGaugeRequest | 未确认 | 未实现 | — |
+| GetShrineOfficeShopListRequest | 未确认 | 未实现 | — |
+| GetSwitchCodeRequest | 未确认 | 未实现 | — |
+| GetVersusReplayInfoRequest | 未确认 | 未实现 | — |
+| GGTapAdRequest | 未确认 | 未实现 | — |
+| GGTapAdSecRequest | 未确认 | 未实现 | — |
+| GoldBoxRenovationEndRequest | 未确认 | 未实现 | — |
+| GoldBoxRenovationStartRequest | 未确认 | 未实现 | — |
+| GoogleSwitchDoRequest | 未确认 | 未实现 | — |
+| GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
+| HomeBGMUpdateRequest | 未确认 | 未实现 | — |
+| HomeCustomSelectUnitUpdateRequest | 未确认 | 未实现 | — |
+| HomeCustomSetUpdateRequest | 未确认 | 未实现 | — |
+| HomeRequest | home | 最小响应 | 空摘要 |
+| IdleSearchCompleteUpgradeRequest | 未确认 | 未实现 | — |
+| IdleSearchReceiveDropRequest | 未确认 | 未实现 | — |
+| IdleSearchSetRequest | 未确认 | 未实现 | — |
+| IdleSearchTopRequest | afk_top | 最小响应 | 未启动摘要，无奖励 |
+| ItemExchangeRequest | 未确认 | 未实现 | — |
+| LectureRoomFoodAdditionRequest | 未确认 | 未实现 | — |
+| LectureRoomFoodDistributionRequest | 未确认 | 未实现 | — |
+| LectureRoomFoodExpansionRequest | 未确认 | 未实现 | — |
+| LectureRoomUnitExpansionRequest | 未确认 | 未实现 | — |
+| LectureRoomUnitRemoveRequest | 未确认 | 未实现 | — |
+| LectureRoomUnitSetRequest | 未确认 | 未实现 | — |
+| LectureRoomUnitTrustUpRequest | 未确认 | 未实现 | — |
+| LectureRoomUpdateRequest | 未确认 | 未实现 | — |
+| LevelGiftRequest | 未确认 | 未实现 | — |
+| LoginRequest | login | 业务实现 | 本地身份与存档读取，不含奖励 |
+| LogoutRequest | 未确认 | 未实现 | — |
+| MailDeleteRequest | 未确认 | 未实现 | — |
+| MailReceiveRequest | 未确认 | 未实现 | — |
+| MailTopRequest | 未确认 | 未实现 | — |
+| MiniGameRequest | 未确认 | 未实现 | — |
+| MissionEndRequest | 未确认 | 未实现 | — |
+| MissionTopRequest | 未确认 | 未实现 | — |
+| MultipleSpiritsWeeklyTopRequest | 未确认 | 未实现 | — |
+| MusicLikeRequest | 未确认 | 未实现 | — |
+| MusicShowRequest | 未确认 | 未实现 | — |
+| NewsRequest | 未确认 | 未实现 | — |
+| PaymentEndCnRequest | 未确认 | 未实现 | — |
+| PaymentEndNewRequest | 未确认 | 未实现 | — |
+| PaymentEndRequest | 未确认 | 未实现 | — |
+| PaymentResumeRequest | 未确认 | 未实现 | — |
+| PaymentStartRequest | 未确认 | 未实现 | — |
+| PhantasmBoxRenovationEndRequest | 未确认 | 未实现 | — |
+| PhantasmBoxRenovationStartRequest | 未确认 | 未实现 | — |
+| PhantasmPointBuyRequest | 未确认 | 未实现 | — |
+| PictureBookReciveRequest | 未确认 | 未实现 | — |
+| PictureBookRequest | 未确认 | 未实现 | — |
+| PictureFrameRequest | 未确认 | 未实现 | — |
+| PictureNewUpdateRequest | 未确认 | 未实现 | — |
+| PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
+| PictureProtectionRequest | 未确认 | 未实现 | — |
+| PictureRecycleRequest | 未确认 | 未实现 | — |
+| PictureSpecActualizeChemicalRequest | 未确认 | 未实现 | — |
+| PictureSpecActualizeRequest | 未确认 | 未实现 | — |
+| PopupAdWindowRequest | 未确认 | 未实现 | — |
+| previewAvatarAPIAsyncRequest | 未确认 | 未实现 | — |
+| ProfileUserInfoUpdateRequest | 未确认 | 未实现 | — |
+| QuestHelperSelectRequest | 未确认 | 未实现 | — |
+| ReadUnitTalkRequest | 未确认 | 未实现 | — |
+| ReincarnationReleaseRequest | 未确认 | 未实现 | — |
+| replaceAvatarRequest | 未确认 | 未实现 | — |
+| RhythmGameEndRequest | 未确认 | 未实现 | — |
+| RhythmGameStartRequest | 未确认 | 未实现 | — |
+| RhythmGameTopRequest | 未确认 | 未实现 | — |
+| RogueLiteBattleEndRequest | 未确认 | 未实现 | — |
+| RogueLiteBattleStartRequest | 未确认 | 未实现 | — |
+| RogueliteDeckCallRequest | 未确认 | 未实现 | — |
+| RogueliteDeckSaveRequest | 未确认 | 未实现 | — |
+| RogueLiteEventEndRequest | 未确认 | 未实现 | — |
+| RogueLiteMapEndRequest | 未确认 | 未实现 | — |
+| RogueLiteMapStartRequest | 未确认 | 未实现 | — |
+| RogueLiteRerollRequest | 未确认 | 未实现 | — |
+| RogueLiteTopRequest | 未确认 | 未实现 | — |
+| SeriesBattleEndRequest | 未确认 | 未实现 | — |
+| SeriesBattleGetReplayInfoRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingEndRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingGetListRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingGetTeamInfoRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingResetRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingScoreSimulateRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingStartRequest | 未确认 | 未实现 | — |
+| SeriesBattleRankingTopRequest | 未确认 | 未实现 | — |
+| SeriesBattleResetRequest | 未确认 | 未实现 | — |
+| SeriesBattleStartRequest | 未确认 | 未实现 | — |
+| SeriesBattleTeamUpdateRequest | 未确认 | 未实现 | — |
+| SeriesBattleUpdateReplayInfoRequest | 未确认 | 未实现 | — |
+| SetAgeRequest | 未确认 | 未实现 | — |
+| ShopListRequest | 未确认 | 未实现 | — |
+| ShopOrderRequest | 未确认 | 未实现 | — |
+| ShowRewardRequest | 未确认 | 未实现 | — |
+| ShowShopRequest | 未确认 | 未实现 | — |
+| ShowTaskRequest | 未确认 | 未实现 | — |
+| SweepRequest | 未确认 | 未实现 | — |
+| SwitchDoRequest | 未确认 | 未实现 | — |
+| SwitchUserInfoGetRequest | 未确认 | 未实现 | — |
+| TeamUpdateRequest | 未确认 | 未实现 | — |
+| TowerBattleEndRequest | 未确认 | 未实现 | — |
+| TowerBattleStartRequest | 未确认 | 未实现 | — |
+| TowerTopRequest | 未确认 | 未实现 | — |
+| TowerUnitInfoRequest | 未确认 | 未实现 | — |
+| TowerUnitRecoveryRequest | 未确认 | 未实现 | — |
+| TrainingRoomCancelRequest | 未确认 | 未实现 | — |
+| TrainingRoomExpansionRequest | 未确认 | 未实现 | — |
+| TrainingRoomShortenedFinishTimeRequest | 未确认 | 未实现 | — |
+| TrainingRoomStartRequest | 未确认 | 未实现 | — |
+| TrainingRoomUpdateRequest | 未确认 | 未实现 | — |
+| TranscribeKpiRequest | 未确认 | 未实现 | — |
+| TreasureGachaRequest | 未确认 | 未实现 | — |
+| TreasureInfoRequest | 未确认 | 未实现 | — |
+| TutorialFirstGachaConfirmRequest | 未确认 | 未实现 | — |
+| TutorialFirstGachaDoRequest | 未确认 | 未实现 | — |
+| TutorialUpdateRequest | 未确认 | 未实现 | — |
+| UnitAllocatePointsRequest | 未确认 | 未实现 | — |
+| UnitBGMUpdateRequest | 未确认 | 未实现 | — |
+| UnitDestinyValueUpRequest | 未确认 | 未实现 | — |
+| UnitEquipCostumeRequest | 未确认 | 未实现 | — |
+| UnitEquipPictureRequest | 未确认 | 未实现 | — |
+| UnitEquipPictureResetRequest | 未确认 | 未实现 | — |
+| UnitExtraSpecActualizeRequest | 未确认 | 未实现 | — |
+| UnitLevelLimitbreakRequest | 未确认 | 未实现 | — |
+| UnitLimitbreakStrongFragrantWoodRequest | 未确认 | 未实现 | — |
+| UnitNewUpdateRequest | 未确认 | 未实现 | — |
+| UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 |
+| UnitRankPromoteItemSetRequest | 未确认 | 未实现 | — |
+| UnitRankPromoteRequest | 未确认 | 未实现 | — |
+| UnitRareAwakenRequest | 未确认 | 未实现 | — |
+| UnitRecycleRequest | 未确认 | 未实现 | — |
+| UnitResetPointAllocationRequest | 未确认 | 未实现 | — |
+| UnitSpecActualizeRequest | 未确认 | 未实现 | — |
+| UnitVoiceAutosetUpdateRequest | 未确认 | 未实现 | — |
+| UnitVoiceUpdateRequest | 未确认 | 未实现 | — |
+| UpdateAutoReplayInfoRequest | 未确认 | 未实现 | — |
+| UpdateGoldExchangeShopListRequest | 未确认 | 未实现 | — |
+| UpdateHomeMotionModeRequest | 未确认 | 未实现 | — |
+| UpdateProfileSetting2APIRequest | 未确认 | 未实现 | — |
+| UpdateProfileSettingAPIRequest | 未确认 | 未实现 | — |
+| UpdateVersusReplayInfoRequest | 未确认 | 未实现 | — |
+| UpdateVoiceVersionRequest | 未确认 | 未实现 | — |
+| UserAppleInfoDeleteRequest | 未确认 | 未实现 | — |
+| UserAppleInfoUpdateRequest | 未确认 | 未实现 | — |
+| UserCreateRequest | user_create | 业务实现 | 本地身份创建、重复调用保留存档 |
+| UserGoogleInfoDeleteRequest | 未确认 | 未实现 | — |
+| UserGoogleInfoUpdateRequest | 未确认 | 未实现 | — |
+| UserTwitterInfoDeleteRequest | 未确认 | 未实现 | — |
+| UserTwitterInfoUpdateRequest | 未确认 | 未实现 | — |
+| VersionGetRequest | version_get | 最小响应 | 固定版本与资源路径 |
+| VersusBattleEndRequest | 未确认 | 未实现 | — |
+| VersusBattleStartRequest | 未确认 | 未实现 | — |
+| VotivePictureExchangeRequest | 未确认 | 未实现 | — |
+| WeeklyArenaBattleScoreResetRequest | 未确认 | 未实现 | — |
+| WeeklyArenaTopRequest | 未确认 | 未实现 | — |

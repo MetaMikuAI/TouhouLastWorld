@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 namespace TouhouLastWorld;
 
 public sealed record LocalReply(int Status, JsonObject? Body, string Error = "");
+public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null);
 
 public sealed class OfflineServer
 {
@@ -39,14 +40,14 @@ public sealed class OfflineServer
         MigrateInitialData();
     }
 
-    public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null)
+    public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
     {
-        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top"))
+        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection"))
             return new(501, null, $"Offline API not implemented: {api}");
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
         if (api == "check_user" && account is null) return new(401, null, "Offline account required.");
-        if (api is "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" && account is null)
+        if (api is not ("game_init" or "version_get" or "user_create" or "login") && account is null)
             return new(401, null, "Offline account required.");
         if (api == "gacha_do" && gachaId is not null)
         {
@@ -62,7 +63,9 @@ public sealed class OfflineServer
             return new(400, null, "Not enough gold.");
         if (api == "battle_end" && battleResult is null) return new(400, null, "Battle result required.");
         if (api is "user_create" or "login") EnsureAccount();
-        JsonObject body = api switch
+        var operation = api == "unit_protection" ? SetProtection(arguments) : null;
+        if (operation is { Status: not 0 }) return operation;
+        JsonObject body = operation?.Body ?? (api switch
         {
             // IDA: 两个 Set*Server 方法均先执行 Base64 解码再按 UTF-8 读取地址。
             "game_init" => new()
@@ -119,11 +122,24 @@ public sealed class OfflineServer
                 ["random_loginbonus"] = new JsonArray(), ["slot_loginbonus"] = new JsonArray(),
                 ["information_update_time"] = DateTimeOffset.UtcNow.ToString("O"), ["is_FdOpen"] = 0
             }
-        };
+        });
         body["session_id"] = session;
         body["encryption_key"] = InitialKey;
         body["response_time"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         return new(0, body);
+    }
+
+    private LocalReply SetProtection(LocalArguments? arguments)
+    {
+        if (arguments?.EntityId is not > 0 || arguments.Value is not (0 or 1))
+            return new(400, null, "Positive entity ID and protection flag 0 or 1 required.");
+        var updated = user.DeepClone().AsObject();
+        var unit = updated["unit"]!["unit_list"]!.AsArray()
+            .FirstOrDefault(item => item!["user_unit_id"]!.GetValue<long>() == arguments.EntityId);
+        if (unit is null) return new(404, null, "Entity not found.");
+        unit["is_protection"] = arguments.Value.Value;
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["unit"] = user["unit"]!.DeepClone() } });
     }
 
     private JsonObject FinishBattle(int result)

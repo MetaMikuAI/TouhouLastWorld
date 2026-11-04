@@ -33,7 +33,9 @@ public partial class NetworkSystemPatch
         var api = request.GetAPIName();
         var gacha = api == "gacha_do" ? request.TryCast<GachaDoRequest>() : null;
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
-        var reply = Plugin.Server.Dispatch(api, gacha?.count, battle?.battle_end?.result, gacha?.gacha_id, gacha?.gacha_button_id);
+        var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
+        var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        var reply = Plugin.Server.Dispatch(api, gacha?.count, battle?.battle_end?.result, gacha?.gacha_id, gacha?.gacha_button_id, arguments);
         Log.Info($"Offline API: {api}; status={reply.Status}");
         network.m_recv.status = reply.Status;
         network.m_recv.now = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
