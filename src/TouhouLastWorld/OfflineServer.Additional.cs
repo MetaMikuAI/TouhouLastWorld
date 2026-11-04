@@ -17,10 +17,11 @@ public sealed partial class OfflineServer
         or "lecture_room_food_expansion" or "training_room_expansion" or "training_room_update"
         or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture"
         or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end"
-        or "achievement_select" || QueryTemplates.ContainsKey(api);
+        or "achievement_select" or "roguelite_deck_save" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "roguelite_deck_save" => SaveDeck(arguments),
         "rhythm_game_start" => StartRhythm(arguments),
         "achievement_select" => SelectAchievement(arguments?.Value),
         "achievement_top" => AchievementOverview(),

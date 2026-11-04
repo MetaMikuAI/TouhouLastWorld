@@ -35,6 +35,12 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "roguelite_deck_save")
+        {
+            var deck = request.TryCast<RogueliteDeckSaveRequest>();
+            arguments = deck == null ? null : new LocalArguments(Value: deck.deck_no,
+                Ids: deck.deck_list?.ToArray().Select(id => (long)id).ToArray(), Text: deck.deck_name);
+        }
         if (api == "achievement_select")
             arguments = new LocalArguments(Value: request.TryCast<AchievementSelectRequest>()?.achievement_id);
         if (api == "rhythm_game_start")

@@ -158,7 +158,7 @@
 | RogueLiteBattleEndRequest | 未确认 | 未实现 | — |
 | RogueLiteBattleStartRequest | 未确认 | 未实现 | — |
 | RogueliteDeckCallRequest | 未确认 | 未实现 | — |
-| RogueliteDeckSaveRequest | 未确认 | 未实现 | — |
+| RogueliteDeckSaveRequest | roguelite_deck_save | 业务实现 | 保存编号、名称和有序条目，同时更新当前配置；可保存空配置，暂不校验容量、持有数量或条目主数据 |
 | RogueLiteEventEndRequest | 未确认 | 未实现 | — |
 | RogueLiteMapEndRequest | 未确认 | 未实现 | — |
 | RogueLiteMapStartRequest | 未确认 | 未实现 | — |
