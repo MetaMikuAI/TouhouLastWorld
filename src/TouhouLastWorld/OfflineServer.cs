@@ -30,7 +30,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalCostumeEntry[]? Costumes = null, LocalRhythmResult? Rhythm = null, LocalPagePurchase? Pages = null,
     LocalSeriesTeam[]? SeriesTeams = null, LocalFoodPurchase? FoodPurchase = null, LocalFoodDistribution? FoodDistribution = null,
     LocalTrainingStart? Training = null, LocalTrainingMaterial[]? TrainingMaterials = null, LocalPointReset? PointReset = null,
-    LocalPointAllocation? PointAllocation = null);
+    LocalPointAllocation? PointAllocation = null, LocalIdleSet? Idle = null);
 
 public sealed partial class OfflineServer
 {
@@ -121,13 +121,7 @@ public sealed partial class OfflineServer
             {
                 ["conditional_pack"] = new JsonArray(), ["is_ignore_check"] = 0
             },
-            "afk_top" => new()
-            {
-                // 本地未开始探索；上限仅用于空进度条，不产出离线奖励。
-                ["content_stage_list"] = new JsonArray(), ["before_content_stage_list"] = new JsonArray(),
-                ["unit_slot_list"] = new JsonArray(), ["picture_slot_list"] = new JsonArray(),
-                ["drop_list"] = new JsonArray(), ["search_elapsed_time"] = 0, ["search_max_time"] = 43200
-            },
+            "afk_top" => IdleOverview(),
             "home" => new()
             {
                 ["gathering_phantasm_point"] = 0, ["gathering_gold"] = 0, ["unread_mail_num"] = 0,

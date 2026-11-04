@@ -1332,3 +1332,36 @@ Check(episodeUser["quest_playdata"]!.AsArray().Count == 2
     "new episode completion persists once without clearing battles");
 Check(episodeUser["gold"]!.GetValue<int>() == episodeSeed["gold"]!.GetValue<int>(), "episode completion does not fabricate currency rewards");
 Console.WriteLine("Passed 4 episode completion checks.");
+var idleSeed = JsonNode.Parse(seed)!.AsObject();
+var idleUnit = idleSeed["unit"]!["unit_list"]![0]!;
+var idleUnitId = idleUnit["user_unit_id"]!.GetValue<long>();
+var idleDirectory = directory + "-idle";
+var idleServer = new OfflineServer(idleDirectory, idleSeed.ToJsonString(), "offline://resources/");
+idleServer.Dispatch("game_init");
+idleServer.Dispatch("login");
+var idleRequest = new LocalIdleSet(idleUnitId, 9, 1, 4, 0, 2, 120, "rare", idleUnit["rare"]!.GetValue<int>(), true);
+Check(idleServer.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Seconds = 0 })).Status == 503
+    && idleServer.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Eligible = false })).Status == 409
+    && idleServer.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Slot = 3 })).Status == 409,
+    "idle start requires duration, eligibility and an unlocked slot");
+var idleStart = idleServer.Dispatch("afk_set", arguments: new(Idle: idleRequest));
+Check(idleStart.Status == 0
+    && (DateTime.Parse(idleStart.Body!["end_at"]!.GetValue<string>()) - DateTime.Parse(idleStart.Body["start_at"]!.GetValue<string>())).TotalSeconds == 120,
+    "idle start returns the persisted duration");
+Check(idleServer.Dispatch("afk_set", arguments: new(Idle: idleRequest)).Status == 409
+    && idleServer.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Slot = 2 })).Status == 409,
+    "idle slots reject duplicate slot and object assignments");
+var idleReload = new OfflineServer(idleDirectory, idleSeed.ToJsonString(), "offline://resources/");
+idleReload.Dispatch("game_init");
+var idleUser = idleReload.Dispatch("login").Body!["user"]!;
+Check(idleReload.Dispatch("afk_top").Body!["unit_slot_list"]!.AsArray().Count == 1
+    && idleUser["unit"]!["unit_list"]![0]!["rare"]!.GetValue<int>() == idleRequest.CurrentValue,
+    "idle assignment survives reload without applying growth");
+Check(idleReload.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Cancel = 1, Content = 2 })).Status == 409
+    && idleReload.Dispatch("afk_top").Body!["unit_slot_list"]!.AsArray().Count == 1,
+    "mismatched idle cancellation preserves the slot");
+Check(idleReload.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Cancel = 1, Seconds = 0, Capacity = 0 })).Status == 0
+    && idleReload.Dispatch("afk_top").Body!["unit_slot_list"]!.AsArray().Count == 0
+    && idleReload.Dispatch("afk_set", arguments: new(Idle: idleRequest with { Cancel = 1 })).Status == 404,
+    "idle cancellation removes the stored slot without requiring growth definitions");
+Console.WriteLine("Passed 6 idle slot checks.");

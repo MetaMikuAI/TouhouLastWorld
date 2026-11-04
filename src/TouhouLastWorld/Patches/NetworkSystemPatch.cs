@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "afk_set")
+            arguments = new LocalArguments(Idle: ReadIdleSet(request.TryCast<IdleSearchSetRequest>()));
         if (api == "allocate_points")
         {
             var allocation = request.TryCast<UnitAllocatePointsRequest>();
