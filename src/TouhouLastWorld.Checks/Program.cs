@@ -357,3 +357,27 @@ Check(homeUser["select_bgm"]!.GetValue<int>() == 123 && homeUser["unit"]!["unit_
 Check(homeReload.Dispatch("home_bgm_update", arguments: new(Value: 0)).Body!["user_update"]!["select_bgm"]!.GetValue<int>() == 0,
     "home music default restored");
 Console.WriteLine("Passed 9 home preference checks.");
+var homeEntry = new LocalHomeEntry(1001, 1, 100101, 0, 123);
+Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([], 0, 0))).Status == 400, "home requires an entry");
+Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry], 1, 0))).Status == 400, "home configuration selection bounds");
+Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry], 0, 2))).Status == 400, "home random mode bounds");
+Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry with { UserUnitId = 999 }], 0, 0))).Status == 404,
+    "home configuration ownership");
+Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry with { UnitId = 999 }], 0, 0))).Status == 400,
+    "home identifiers must match");
+var configuredHome = teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry], 0, 1)))
+    .Body!["user_update"]!["home_unit_info"]!;
+Check(configuredHome["random_select_mode"]!.GetValue<int>() == 1 && configuredHome["unit_param"]![0]!["bgm"]!.GetValue<int>() == 123,
+    "complete home configuration saved");
+var beforeInvalidHome = teams.Dispatch("login").Body!["user"]!["home_unit_info"]!.DeepClone();
+Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry, homeEntry with { UserUnitId = 999 }], 0, 0))).Status == 404
+    && JsonNode.DeepEquals(beforeInvalidHome, teams.Dispatch("login").Body!["user"]!["home_unit_info"]), "home batch update is atomic");
+Check(teams.Dispatch("update_home_motion_mode", arguments: new(999, 1)).Status == 404
+    && teams.Dispatch("update_home_motion_mode", arguments: new(1, -1)).Status == 400, "motion preference validates target and value");
+Check(teams.Dispatch("update_home_motion_mode", arguments: new(1, 1)).Status == 0, "motion preference saved");
+var configuredHomeReload = new OfflineServer(teamDirectory, teamSeed.ToJsonString(), "offline://resources/");
+configuredHomeReload.Dispatch("game_init");
+var configuredUser = configuredHomeReload.Dispatch("login").Body!["user"]!;
+Check(configuredUser["home_unit_info"]!["random_select_mode"]!.GetValue<int>() == 1
+    && configuredUser["unit"]!["unit_list"]![0]!["home_motion"]!.GetValue<int>() == 1, "home configuration and motion persist");
+Console.WriteLine("Passed 10 home configuration checks.");
