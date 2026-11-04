@@ -39,6 +39,9 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Text: request.TryCast<LogoutRequest>()?.user_id);
         if (api == "set_age")
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
+        if (api == "achievement_new_update")
+            arguments = new LocalArguments(Ids: request.TryCast<AchievementNewUpdateRequest>()?.new_update_id_list?.ToArray()
+                .Select(id => (long)id).ToArray());
         if (api is "get_replay_info" or "update_replay_info")
         {
             var replay = request.TryCast<BattleReplayInfoRequest>();

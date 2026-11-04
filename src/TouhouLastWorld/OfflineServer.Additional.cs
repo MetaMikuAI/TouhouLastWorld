@@ -9,11 +9,12 @@ public sealed partial class OfflineServer
         or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
         or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
-        or "get_replay_info" or "update_replay_info" || QueryTemplates.ContainsKey(api);
+        or "get_replay_info" or "update_replay_info" or "achievement_new_update" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "achievement_new_update" => ClearAchievementMarkers(arguments?.Ids),
         "get_replay_info" => QuestReplay(arguments, false),
         "update_replay_info" => QuestReplay(arguments, true),
         "get_series_battle_replay_info" => GetSeriesReplays(arguments),
@@ -41,6 +42,20 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply ClearAchievementMarkers(long[]? ids)
+    {
+        if (ids is null || ids.Any(id => id <= 0 || id > int.MaxValue))
+            return new(400, null, "Positive achievement IDs required.");
+        var updated = user.DeepClone().AsObject();
+        var achievement = updated["achievement"]!.AsObject();
+        var recent = achievement["recently_received_achievement_id_list"]!.AsArray();
+        var marked = ids.ToHashSet();
+        for (var index = recent.Count - 1; index >= 0; index--)
+            if (marked.Contains(recent[index]!.GetValue<long>())) recent.RemoveAt(index);
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["achievement"] = achievement.DeepClone() } });
+    }
 
     private LocalReply UpdateProfile(LocalProfileUpdate? profile)
     {
