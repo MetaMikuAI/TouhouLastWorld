@@ -17,11 +17,12 @@ public sealed record LocalRhythmResult(int MusicId, int Difficulty, int Score, f
 public sealed record LocalPagePurchase(int Id, int Count, int MaxPages, int UnitCost);
 public sealed record LocalSeriesTeam(int Number, long[]? Units);
 public sealed record LocalFoodPurchase(int ItemId, int Count, int PointCost, int OrbCost);
+public sealed record LocalFoodDistribution(int ItemId, int FoodId, int Count, int Value, int Capacity, int EffectMinutes);
 public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null,
     LocalProfileUpdate? Profile = null, LocalReplayMeasure? ReplayMeasure = null, LocalReplayContent? ReplayContent = null,
     LocalTeamUpdate? Team = null, LocalHomeUpdate? Home = null, LocalEquipmentEntry[]? Equipment = null,
     LocalCostumeEntry[]? Costumes = null, LocalRhythmResult? Rhythm = null, LocalPagePurchase? Pages = null,
-    LocalSeriesTeam[]? SeriesTeams = null, LocalFoodPurchase? FoodPurchase = null);
+    LocalSeriesTeam[]? SeriesTeams = null, LocalFoodPurchase? FoodPurchase = null, LocalFoodDistribution? FoodDistribution = null);
 
 public sealed partial class OfflineServer
 {

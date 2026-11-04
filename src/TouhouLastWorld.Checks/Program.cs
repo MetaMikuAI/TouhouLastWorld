@@ -837,3 +837,25 @@ Check(foodUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 3
 Check(foodReload.Dispatch("lecture_room_food_addition", arguments: new(FoodPurchase: new(10, int.MaxValue, 0, 0))).Status == 409,
     "inventory overflow rejected");
 Console.WriteLine("Passed 5 food purchase checks.");
+Check(foodReload.Dispatch("lecture_room_food_distribution", arguments: new(FoodDistribution: new(10, 1, 4, 80, 100, 10))).Status == 409,
+    "food distribution rejects insufficient inventory");
+var beforeDistribution = DateTimeOffset.UtcNow;
+var distributed = foodReload.Dispatch("lecture_room_food_distribution", arguments: new(FoodDistribution: new(10, 1, 2, 80, 100, 10))).Body!["user_update"]!;
+var foodState = distributed["lecture_room"]!["food"]!;
+var firstFinish = DateTimeOffset.Parse(foodState["food_list"]![0]!["add_effect_finish_time"]!.GetValue<string>(),
+    System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal);
+Check(foodState["food_rest_value"]!.GetValue<int>() == 100 && distributed["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 1,
+    "distribution caps food value and consumes requested items");
+Check((firstFinish - beforeDistribution).TotalMinutes is > 19.9 and < 20.1, "food effect duration uses minutes and quantity");
+foodReload.Dispatch("lecture_room_food_distribution", arguments: new(FoodDistribution: new(10, 1, 1, 80, 100, 10)));
+var foodAfterReload = new OfflineServer(foodDirectory, foodSeed.ToJsonString(), "offline://resources/");
+foodAfterReload.Dispatch("game_init");
+var fedUser = foodAfterReload.Dispatch("login").Body!["user"]!;
+var effectsAfter = fedUser["lecture_room"]!["food"]!["food_list"]!.AsArray();
+var secondFinish = DateTimeOffset.Parse(effectsAfter[0]!["add_effect_finish_time"]!.GetValue<string>(),
+    System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal);
+Check(effectsAfter.Count == 1 && secondFinish - firstFinish == TimeSpan.FromMinutes(10)
+    && fedUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 0, "effect extension and consumed inventory persist");
+Check(fedUser["phantasm_point"]!["points"]!.GetValue<int>() == 70
+    && JsonNode.DeepEquals(fedUser["unit"], foodSeed["unit"]), "distribution does not fabricate growth or charge purchase cost again");
+Console.WriteLine("Passed 5 food distribution checks.");

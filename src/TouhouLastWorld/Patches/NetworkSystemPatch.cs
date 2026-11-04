@@ -35,6 +35,14 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "lecture_room_food_distribution")
+        {
+            var distribution = request.TryCast<LectureRoomFoodDistributionRequest>();
+            var food = MasterDB.This()?.Food?.ToList()?.ToArray().FirstOrDefault(entry => entry.item_id == distribution?.item_id);
+            var capacity = MasterDB.This()?.LectureRoomFoodExpansion?.Find(Plugin.Server.LectureFoodExpansionRank)?.food_limit;
+            arguments = distribution == null || food == null || capacity == null ? null
+                : new LocalArguments(FoodDistribution: new(distribution.item_id, food.id, distribution.num, food.value, capacity.Value, food.add_effect_time));
+        }
         if (api == "lecture_room_food_addition")
         {
             var purchase = request.TryCast<LectureRoomFoodAdditionRequest>();
