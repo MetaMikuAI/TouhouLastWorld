@@ -35,6 +35,7 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "unit_reincarnation_release") arguments = ReadAutomaticRelease(request.TryCast<ReincarnationReleaseRequest>());
         if (api == "votive_picture_exchange") arguments = ReadTicketExchange(request.TryCast<VotivePictureExchangeRequest>());
         if (api == "fudai/fudai_info" && request.TryCast<TreasureInfoRequest>() is not null)
             arguments = new LocalArguments(Value: MasterDB.This()?.Event?.ToList()?.ToArray().FirstOrDefault(row => row.event_type == 99)?.id);

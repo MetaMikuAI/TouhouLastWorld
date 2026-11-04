@@ -150,7 +150,7 @@
 | ProfileUserInfoUpdateRequest | user_info_update | 业务实现 | 三种派生请求更新名称或简介，基础文本校验、原子保存；不含远端文本审核 |
 | QuestHelperSelectRequest | friend_helper_select | 最小响应 | 空候选列表，支持不使用援助；返回本地容量及申请数；无积分与远端匹配 |
 | ReadUnitTalkRequest | read_unit_talk | 业务实现 | 保存正数对话 ID 的已读标记，重复提交幂等；不校验内容存在性，不生成解锁或奖励 |
-| ReincarnationReleaseRequest | 未确认 | 未实现 | — |
+| ReincarnationReleaseRequest | unit_reincarnation_release | 业务实现 | 仅保存无消耗、无附带功能的自动解锁节点，校验等级、阶段与强化条件；付费节点、附带功能及扩展谱系未实现 |
 | replaceAvatarRequest | avatar/update | 业务实现 | 仅选择本地已解锁条目，保存编号与资源描述；不授予解锁，不验证资源文件是否存在 |
 | RhythmGameEndRequest | rhythm_game_end | 业务实现 | 匹配当前曲目、校验难度 2–4，按曲目和难度分别保存分数、完成率及等级最大值；禁止重复结束，不复算成绩，恢复额度为零且无奖励 |
 | RhythmGameStartRequest | rhythm_game_start | 业务实现 | 校验曲目主数据并保存当前曲目；再次开始替换上次记录，不扣除资源 |

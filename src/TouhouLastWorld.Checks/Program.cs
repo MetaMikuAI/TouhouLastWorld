@@ -2719,3 +2719,26 @@ Check(ticketReload.Dispatch("votive_picture_exchange", arguments: new(TicketExch
     && ticketReload.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 2,
     "ticket exchange inventory and remaining materials survive restart");
 Console.WriteLine("Passed 3 ticket exchange checks.");
+var releaseSeed = JsonNode.Parse(seed)!;
+var releaseUnit = releaseSeed["unit"]!["unit_list"]![0]!;
+var releaseUnitId = releaseUnit["user_unit_id"]!.GetValue<long>();
+releaseUnit["release_functions"] = new JsonArray(JsonValue.Create(1));
+releaseUnit["level"] = 50;
+releaseUnit["reincarnation_stage"] = 1;
+var releaseDirectory = directory + "-automatic-release";
+var releaseServer = new OfflineServer(releaseDirectory, releaseSeed.ToJsonString(), "offline://resources/");
+releaseServer.Dispatch("game_init");
+releaseServer.Dispatch("login");
+var releaseRule = new LocalAutomaticRelease(2, releaseUnit["unit_id"]!.GetValue<int>(), 50, 1, true, true);
+Check(releaseServer.Dispatch("unit_reincarnation_release", arguments: new(releaseUnitId, 2, AutomaticRelease: releaseRule with { Level = 51 })).Status == 409
+    && releaseServer.Dispatch("unit_reincarnation_release", arguments: new(releaseUnitId, 2, AutomaticRelease: releaseRule with { FullStats = false })).Status == 409,
+    "automatic release checks level and full-stat requirements");
+var releasedReply = releaseServer.Dispatch("unit_reincarnation_release", arguments: new(releaseUnitId, 2, AutomaticRelease: releaseRule));
+Check(releasedReply.Status == 0 && releasedReply.Body!["user_update"]!["unit"]!["unit_list"]![0]!["release_functions"]!.AsArray().Count == 2,
+    "automatic release adds the verified node");
+var releaseReload = new OfflineServer(releaseDirectory, seed, "offline://resources/");
+releaseReload.Dispatch("game_init");
+releaseReload.Dispatch("login");
+Check(releaseReload.Dispatch("unit_reincarnation_release", arguments: new(releaseUnitId, 2, AutomaticRelease: releaseRule)).Body!["user_update"]!["unit"]!["unit_list"]![0]!["release_functions"]!.AsArray().Count == 2,
+    "automatic release persists and duplicate requests are idempotent");
+Console.WriteLine("Passed 3 automatic release checks.");
