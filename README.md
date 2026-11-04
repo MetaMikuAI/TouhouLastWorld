@@ -199,7 +199,7 @@
 | TrainingRoomUpdateRequest | training_room_update | 最小响应 | 返回已保存训练任务与等级；不推进训练时间或结算技能成长 |
 | TranscribeKpiRequest | transcribe_kpi | 最小响应 | 接受类型 1、2 的统计事件；不上传、不记录、不变更资产 |
 | TreasureGachaRequest | 未确认 | 未实现 | — |
-| TreasureInfoRequest | 未确认 | 未实现 | — |
+| TreasureInfoRequest | fudai/fudai_info | 业务实现 | 查询与活动配置匹配的本地状态及已保存奖励信息；不生成奖励码，缺少快照时拒绝返回 |
 | TutorialFirstGachaConfirmRequest | 未确认 | 未实现 | — |
 | TutorialFirstGachaDoRequest | 未确认 | 未实现 | — |
 | TutorialUpdateRequest | tutorial_update | 业务实现 | 校验并保存单调进度；不含阶段奖励 |

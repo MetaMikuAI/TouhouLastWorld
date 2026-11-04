@@ -8,7 +8,7 @@ public sealed partial class OfflineServer
         or "unit_level_limitbreak" or "unit_rare_awaken" or "unit_rank_promote" or "unit_rank_promote_item_set" or "phantasm_point_buy" or "phantasm_box_renovation_start" or "phantasm_box_renovation_end" or "friend/search" or "user_info_update" or "get_profile_setting" or "update_profile_setting"
         or "picture_recycle" or "picture_potential_limitbreak" or "unit_destiny_value_up" or "picture_spec_actualize_chemicals" or "picture_spec_actualize" or "limitbreak_strong_fragrantwood" or "unit_extra_spec_actualize" or "unit_spec_actualize" or "update_profile_setting2" or "get_auto_replay_info" or "update_auto_replay_info"
         or "pass_card/buy_goods" or "pass_card/user_orb_add_level" or "pass_card/collect_reward" or "pass_card/collect_exp" or "get_exchange_code_reward" or "picture_book/get_reward" or "dispatch_bulk_end" or "dispatch_start" or "personal_info_update" or "anniversary_info_update" or "item_exchange" or "auto_replay_start" or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
-        or "get_event_total_point_reward_all" or "get_event_total_point_reward" or "gain_free_item" or "pass_card/show_reward" or "pass_card/get_level_gift" or "get_series_battle_replay_info" or "update_series_battle_replay_info"
+        or "fudai/fudai_info" or "get_event_total_point_reward_all" or "get_event_total_point_reward" or "gain_free_item" or "pass_card/show_reward" or "pass_card/get_level_gift" or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
         or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
@@ -35,6 +35,7 @@ public sealed partial class OfflineServer
         "gain_free_item" => GainFreeItem(arguments),
         "get_event_total_point_reward" => ClaimEventPointReward(arguments),
         "get_event_total_point_reward_all" => ClaimEventPointReward(arguments, all: true),
+        "fudai/fudai_info" => TreasureOverview(arguments),
         "pass_card/collect_exp" => CollectPassExperience(arguments),
         "pass_card/collect_reward" => CollectPassRewards(arguments),
         "pass_card/show_task" or "pass_card/show_shop" => PassOverview(),

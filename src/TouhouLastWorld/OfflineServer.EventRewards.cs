@@ -7,6 +7,24 @@ public sealed record LocalEventRewards(int EventId, LocalEventRewardGroup[] Grou
 
 public sealed partial class OfflineServer
 {
+    private LocalReply TreasureOverview(LocalArguments? request)
+    {
+        if (request?.Value is null or <= 0) return new(503, null, "Event definition unavailable.");
+        if (user["_local_treasure"] is not JsonObject snapshot
+            || snapshot["event_id"]?.GetValue<int>() != request.Value
+            || snapshot["fd_status"]?.GetValue<int>() is not (-1 or 0 or 1)
+            || snapshot["info"] is not JsonObject info)
+            return new(503, null, "Local reward snapshot unavailable.");
+        var status = snapshot["fd_status"]!.GetValue<int>();
+        var gift = info["gift_id"]?.GetValue<int>();
+        var code = info["code"]?.GetValue<string>();
+        if (gift is null or < 0 || code is null || code.Any(char.IsControl)
+            || status == 1 && (gift == 0 || string.IsNullOrWhiteSpace(code)))
+            return new(409, null, "Invalid local reward information.");
+        return new(0, new() { ["fd_status"] = status,
+            ["info"] = new JsonObject { ["gift_id"] = gift.Value, ["code"] = code } });
+    }
+
     private LocalReply ClaimEventPointReward(LocalArguments? request, bool all = false)
     {
         if (request?.Value is null or <= 0) return new(400, null, "Positive event ID required.");

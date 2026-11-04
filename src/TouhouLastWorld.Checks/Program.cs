@@ -2674,3 +2674,23 @@ pointBatchReload.Dispatch("login");
 Check(pointBatchReload.Dispatch("get_event_total_point_reward_all", arguments: new(Value: 7, EventRewards: pointRewardRule)).Status == 409,
     "completed point reward batches cannot grant again after restart");
 Console.WriteLine("Passed 3 accumulated reward batch checks.");
+var treasureSeed = JsonNode.Parse(seed)!;
+treasureSeed["_local_treasure"] = new JsonObject
+{
+    ["event_id"] = 99, ["fd_status"] = 1,
+    ["info"] = new JsonObject { ["gift_id"] = 3, ["code"] = "local-test" }
+};
+var treasureServer = new OfflineServer(directory + "-treasure", treasureSeed.ToJsonString(), "offline://resources/");
+treasureServer.Dispatch("game_init");
+treasureServer.Dispatch("login");
+Check(treasureServer.Dispatch("fudai/fudai_info").Status == 503
+    && treasureServer.Dispatch("fudai/fudai_info", arguments: new(Value: 98)).Status == 503,
+    "treasure overview requires a matching event definition");
+var treasureReply = treasureServer.Dispatch("fudai/fudai_info", arguments: new(Value: 99)).Body!;
+Check(treasureReply["fd_status"]!.GetValue<int>() == 1 && treasureReply["info"]!["gift_id"]!.GetValue<int>() == 3
+    && treasureReply["info"]!["code"]!.GetValue<string>() == "local-test",
+    "treasure overview returns the saved reward without generating another");
+treasureReply["info"]!["code"] = "changed";
+Check(treasureServer.Dispatch("fudai/fudai_info", arguments: new(Value: 99)).Body!["info"]!["code"]!.GetValue<string>() == "local-test",
+    "treasure overview returns an independent snapshot");
+Console.WriteLine("Passed 3 treasure overview checks.");
