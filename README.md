@@ -140,7 +140,7 @@
 | PictureBookRequest | picture_book/get_user_picture_book_list | 最小响应 | 空完成记录；不含进度与奖励 |
 | PictureFrameRequest | avatar/list | 业务实现 | 返回已保存条目及已读状态；无条目时返回空列表，不自动解锁 |
 | PictureNewUpdateRequest | picture_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |
-| PicturePotentialLimitbreakRequest | 未确认 | 未实现 | — |
+| PicturePotentialLimitbreakRequest | picture_potential_limitbreak | 业务实现 | 消耗同类装备并逐级扣金币；校验保护、培养占用和上限，解绑材料装备槽并返回删除编号 |
 | PictureProtectionRequest | picture_protection | 业务实现 | 保护标记校验、更新与保存 |
 | PictureRecycleRequest | 未确认 | 未实现 | — |
 | PictureSpecActualizeChemicalRequest | picture_spec_actualize_chemicals | 业务实现 | 按类型、稀有度和下一等级配置消耗特殊材料；校验归属与上限后保存强化等级，不扣金币 |

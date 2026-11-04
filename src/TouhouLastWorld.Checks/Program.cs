@@ -2124,3 +2124,41 @@ busyDestinyServer.Dispatch("login");
 Check(busyDestinyServer.Dispatch("unit_destiny_value_up", arguments: new(rankMaterialId, DestinyGrowth: destinyGrowthRule)).Status == 409,
     "destiny growth rejects active background growth");
 Console.WriteLine("Passed 5 destiny growth checks.");
+
+var pictureBreakSeed = JsonNode.Parse(seed)!;
+pictureBreakSeed["picture"]!["picture_list"] = new JsonArray(
+    new JsonObject { ["user_picture_id"] = 700L, ["picture_id"] = 71, ["potential_limitbreak"] = 0, ["spec_actualize"] = 2, ["is_protection"] = 1 },
+    new JsonObject { ["user_picture_id"] = 701L, ["picture_id"] = 71, ["potential_limitbreak"] = 1, ["is_protection"] = 0, ["equip_user_unit_id"] = rankMaterialId },
+    new JsonObject { ["user_picture_id"] = 702L, ["picture_id"] = 71, ["potential_limitbreak"] = 0, ["is_protection"] = 0 });
+pictureBreakSeed["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"] = 701L;
+var pictureBreakRule = new LocalPictureLimitBreak(71, 0, 4, [100, 200]);
+var pictureBreakDirectory = directory + "-picture-break";
+var pictureBreakServer = new OfflineServer(pictureBreakDirectory, pictureBreakSeed.ToJsonString(), "offline://resources/");
+pictureBreakServer.Dispatch("game_init");
+pictureBreakServer.Dispatch("login");
+Check(pictureBreakServer.Dispatch("picture_potential_limitbreak", arguments: new(700, Ids: [701, 701], PictureLimitBreak: pictureBreakRule)).Status == 400
+    && pictureBreakServer.Dispatch("picture_potential_limitbreak", arguments: new(700, Ids: [701, 702], PictureLimitBreak: pictureBreakRule with { Maximum = 1 })).Status == 409
+    && pictureBreakServer.Dispatch("picture_potential_limitbreak", arguments: new(700, Ids: [701, 702], PictureLimitBreak: pictureBreakRule with { GoldCosts = [5000, 1] })).Status == 409,
+    "equipment limit break rejects duplicate materials, excessive steps and insufficient gold");
+var pictureBroken = pictureBreakServer.Dispatch("picture_potential_limitbreak", arguments: new(700, Ids: [701, 702], PictureLimitBreak: pictureBreakRule)).Body!;
+Check(pictureBroken["remove_user_picture_id_list"]!.AsArray().Select(id => id!.GetValue<long>()).SequenceEqual([701L, 702L])
+    && pictureBroken["user_update"]!["picture"]!["picture_list"]!.AsArray().Count == 1
+    && pictureBroken["user_update"]!["picture"]!["picture_list"]![0]!["potential_limitbreak"]!.GetValue<int>() == 2
+    && pictureBroken["user_update"]!["picture"]!["picture_list"]![0]!["spec_actualize"]!.GetValue<int>() == 2
+    && pictureBroken["user_update"]!["unit"]!["unit_list"]![0]!["equip_spellcard1_user_picture_id"]!.GetValue<long>() == 0
+    && pictureBroken["user_update"]!["gold"]!.GetValue<int>() == 4700,
+    "equipment limit break advances per material, clears assignments and emits native removal list");
+var pictureBreakReload = new OfflineServer(pictureBreakDirectory, seed, "offline://resources/");
+pictureBreakReload.Dispatch("game_init");
+pictureBreakReload.Dispatch("login");
+Check(pictureBreakReload.Dispatch("picture_potential_limitbreak", arguments: new(700, Ids: [701, 702], PictureLimitBreak: pictureBreakRule)).Status == 409
+    && pictureBreakReload.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 1,
+    "equipment consumption persists and stale request does not repeat costs");
+pictureBreakSeed["picture"]!["picture_list"]![2]!["is_protection"] = 1;
+var protectedPictureServer = new OfflineServer(directory + "-picture-break-protected", pictureBreakSeed.ToJsonString(), "offline://resources/");
+protectedPictureServer.Dispatch("game_init");
+protectedPictureServer.Dispatch("login");
+Check(protectedPictureServer.Dispatch("picture_potential_limitbreak", arguments: new(700, Ids: [701, 702], PictureLimitBreak: pictureBreakRule)).Status == 409
+    && protectedPictureServer.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 3,
+    "protected material prevents all consumption");
+Console.WriteLine("Passed 4 equipment limit break checks.");

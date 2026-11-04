@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "picture_potential_limitbreak")
+            arguments = ReadPictureLimitBreak(request.TryCast<PicturePotentialLimitbreakRequest>());
         if (api == "unit_rank_promote_item_set")
             arguments = ReadRankMaterial(request.TryCast<UnitRankPromoteItemSetRequest>());
         if (api == "unit_rank_promote")
