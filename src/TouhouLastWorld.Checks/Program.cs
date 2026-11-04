@@ -1407,3 +1407,20 @@ foreach (var (objectType, content, growthField) in new[] { (9, 4, "rare"), (9, 2
         "growth and task removal persist together");
 }
 Console.WriteLine("Passed 13 idle completion checks.");
+var emptyIdleDrop = idleReload.Dispatch("afk_receive_drop");
+Check(emptyIdleDrop.Status == 0 && emptyIdleDrop.Body!["drop_list"]!.AsArray().Count == 0
+    && emptyIdleDrop.Body["search_elapsed_time"]!.GetValue<int>() == 0
+    && emptyIdleDrop.Body["search_max_time"]!.GetValue<int>() > 0 && emptyIdleDrop.Body["user_update"] is null,
+    "empty idle claim returns no inventory mutation");
+var pendingDropSeed = JsonNode.Parse(seed)!.AsObject();
+pendingDropSeed["_local_idle"] = new JsonObject { ["drop_list"] = new JsonArray(new JsonObject
+{
+    ["object_type"] = 1, ["object_id"] = 0, ["object_value"] = 10
+}) };
+var pendingDrop = new OfflineServer(directory + "-pending-idle-drop", pendingDropSeed.ToJsonString(), "offline://resources/");
+pendingDrop.Dispatch("game_init");
+pendingDrop.Dispatch("login");
+Check(pendingDrop.Dispatch("afk_receive_drop").Status == 503
+    && pendingDrop.Dispatch("login").Body!["user"]!["_local_idle"]!["drop_list"]!.AsArray().Count == 1,
+    "unsupported idle rewards remain pending instead of being silently cleared");
+Console.WriteLine("Passed 2 idle drop boundary checks.");

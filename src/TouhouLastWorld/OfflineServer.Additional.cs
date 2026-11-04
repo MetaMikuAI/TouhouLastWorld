@@ -22,12 +22,13 @@ public sealed partial class OfflineServer
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply" or "friend/apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_request" or "friend_approve" or "reset_point_allocation" or "allocate_points"
-        or "afk_complete_upgrade" or "afk_set" or "episode_end" or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
+        or "afk_receive_drop" or "afk_complete_upgrade" or "afk_set" or "episode_end" or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "afk_set" => SetIdleSlot(arguments?.Idle),
         "afk_complete_upgrade" => CompleteIdleSlot(arguments),
+        "afk_receive_drop" => ReceiveIdleDrop(),
         "episode_end" => CompleteEpisode(arguments),
         "event_top" => EventOverview(),
         "daily_arena_top" => DailyOverview(),

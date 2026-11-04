@@ -8,6 +8,16 @@ public sealed record LocalIdleSet(long ObjectId, int ObjectType, int Slot, int C
 
 public sealed partial class OfflineServer
 {
+    private LocalReply ReceiveIdleDrop()
+    {
+        if (user["_local_idle"]?["drop_list"] is JsonArray { Count: > 0 })
+            return new(503, null, "Stored idle reward settlement unavailable.");
+        return new(0, new()
+        {
+            ["drop_list"] = new JsonArray(), ["search_elapsed_time"] = 0, ["search_max_time"] = 43200
+        });
+    }
+
     public LocalIdleSet? IdleSelection(int type, int number)
     {
         if (type is not (9 or 10) || number is < 1 or > 5) return null;
