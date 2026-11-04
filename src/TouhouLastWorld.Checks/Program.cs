@@ -2817,3 +2817,30 @@ introReload.Dispatch("login");
 Check(introReload.Dispatch("first_draw_data", arguments: new(Text: introPublicId, IntroDefinitions: introRules)).Body!["unit_ids"]![0]!["unit_id"]!.GetValue<int>() == introUnitId,
     "initial draw pending result survives restart");
 Console.WriteLine("Passed 3 initial draw checks.");
+var introGrant = new LocalIntroGrant(10, 10, Array.Empty<LocalIntroPicture>());
+Check(introReload.Dispatch("first_draw_save", arguments: new(IntroGrant: introGrant with { UnitCapacity = 1 })).Status == 409
+    && introReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]!.AsArray().Count == 1,
+    "initial confirmation preserves pending inventory when capacity is insufficient");
+var introSaved = introReload.Dispatch("first_draw_save", arguments: new(IntroGrant: introGrant)).Body!;
+Check(introSaved["user_update"]!["unit"]!["unit_list"]!.AsArray().Count == 2
+    && introSaved["unit_list"]![0]!["voice_set_id"]!.GetValue<int>() == 1,
+    "initial confirmation grants the configured template and records its voice selection");
+var introConfirmedReload = new OfflineServer(introDirectory, seed, "offline://resources/");
+introConfirmedReload.Dispatch("game_init");
+introConfirmedReload.Dispatch("login");
+Check(introConfirmedReload.Dispatch("first_draw_save").Body!["user_update"]!["unit"]!["unit_list"]!.AsArray().Count == 2
+    && introConfirmedReload.Dispatch("first_draw_data", arguments: new(Text: introPublicId, IntroDefinitions: introRules)).Status == 409,
+    "initial confirmation survives restart without duplicate grants or another draw");
+introSeed["_local_first_draw_candidate"]!["picture_ids"] = new JsonArray(JsonValue.Create(100), JsonValue.Create(100));
+var introPicturesServer = new OfflineServer(directory + "-intro-pictures", introSeed.ToJsonString(), "offline://resources/");
+introPicturesServer.Dispatch("game_init");
+var introPicturesId = introPicturesServer.Dispatch("login").Body!["public_id"]!.GetValue<string>();
+introPicturesServer.Dispatch("first_draw_data", arguments: new(Text: introPicturesId, IntroDefinitions: introRules with { PictureIds = new[] { 100 } }));
+Check(introPicturesServer.Dispatch("first_draw_save", arguments: new(IntroGrant: introGrant)).Status == 503,
+    "initial confirmation rejects missing equipment definitions before granting units");
+var introPictureGrant = introPicturesServer.Dispatch("first_draw_save", arguments: new(IntroGrant: introGrant with { Pictures = new[] { new LocalIntroPicture(100, 1, 2, 3) } })).Body!;
+Check(introPictureGrant["user_update"]!["picture"]!["picture_list"]!.AsArray().Count == 2
+    && introPictureGrant["picture_list"]!.AsArray().Count == 1
+    && introPictureGrant["user_update"]!["picture"]!["picture_list"]!.AsArray().Select(row => row!["user_picture_id"]!.GetValue<long>()).Distinct().Count() == 2,
+    "initial confirmation creates distinct equipment and a single album entry");
+Console.WriteLine("Passed 5 initial confirmation checks.");

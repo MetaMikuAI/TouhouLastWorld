@@ -52,7 +52,7 @@
 | ExchangeCodeRequest | get_exchange_code_reward | 业务实现 | 兑换本地配置的代码，校验账号、同组及重复领取，原子发放金币、晶体、物品；不识别外部代码 |
 | ExchangeRequest | exchange | 业务实现 | 仅金币商店：按商品配置扣费、发放金币/晶体/物品并扣库存，校验有效期与容量；其他商店及奖励类型未实现 |
 | FirstGachaDrawRequest | first_draw_data | 业务实现 | 校验本地身份和配置中的初始结果，保存待确认快照并重复返回，不直接入库；仅固定本地候选，随机池未实现 |
-| FirstGachaSaveRequest | 未确认 | 未实现 | — |
+| FirstGachaSaveRequest | first_draw_save | 业务实现 | 确认待定结果，校验容量后一次保存角色、装备和图鉴，重试不重复发放；角色仅支持本地种子模板 |
 | FriendAcceptRequest | friend/accept_apply | 业务实现 | 按主数据容量将本地申请转为关系并保存；亲密度初始为零，不同步远端或校验对方容量 |
 | FriendApplyListRequest | friend/apply_list | 业务实现 | 返回已保存的本地申请；不从远端获取 |
 | FriendApplyRequest | friend/apply | 业务实现 | 按 public_id 向本地推荐玩家发出并保存申请；校验关系容量、重复和已有关系，不校验远端容量或发送远端请求 |

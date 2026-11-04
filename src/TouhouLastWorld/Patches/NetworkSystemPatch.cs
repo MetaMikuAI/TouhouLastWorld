@@ -35,6 +35,22 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "first_draw_save" && request.TryCast<FirstGachaSaveRequest>() is not null)
+        {
+            var master = MasterDB.This();
+            var current = User.This();
+            var unitCapacity = current?.unit == null ? null : master?.UnitExpansion?.Find(current.unit.expansion_rank);
+            var pictureCapacity = current?.picture == null ? null : master?.PictureExpansion?.Find(current.picture.expansion_rank);
+            var ids = Plugin.Server.PendingIntroPictures;
+            if (unitCapacity != null && pictureCapacity != null && ids.All(id => master?.Picture?.Find(id) != null))
+                arguments = new LocalArguments(IntroGrant: new(unitCapacity.unit_count, pictureCapacity.picture_count,
+                    ids.Select(id =>
+                    {
+                        var picture = UserData.UserPicture.CreateUserPicture(id);
+                        return new LocalIntroPicture(id, picture.parameter1_value, picture.parameter2_value,
+                            picture.picture_characteristic_group_master_id);
+                    }).ToArray()));
+        }
         if (api == "first_draw_data")
         {
             var change = request.TryCast<FirstGachaDrawRequest>();
