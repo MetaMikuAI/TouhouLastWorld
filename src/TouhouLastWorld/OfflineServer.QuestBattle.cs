@@ -108,6 +108,7 @@ public sealed partial class OfflineServer
         var changes = new JsonObject();
         if (won && rewards is not null)
         {
+            updated[QuestWinCount] = (int)Math.Min((long)MainQuestWins() + 1, int.MaxValue);
             for (var index = 0; index < rewards.DefeatLimits.Length; index++)
                 if (request.Defeated.Length <= rewards.DefeatLimits[index]) challenges.Add(index + 1);
             var previous = (entry["battle_challenge"] as JsonArray)?.Count ?? 0;

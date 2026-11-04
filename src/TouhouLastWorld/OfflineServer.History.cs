@@ -8,6 +8,30 @@ public sealed record LocalHistoryDefinitions(int[] Units, Dictionary<int, int> C
 
 public sealed partial class OfflineServer
 {
+    private const string QuestWinCount = "_local_quest_win_count";
+    private const string DispatchCompletionCount = "_local_dispatch_completion_count";
+
+    private LocalReply ProfileHistory()
+    {
+        var collection = user["album"]?["unit_list"] as JsonArray ?? new JsonArray();
+        var owned = user["unit"]!["unit_list"]!.AsArray();
+        var acquired = collection.Concat(owned).Select(row => row?["unit_id"]?.GetValue<int>() ?? 0)
+            .Where(id => id > 0).Distinct().Count();
+        return new(0, new()
+        {
+            ["unit_get_count"] = acquired, ["quest_complete_count"] = MainQuestWins(),
+            ["dispatch_complete_count"] = user[DispatchCompletionCount]?.GetValue<int>() ?? 0
+        });
+    }
+
+    private int MainQuestWins()
+    {
+        if (user[QuestWinCount]?.GetValue<int>() is { } count) return count;
+        // 旧存档只保留各难度的最佳通关状态。
+        return (user["quest_playdata"] as JsonArray)?.Sum(episode =>
+            QuestDifficulties.Count(key => episode?[key]?["status"]?.GetValue<int>() >= 2)) ?? 0;
+    }
+
     private LocalReply RankingHistoryTeam(LocalArguments? request)
     {
         if (request?.Value is null or <= 0 || string.IsNullOrWhiteSpace(request.Text) || request.Text.Any(char.IsControl))

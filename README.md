@@ -89,7 +89,7 @@
 | GetDispatchListRequest | get_dispatch_list | 业务实现 | 合并本地候选与已启动任务；未配置候选时为空，不生成候选 | 未测 |
 | GetEventTotalPointRewardAllRequest | get_event_total_point_reward_all | 业务实现 | 连续领取积分已达标的固定奖励，一次保存库存与进度；容量不足或含未支持奖励时整批不变，随机奖励未实现 | 未测 |
 | GetEventTotalPointRewardRequest | get_event_total_point_reward | 业务实现 | 按本地累计积分领取当前档固定奖励并推进、保存进度；支持金币、晶体、物品，随机奖励和积分生成未实现 | 未测 |
-| GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 | 未测 |
+| GetHistoryRequest | get_history | 业务实现 | 按图鉴统计伙伴，累计主线胜利和派遣结算，旧档从已通关难度恢复基础计数 | 通过（个人资料，派遣计数待测） |
 | GetProfileSettingAPIRequest | get_profile_setting | 业务实现 | 读取本地布局，首次返回空字符串使用客户端默认值；成就列表为空 | 未测 |
 | GetQuestClearedTeamInfoRequest | get_quest_cleared_team_info | 最小响应 | 按类型、目标和难度读取已存队伍；缺省空队伍，不自动记录通关 | 未测 |
 | GetRaidGaugeRequest | get_raid_gauge | 最小响应 | 进度列表为空，客户端使用零累计值；不统计跨用户进度 | 未测 |

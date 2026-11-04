@@ -60,6 +60,8 @@ public sealed partial class OfflineServer
         settlements!.Remove(settlement);
         if (updated["_local_dispatch_offers"] is JsonArray offers)
             foreach (var offer in offers.Where(row => row?["user_dispatch_id"]?.GetValue<long>() == request.EntityId).ToArray()) offers.Remove(offer);
+        var completions = updated[DispatchCompletionCount]?.GetValue<int>() ?? 0;
+        updated[DispatchCompletionCount] = (int)Math.Min((long)completions + 1, int.MaxValue);
         Save(updated);
         response["user_update"] = new JsonObject { ["dispatch"] = updated["dispatch"]!.DeepClone(),
             ["gold"] = updated["gold"]!.DeepClone(), ["crystal"] = updated["crystal"]!.DeepClone(), ["item"] = updated["item"]!.DeepClone() };

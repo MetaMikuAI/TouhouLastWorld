@@ -10,7 +10,7 @@ public sealed partial class OfflineServer
         or "pass_card/buy_goods" or "pass_card/user_orb_add_level" or "pass_card/collect_reward" or "pass_card/collect_exp" or "get_exchange_code_reward" or "picture_book/get_reward" or "dispatch_bulk_end" or "dispatch_end" or "dispatch_start" or "personal_info_update" or "anniversary_info_update" or "item_exchange" or "auto_replay_start" or "get_multiple_spirits_weekly_replay_info" or "update_multiple_spirits_weekly_replay_info"
         or "get_clear_history_playerinfo" or "get_clear_history_teaminfo" or "tutorial_first_gacha_confirm" or "tutorial_first_gacha_do" or "retry_gacha_fix" or "first_draw_save" or "first_draw_data" or "exchange" or "update_gold_exchange_shop_list" or "unit_reincarnation_release" or "votive_picture_exchange" or "multiple_spirits_weekly_top" or "roguelite_reroll" or "batch_search" or "multiple_spirits_weekly_battle_end" or "multiple_spirits_weekly_battle_start" or "arena_battle_end" or "arena_battle_start" or "event_point_gacha_do" or "fudai/fudai_draw" or "fudai/fudai_info" or "get_event_total_point_reward_all" or "get_event_total_point_reward" or "gain_free_item" or "pass_card/show_reward" or "pass_card/get_level_gift" or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "gacha_point_exchange" or "mini_game_top" or "get_series_battle_ranking_teaminfo" or "battle_pass_receive_reward" or "battle_pass_mission_end" or "mission_end" or "tower_unit_recovery" or "friend_get_history" or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
-        or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
+        or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update" or "get_history"
         or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
         or "user_twitter_info_update" or "user_google_info_delete" or "user_apple_info_delete" or "user_twitter_info_delete" or "lecture_room_unit_trust_up" or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
         or "lecture_room_update" or "lecture_room_unit_set" or "lecture_room_unit_expansion"
@@ -57,6 +57,7 @@ public sealed partial class OfflineServer
         "tutorial_first_gacha_confirm" => TutorialInventory(restore: true),
         "get_clear_history_teaminfo" => HistoryTeam(arguments),
         "get_clear_history_playerinfo" => HistoryPlayer(arguments),
+        "get_history" => ProfileHistory(),
         "friend_get_history" => HistoryPlayer(arguments, summaryOnly: true),
         "tower_unit_recovery" => RecoverTowerUnits(arguments),
         "mission_end" => ReceiveMission(arguments?.MissionClaim, arguments?.DailyLoginMission),

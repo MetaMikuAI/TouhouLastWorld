@@ -81,6 +81,10 @@ Check(fresh.Dispatch("gacha_do", 1).Status == 400, "insufficient currency");
 var gameRestart = new OfflineServer(directory + "-fresh", seed, "offline://resources/");
 gameRestart.Dispatch("game_init");
 var saved = gameRestart.Dispatch("login").Body!["user"]!;
+var profileHistory = gameRestart.Dispatch("get_history").Body!;
+Check(profileHistory["unit_get_count"]!.GetValue<int>() == 1
+    && profileHistory["quest_complete_count"]!.GetValue<int>() == 1,
+    "history counts unique partners and settled wins after relogin");
 Check(saved["gold"]!.GetValue<int>() == 5100 && saved["crystal"]!.GetValue<int>() == 0
     && saved["phantasm_point"]!["points"]!.GetValue<int>() == 90 && saved["exp"]!.GetValue<long>() == 25
     && saved["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3, "gameplay changes survive restart");
@@ -194,7 +198,7 @@ Console.WriteLine("Passed 7 preference and list response checks.");
 
 foreach (var (route, field) in new[]
 {
-    ("get_history", "bronze_trophy_count"), ("achievement_top", "achievement_list"),
+    ("get_history", "unit_get_count"), ("achievement_top", "achievement_list"),
     ("get_dispatch_list", "dispatch_list"), ("mission_top", "mission"),
     ("friend_get_candidate_list", "helper_list"),
     ("picture_book/get_user_picture_book_list", "user_completed_info"),
