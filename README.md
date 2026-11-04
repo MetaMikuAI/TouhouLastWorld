@@ -85,7 +85,7 @@
 | GetDispatchListRequest | 未确认 | 未实现 | — |
 | GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
 | GetEventTotalPointRewardRequest | 未确认 | 未实现 | — |
-| GetHistoryRequest | 未确认 | 未实现 | — |
+| GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 |
 | GetProfileSettingAPIRequest | 未确认 | 未实现 | — |
 | GetQuestClearedTeamInfoRequest | 未确认 | 未实现 | — |
 | GetRaidGaugeRequest | 未确认 | 未实现 | — |
