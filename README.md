@@ -120,7 +120,7 @@
 | LogoutRequest | 未确认 | 未实现 | — |
 | MailDeleteRequest | 未确认 | 未实现 | — |
 | MailReceiveRequest | 未确认 | 未实现 | — |
-| MailTopRequest | 未确认 | 未实现 | — |
+| MailTopRequest | mail_top | 最小响应 | 空列表；不含领取与删除 |
 | MiniGameRequest | 未确认 | 未实现 | — |
 | MissionEndRequest | 未确认 | 未实现 | — |
 | MissionTopRequest | 未确认 | 未实现 | — |

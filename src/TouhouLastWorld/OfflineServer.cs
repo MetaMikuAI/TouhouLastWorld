@@ -42,7 +42,7 @@ public sealed class OfflineServer
 
     public LocalReply Dispatch(string api, int? count = null, int? battleResult = null, int? gachaId = null, int? gachaButtonId = null, LocalArguments? arguments = null)
     {
-        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection" or "unit_new_update" or "picture_protection" or "picture_new_update"))
+        if (api is not ("game_init" or "version_get" or "user_create" or "login" or "check_user" or "battle_start" or "battle_end" or "gacha_do" or "gacha_top" or "home" or "check_conditional_pack" or "afk_top" or "unit_protection" or "unit_new_update" or "picture_protection" or "picture_new_update" or "mail_top"))
             return new(501, null, $"Offline API not implemented: {api}");
         if (api == "game_init") session = Guid.NewGuid().ToString("N");
         if (session is null) return new(401, null, "Offline game_init required.");
@@ -82,6 +82,7 @@ public sealed class OfflineServer
             },
             "user_create" => new() { ["device_id"] = account!.DeviceId },
             "check_user" => new(),
+            "mail_top" => new() { ["mail"] = new JsonArray() },
             "check_conditional_pack" => new()
             {
                 ["conditional_pack"] = new JsonArray(), ["is_ignore_check"] = 0
