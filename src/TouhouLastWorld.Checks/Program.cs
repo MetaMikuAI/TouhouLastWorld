@@ -3314,3 +3314,34 @@ Check(towerStartSaved["_local_tower_pending"]!["battle_id"]!.GetValue<int>() == 
     && JsonNode.DeepEquals(towerStartSaved["unit"], towerStartSeed["unit"]),
     "floor entry persists without changing completion or restoring units");
 Console.WriteLine("Passed 3 floor entry checks.");
+var towerEndEnemies = "100," + string.Join(",", Enumerable.Repeat("0", 25)) + "\n";
+var towerEndRule = new LocalTowerEnd(1, 101, 1, 1, 0, towerUnitCsv + ",\n", towerEndEnemies, new[] { 1L },
+    new[] { 100 }, new[] { new LocalInventoryReward(3, 0, 10, int.MaxValue) }, new[] { new LocalInventoryReward(3, 0, 2, int.MaxValue) });
+Check(towerStartReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndRule with { Enemies = "100,0" })).Status == 400
+    && towerStartReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndRule with { Units = "" })).Status == 400
+    && towerStartReload.PendingTowerId == 1,
+    "floor settlement rejects incomplete snapshots and retains its pending entry");
+var towerEndLoss = towerStartReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndRule)).Body!;
+var towerEndReload = new OfflineServer(towerStartDirectory, seed, "offline://resources/");
+towerEndReload.Dispatch("game_init");
+towerEndReload.Dispatch("login");
+Check(towerEndLoss["drop_list"]!.AsArray().Count == 0 && towerEndReload.PendingTowerId == 0
+    && towerEndReload.Dispatch("tower_top").Body!["enemy_battle_info"]!.GetValue<string>() == towerEndEnemies
+    && towerEndReload.Dispatch("get_tower_unit_info").Body!["tower_unit_info"]!.GetValue<string>() == towerEndRule.Units,
+    "floor loss preserves both snapshots across restart without granting rewards");
+towerEndReload.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { MaxFloor = 1 }));
+var towerEndWin = towerEndRule with { Result = 1, Enemies = "", Defeated = [] };
+Check(towerEndReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndWin with { FirstRewards = new[] { new LocalInventoryReward(3, 0, 10, 1) } })).Status == 409
+    && towerEndReload.PendingTowerId == 1 && towerEndReload.Dispatch("tower_top").Body!["cleared_floor"]!.GetValue<int>() == 0,
+    "floor reward capacity failure leaves snapshots, progress and pending entry untouched");
+var towerEndSuccess = towerEndReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndWin)).Body!;
+Check(towerEndSuccess["user_update"]!["tower"]!["cleared_floor"]!.GetValue<int>() == 1
+    && towerEndSuccess["drop_list"]![0]!["object_value"]!.GetValue<int>() == 10
+    && towerEndReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndWin)).Status == 409
+    && towerEndReload.Dispatch("tower_top").Body!["enemy_battle_info"]!.GetValue<string>() == "",
+    "floor victory grants once and clears enemy damage while preserving unit damage");
+Check(towerEndReload.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { MaxFloor = 2 })).Status == 409
+    && towerEndReload.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { MaxFloor = 1 })).Status == 0
+    && towerEndReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndWin)).Body!["drop_list"]![0]!["object_value"]!.GetValue<int>() == 2,
+    "only the completed maximum floor receives repetition rewards");
+Console.WriteLine("Passed 5 floor settlement checks.");

@@ -31,9 +31,9 @@ public sealed partial class OfflineServer
             ["user_update"] = new JsonObject { ["crystal"] = updated["crystal"]!.DeepClone(), ["unit"] = updated["unit"]!.DeepClone() } });
     }
 
-    private LocalReply TowerUnits()
+    private LocalReply TowerUnits(JsonNode? supplied = null)
     {
-        var snapshot = user["_local_tower_unit_info"];
+        var snapshot = supplied ?? user["_local_tower_unit_info"];
         if (snapshot == null)
             return new(0, new() { ["tower_unit_info"] = "" });
         if (snapshot is not JsonValue value || !value.TryGetValue<string>(out var csv))
@@ -65,7 +65,7 @@ public sealed partial class OfflineServer
         return new(0, new()
         {
             ["cleared_floor"] = floor, ["exist_data"] = exists,
-            ["remaining_recovery_count"] = RemainingTowerRecovery, ["enemy_battle_info"] = ""
+            ["remaining_recovery_count"] = RemainingTowerRecovery, ["enemy_battle_info"] = user["_local_tower_enemy_info"]?.DeepClone() ?? JsonValue.Create("")
         });
     }
 }

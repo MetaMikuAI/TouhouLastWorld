@@ -44,13 +44,14 @@ public partial class NetworkSystemPatch
         if (api == "battle_pass_receive_reward") arguments = ReadBattlePassRewards();
         if (api == "get_series_battle_ranking_teaminfo") arguments = ReadRankingHistory(request.TryCast<SeriesBattleRankingGetTeamInfoRequest>());
         if (api == "mini_game_top") arguments = new(Ids: MasterDB.This()?.MiniGame?.GetAll()?.ToArray().Select(row => (long)row.id).ToArray());
+        if (api == "tower_battle_end") arguments = ReadTowerEnd(request.TryCast<TowerBattleEndRequest>());
         if (api == "tower_battle_start")
         {
             var change = request.TryCast<TowerBattleStartRequest>();
             var master = MasterDB.This();
             var row = change == null ? null : master?.Tower?.Find(change.tower_master_id);
             if (row != null && row.battle_id == change!.battle_id)
-                arguments = new(TowerStart: new(row.id, row.battle_id, row.floor, change.team_number));
+                arguments = new(TowerStart: new(row.id, row.battle_id, row.floor, change.team_number, master!.Tower.ToList().ToArray().Max(entry => entry.floor)));
         }
         if (api == "series_battle_end") arguments = ReadSeriesEnd(request.TryCast<SeriesBattleEndRequest>());
         if (api == "series_battle_start") arguments = ReadSeriesStart(request.TryCast<SeriesBattleStartRequest>());
@@ -725,7 +726,7 @@ public partial class NetworkSystemPatch
                 PopupSystem.This()?.CreateMessage(reply.Error);
                 yield break;
             }
-            if (api is "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
+            if (api is "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
             {
                 var panel = UnityEngine.Object.FindObjectOfType<MissionBehavior>();
                 if ((api is "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward") && panel != null) panel.m_rcvflg = false;
