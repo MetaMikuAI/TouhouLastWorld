@@ -31,7 +31,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalSeriesTeam[]? SeriesTeams = null, LocalFoodPurchase? FoodPurchase = null, LocalFoodDistribution? FoodDistribution = null,
     LocalTrainingStart? Training = null, LocalTrainingMaterial[]? TrainingMaterials = null, LocalPointReset? PointReset = null,
     LocalPointAllocation? PointAllocation = null, LocalIdleSet? Idle = null, LocalMailRules? MailRules = null,
-    LocalBoxRenovation? Renovation = null);
+    LocalBoxRenovation? Renovation = null, LocalPointPurchase? PointPurchase = null);
 
 public sealed partial class OfflineServer
 {

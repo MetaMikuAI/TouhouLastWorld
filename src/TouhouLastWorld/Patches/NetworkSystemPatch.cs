@@ -44,6 +44,16 @@ public partial class NetworkSystemPatch
         }
         if (api == "friend_helper_select")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX);
+        if (api == "phantasm_point_buy")
+        {
+            var nativeUser = User.This();
+            var count = nativeUser?.phantasm_point?.purchase_count;
+            var price = count is >= 0 and < int.MaxValue ? MasterDB.This()?.PhantasmPointShop?.Find(count.Value + 1) : null;
+            var setting = MasterDB.This()?.Setting;
+            arguments = new LocalArguments(PointPurchase: nativeUser == null || price == null || setting == null || !count.HasValue
+                ? null : new(nativeUser.level, count.Value, price.consume_orb, setting.PHANTASM_POINT_BUY_BASE,
+                    setting.PHANTASM_POINT_BUY_CALC_VALUE, setting.PHANTASM_POINT_MAX));
+        }
         if (api == "gather_gold")
         {
             var level = User.This()?.level;

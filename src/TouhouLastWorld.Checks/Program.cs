@@ -1820,3 +1820,30 @@ Check(pointStartReload.Dispatch("phantasm_box_renovation_start", arguments: new(
     && pointStartReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
     "point renovation timer persists and completes with only one charge");
 Console.WriteLine("Passed 3 point renovation start checks.");
+
+var pointBuySeed = JsonNode.Parse(seed)!;
+pointBuySeed["orb"]!["free"] = 3;
+pointBuySeed["orb"]!["purchased"] = 7;
+var pointBuyDirectory = directory + "-point-buy";
+var pointBuyServer = new OfflineServer(pointBuyDirectory, pointBuySeed.ToJsonString(), "offline://resources/");
+pointBuyServer.Dispatch("game_init");
+pointBuyServer.Dispatch("login");
+Check(pointBuyServer.Dispatch("phantasm_point_buy").Status == 503
+    && pointBuyServer.Dispatch("phantasm_point_buy", arguments: new(PointPurchase: new(1, 1, 5, 10, 2, 999))).Status == 409,
+    "point purchase requires current price and count");
+Check(pointBuyServer.Dispatch("phantasm_point_buy", arguments: new(PointPurchase: new(1, 0, 11, 10, 2, 999))).Status == 409
+    && pointBuyServer.Dispatch("phantasm_point_buy", arguments: new(PointPurchase: new(1, 0, 5, 10, 2, 110))).Status == 409
+    && pointBuyServer.Dispatch("login").Body!["user"]!["phantasm_point"]!["purchase_count"]!.GetValue<int>() == 0,
+    "insufficient balance or capacity leaves purchase count unchanged");
+var pointBought = pointBuyServer.Dispatch("phantasm_point_buy", arguments: new(PointPurchase: new(1, 0, 5, 10, 2, 999))).Body!["user_update"]!;
+Check(pointBought["phantasm_point"]!["points"]!.GetValue<int>() == 112
+    && pointBought["phantasm_point"]!["purchase_count"]!.GetValue<int>() == 1
+    && pointBought["orb"]!["free"]!.GetValue<long>() == 0 && pointBought["orb"]!["purchased"]!.GetValue<long>() == 5,
+    "point purchase applies the level formula and spends free balance first");
+var pointBuyReload = new OfflineServer(pointBuyDirectory, seed, "offline://resources/");
+pointBuyReload.Dispatch("game_init");
+pointBuyReload.Dispatch("login");
+Check(pointBuyReload.Dispatch("phantasm_point_buy", arguments: new(PointPurchase: new(1, 0, 5, 10, 2, 999))).Status == 409
+    && pointBuyReload.Dispatch("login").Body!["user"]!["phantasm_point"]!["points"]!.GetValue<int>() == 112,
+    "point purchase state survives restart and rejects stale count");
+Console.WriteLine("Passed 4 point purchase checks.");
