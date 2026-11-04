@@ -22,10 +22,11 @@ public sealed partial class OfflineServer
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_approve" or "reset_point_allocation" or "allocate_points"
-        or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
+        or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "weekly_arena_top" => WeeklyOverview(),
         "weekly_arena_battle_score_reset" => ResetWeeklyScore(arguments?.Value),
         "friend_approve" => ApproveContactRequest(arguments),
         "friend_request_cancel" => CancelContactRequest(arguments),
@@ -122,6 +123,27 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply WeeklyOverview()
+    {
+        if (user["_local_weekly_arena"] is not JsonObject overview
+            || overview["custom_battle_id"]?.GetValue<int>() is not > 0
+            || overview["weekly_battle_data"] is not JsonObject battles)
+            return new(503, null, "Local weekly configuration unavailable.");
+        for (var number = 1; number <= 4; number++)
+        {
+            if (battles[$"battle_number{number}"] is not JsonObject battle
+                || battle["buff_role_type"] is not JsonArray || battle["wave_enemy_info"] is not JsonArray
+                || battle["unit_list"] is not JsonArray || battle["user_unit_list"] is not JsonArray)
+                return new(503, null, "Local weekly battle configuration incomplete.");
+        }
+        return new(0, new()
+        {
+            ["custom_battle_id"] = overview["custom_battle_id"]!.DeepClone(),
+            ["weekly_battle_data"] = battles.DeepClone(),
+            ["total_battle_score"] = overview["total_battle_score"]?.DeepClone() ?? JsonValue.Create(0)
+        });
+    }
 
     private LocalReply ResetWeeklyScore(int? number)
     {

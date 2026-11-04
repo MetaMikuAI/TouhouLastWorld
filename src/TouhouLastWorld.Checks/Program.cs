@@ -1176,3 +1176,31 @@ Check(resetWeekly["total_battle_score"]!.GetValue<int>() == 30 && resetWeeklyBat
 Check(resetWeeklyBattle["difficulty"]!.GetValue<int>() == 3 && resetWeeklyBattle["attack_count_score"]!.GetValue<int>() == 5,
     "weekly reset preserves difficulty and component scores");
 Console.WriteLine("Passed 4 weekly score reset checks.");
+Check(weeklyResetReload.Dispatch("weekly_arena_top").Status == 503,
+    "weekly overview rejects an incomplete local configuration");
+var weeklyOverviewSeed = weeklyResetSeed.DeepClone().AsObject();
+var weeklyOverviewData = weeklyOverviewSeed["_local_weekly_arena"]!.AsObject();
+weeklyOverviewData["custom_battle_id"] = 1;
+for (var number = 1; number <= 4; number++)
+{
+    weeklyOverviewData["weekly_battle_data"]![$"battle_number{number}"] = new JsonObject
+    {
+        ["total_score"] = number * 10, ["difficulty"] = 2,
+        ["buff_role_type"] = new JsonArray(), ["wave_enemy_info"] = new JsonArray(),
+        ["unit_list"] = new JsonArray(), ["user_unit_list"] = new JsonArray()
+    };
+}
+var weeklyOverview = new OfflineServer(directory + "-weekly-overview", weeklyOverviewSeed.ToJsonString(), "offline://resources/");
+weeklyOverview.Dispatch("game_init");
+weeklyOverview.Dispatch("login");
+var weeklySnapshot = weeklyOverview.Dispatch("weekly_arena_top").Body!;
+Check(weeklySnapshot["weekly_battle_data"]!.AsObject().Count == 4
+    && weeklySnapshot["custom_battle_id"]!.GetValue<int>() == 1, "weekly overview reads all stored battle configurations");
+weeklySnapshot["weekly_battle_data"]!["battle_number2"]!["total_score"] = 0;
+Check(weeklyOverview.Dispatch("weekly_arena_top").Body!["weekly_battle_data"]!["battle_number2"]!["total_score"]!.GetValue<int>() == 20,
+    "weekly overview returns an isolated snapshot");
+weeklyOverview.Dispatch("weekly_arena_battle_score_reset", arguments: new(Value: 2));
+var weeklyAfterReset = weeklyOverview.Dispatch("weekly_arena_top").Body!;
+Check(weeklyAfterReset["weekly_battle_data"]!["battle_number2"]!["total_score"]!.GetValue<int>() == 0
+    && weeklyAfterReset["total_battle_score"]!.GetValue<int>() == 30, "weekly overview reflects reset without lowering historical high score");
+Console.WriteLine("Passed 4 weekly overview checks.");

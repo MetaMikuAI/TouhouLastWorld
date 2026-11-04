@@ -241,4 +241,4 @@
 | VersusBattleStartRequest | 未确认 | 未实现 | — |
 | VotivePictureExchangeRequest | 未确认 | 未实现 | — |
 | WeeklyArenaBattleScoreResetRequest | weekly_arena_battle_score_reset | 业务实现 | 清零本地场次总分与参战编号；保留累计最高分、难度、分项与敌方配置，缺少场次返回错误；不生成周配置 |
-| WeeklyArenaTopRequest | 未确认 | 未实现 | — |
+| WeeklyArenaTopRequest | weekly_arena_top | 最小响应 | 读取本地四场配置与累计最高分；缺少配置返回 503，不生成敌方配置、不轮换周期、不验证资源完整性 |
