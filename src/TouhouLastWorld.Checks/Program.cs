@@ -1998,3 +1998,27 @@ Check(statReload.Dispatch("unit_spec_actualize", arguments: new(rankMaterialId, 
     && statReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["add_speed"]!.GetValue<int>() == 2,
     "strengthening persists and rejects stale stat snapshots");
 Console.WriteLine("Passed 4 strengthening checks.");
+
+var extraStatDirectory = directory + "-extra-stats";
+var extraStatServer = new OfflineServer(extraStatDirectory, statSeed.ToJsonString(), "offline://resources/");
+extraStatServer.Dispatch("game_init");
+extraStatServer.Dispatch("login");
+var extraStatRules = new LocalStatMaterial[] { new(71, 6, 1, 1, 0, 10), new(72, 4, 6, 1, 0, 4) };
+Check(extraStatServer.Dispatch("unit_extra_spec_actualize", arguments: new(rankMaterialId, StatMaterials: statRules)).Status == 503
+    && extraStatServer.Dispatch("unit_extra_spec_actualize", arguments: new(rankMaterialId, StatMaterials: [extraStatRules[0], extraStatRules[1] with { Maximum = 3 }])).Status == 409
+    && extraStatServer.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 10,
+    "extra strengthening enforces its own cost and all current caps before saving");
+var extraStatReply = extraStatServer.Dispatch("unit_extra_spec_actualize", arguments: new(rankMaterialId, StatMaterials: extraStatRules)).Body!["user_update"]!;
+Check(extraStatReply["unit"]!["unit_list"]![0]!["strong_fragrant_wood"]!["type_1"]!.GetValue<int>() == 6
+    && extraStatReply["unit"]!["unit_list"]![0]!["strong_fragrant_wood"]!["type_6"]!.GetValue<int>() == 4
+    && extraStatReply["unit"]!["unit_list"]![0]!["strong_fragrant_wood"]!["add_life_point"]!.GetValue<int>() == 6
+    && extraStatReply["unit"]!["unit_list"]![0]!["add_life_point"]!.GetValue<int>() == 0
+    && extraStatReply["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 4,
+    "extra strengthening updates serialized and derived extra values without changing base stats");
+var extraStatReload = new OfflineServer(extraStatDirectory, seed, "offline://resources/");
+extraStatReload.Dispatch("game_init");
+extraStatReload.Dispatch("login");
+Check(extraStatReload.Dispatch("unit_extra_spec_actualize", arguments: new(rankMaterialId, StatMaterials: extraStatRules)).Status == 409
+    && extraStatReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["strong_fragrant_wood"]!["type_6"]!.GetValue<int>() == 4,
+    "extra strengthening persists and rejects stale snapshots");
+Console.WriteLine("Passed 3 extra strengthening checks.");

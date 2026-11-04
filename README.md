@@ -209,7 +209,7 @@
 | UnitEquipCostumeRequest | unit_equip_costume | 业务实现 | 批量切换默认、已持有或当前外观，校验主数据归属；不新增持有，未接入特殊进阶解锁 |
 | UnitEquipPictureRequest | unit_equip_picture | 业务实现 | 局部更新 1–5 槽位与反向引用；校验持有、重复和占用，0 表示卸下；未校验槽位解锁 |
 | UnitEquipPictureResetRequest | unit_equip_picture_reset | 业务实现 | 清空持有实例的 5 个装备槽与装备反向引用；保留装备、保护状态及其他实例配置 |
-| UnitExtraSpecActualizeRequest | 未确认 | 未实现 | — |
+| UnitExtraSpecActualizeRequest | unit_extra_spec_actualize | 业务实现 | 独立保存六项额外属性、按一比一消耗对应材料；使用当前解锁上限及生命系数，整批校验后保存 |
 | UnitLevelLimitbreakRequest | unit_level_limitbreak | 业务实现 | 通用物品材料路径：按配置校验等级与数量，扣除金币和物品、提升突破阶数并增加命运值；暂不支持同名单位材料 |
 | UnitLimitbreakStrongFragrantWoodRequest | 未确认 | 未实现 | — |
 | UnitNewUpdateRequest | unit_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 |

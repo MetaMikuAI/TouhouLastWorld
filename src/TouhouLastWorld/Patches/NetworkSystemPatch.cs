@@ -41,6 +41,8 @@ public partial class NetworkSystemPatch
             arguments = ReadRankPromotion(request.TryCast<UnitRankPromoteRequest>());
         if (api == "unit_spec_actualize")
             arguments = ReadStrengthening(request.TryCast<UnitSpecActualizeRequest>());
+        if (api == "unit_extra_spec_actualize")
+            arguments = ReadExtraStrengthening(request.TryCast<UnitExtraSpecActualizeRequest>());
         if (api == "unit_level_limitbreak")
         {
             var change = request.TryCast<UnitLevelLimitbreakRequest>();
