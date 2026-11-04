@@ -381,3 +381,14 @@ var configuredUser = configuredHomeReload.Dispatch("login").Body!["user"]!;
 Check(configuredUser["home_unit_info"]!["random_select_mode"]!.GetValue<int>() == 1
     && configuredUser["unit"]!["unit_list"]![0]!["home_motion"]!.GetValue<int>() == 1, "home configuration and motion persist");
 Console.WriteLine("Passed 10 home configuration checks.");
+Check(flags.Dispatch("anniversary_info_get").Body!["mail_address"]!.GetValue<string>() == "", "empty anniversary contact");
+var personal = flags.Dispatch("personal_info_get").Body!;
+Check(new[] { "user_name", "zip_code", "address", "phone_number" }.All(field => personal[field]!.GetValue<string>() == ""),
+    "empty personal contact fields");
+var ranking = flags.Dispatch("get_series_battle_ranking_list").Body!;
+Check(ranking["ranking"]!.AsArray().Count == 0 && ranking["myrank"]!.AsArray().Count == 0, "no fabricated ranking");
+var gauge = flags.Dispatch("get_raid_gauge").Body!;
+Check(gauge["raid_gauge_list"]!.AsArray().Count == 0, "empty shared progress list");
+gauge["raid_gauge_list"]!.AsArray().Add(new JsonObject());
+Check(flags.Dispatch("get_raid_gauge").Body!["raid_gauge_list"]!.AsArray().Count == 0, "query templates remain isolated");
+Console.WriteLine("Passed 5 contact and progress query checks.");
