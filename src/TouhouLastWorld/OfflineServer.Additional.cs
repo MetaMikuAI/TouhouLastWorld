@@ -11,14 +11,15 @@ public sealed partial class OfflineServer
         or "get_series_battle_replay_info" or "update_series_battle_replay_info"
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
-        or "favorite_unit_update" || QueryTemplates.ContainsKey(api);
+        or "favorite_unit_update" or "update_home_motion_mode" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
         "favorite_unit_update" => UpdateHome(arguments?.Home),
         "home_select_unit_update" => SelectHomeUnit(arguments?.Value),
-        "unit_bgm_update" => SetUnitMusic(arguments),
+        "unit_bgm_update" => SetUnitPreference(arguments, "select_bgm"),
+        "update_home_motion_mode" => SetUnitPreference(arguments, "home_motion"),
         "home_bgm_update" => arguments?.Value is >= 0 ? SetUserInteger("select_bgm", arguments.Value.Value)
             : new(400, null, "Nonnegative music selection required."),
         "team_update" => UpdateTeam(arguments?.Team),

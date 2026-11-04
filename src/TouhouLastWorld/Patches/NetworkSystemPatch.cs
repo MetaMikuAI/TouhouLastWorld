@@ -51,6 +51,11 @@ public partial class NetworkSystemPatch
         }
         if (api == "home_bgm_update")
             arguments = new LocalArguments(Value: request.TryCast<HomeBGMUpdateRequest>()?.select_bgm_id);
+        if (api == "update_home_motion_mode")
+        {
+            var update = request.TryCast<UpdateHomeMotionModeRequest>();
+            arguments = update == null ? null : new LocalArguments(update.user_unit_id, update.mode);
+        }
         if (api == "unit_bgm_update")
         {
             var update = request.TryCast<UnitBGMUpdateRequest>();
