@@ -45,6 +45,19 @@ public partial class NetworkSystemPatch
             arguments = ReadExtraStrengthening(request.TryCast<UnitExtraSpecActualizeRequest>());
         if (api == "limitbreak_strong_fragrantwood")
             arguments = ReadStatUnlock(request.TryCast<UnitLimitbreakStrongFragrantWoodRequest>());
+        if (api == "picture_spec_actualize")
+        {
+            var change = request.TryCast<PictureSpecActualizeRequest>();
+            var picture = change == null ? null : User.This()?.picture?.Find(change.user_picture_id);
+            arguments = new LocalArguments(change?.user_picture_id);
+            if (picture != null && picture.spec_actualize >= 0 && picture.spec_actualize < picture.spec_actualize_limit)
+            {
+                var status = new PictureStatus(picture.picture_id);
+                var next = MasterDB.This()?.PictureSpecActualize?.Find(status.GetPictureType(), status.GetRare(), picture.spec_actualize + 1);
+                if (next != null) arguments = arguments with { PictureGrowth = new(picture.picture_id, picture.spec_actualize,
+                    next.spec_actualize, picture.spec_actualize_limit, next.item_id, next.item_value, next.consume_gold) };
+            }
+        }
         if (api == "unit_level_limitbreak")
         {
             var change = request.TryCast<UnitLevelLimitbreakRequest>();

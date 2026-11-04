@@ -2047,3 +2047,33 @@ Check(unlockReload.Dispatch("limitbreak_strong_fragrantwood", arguments: new(ran
     && unlockReload.Dispatch("login").Body!["user"]!["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2,
     "stat unlock persists and rejects duplicate advancement");
 Console.WriteLine("Passed 3 stat unlock checks.");
+
+var pictureGrowthSeed = JsonNode.Parse(seed)!;
+pictureGrowthSeed["picture"]!["picture_list"] = new JsonArray(new JsonObject
+{
+    ["user_picture_id"] = 700L, ["picture_id"] = 71, ["spec_actualize"] = 0,
+    ["potential_limitbreak"] = 1, ["equip_user_unit_id"] = rankMaterialId
+});
+pictureGrowthSeed["item"]!["item_list"] = new JsonArray(new JsonObject { ["item_id"] = 72, ["num"] = 5 });
+var pictureGrowthDirectory = directory + "-picture-growth";
+var pictureGrowthServer = new OfflineServer(pictureGrowthDirectory, pictureGrowthSeed.ToJsonString(), "offline://resources/");
+pictureGrowthServer.Dispatch("game_init");
+pictureGrowthServer.Dispatch("login");
+var pictureGrowthRule = new LocalPictureGrowth(71, 0, 1, 5, 72, 3, 100);
+Check(pictureGrowthServer.Dispatch("picture_spec_actualize", arguments: new(700, PictureGrowth: pictureGrowthRule with { Maximum = 0 })).Status == 503
+    && pictureGrowthServer.Dispatch("picture_spec_actualize", arguments: new(700, PictureGrowth: pictureGrowthRule with { ItemCount = 6 })).Status == 409
+    && pictureGrowthServer.Dispatch("picture_spec_actualize", arguments: new(700, PictureGrowth: pictureGrowthRule with { GoldCost = 6000 })).Status == 409,
+    "equipment growth checks cap and both costs before saving");
+var pictureGrown = pictureGrowthServer.Dispatch("picture_spec_actualize", arguments: new(700, PictureGrowth: pictureGrowthRule)).Body!["user_update"]!;
+Check(pictureGrown["gold"]!.GetValue<int>() == 4900 && pictureGrown["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 2
+    && pictureGrown["picture"]!["picture_list"]![0]!["spec_actualize"]!.GetValue<int>() == 1
+    && pictureGrown["picture"]!["picture_list"]![0]!["potential_limitbreak"]!.GetValue<int>() == 1
+    && pictureGrown["picture"]!["picture_list"]![0]!["equip_user_unit_id"]!.GetValue<long>() == rankMaterialId,
+    "equipment growth consumes configured costs and preserves assignment and other growth");
+var pictureGrowthReload = new OfflineServer(pictureGrowthDirectory, seed, "offline://resources/");
+pictureGrowthReload.Dispatch("game_init");
+pictureGrowthReload.Dispatch("login");
+Check(pictureGrowthReload.Dispatch("picture_spec_actualize", arguments: new(700, PictureGrowth: pictureGrowthRule)).Status == 409
+    && pictureGrowthReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
+    "equipment growth persists and rejects stale advancement");
+Console.WriteLine("Passed 3 equipment growth checks.");
