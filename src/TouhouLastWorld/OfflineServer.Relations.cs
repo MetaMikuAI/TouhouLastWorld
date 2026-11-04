@@ -4,6 +4,14 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply ClearLocalRelation(string field)
+    {
+        var updated = user.DeepClone().AsObject();
+        updated[field] = 0;
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { [field] = 0 } });
+    }
+
     private LocalReply DeleteLocalTwitterRelation(string? identity)
     {
         if (string.IsNullOrWhiteSpace(identity)) return new(400, null, "Identity required.");

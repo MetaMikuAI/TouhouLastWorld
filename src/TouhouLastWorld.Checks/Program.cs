@@ -2238,3 +2238,20 @@ Check(relationReload.Dispatch("login").Body!["user"]!["twitter_info"]!["is_relat
     && relationReload.Dispatch("user_twitter_info_delete", arguments: new(Text: "local-test-identity")).Status == 0,
     "local unlink persists and repeated clearing is harmless");
 Console.WriteLine("Passed 3 local relation checks.");
+
+var appleRelationSeed = JsonNode.Parse(seed)!;
+appleRelationSeed["apple_relation"] = 1;
+appleRelationSeed["google_relation"] = 1;
+var appleRelationDirectory = directory + "-apple-relation";
+var appleRelationServer = new OfflineServer(appleRelationDirectory, appleRelationSeed.ToJsonString(), "offline://resources/");
+appleRelationServer.Dispatch("game_init");
+appleRelationServer.Dispatch("login");
+Check(appleRelationServer.Dispatch("user_apple_info_delete").Body!["user_update"]!["apple_relation"]!.GetValue<int>() == 0
+    && appleRelationServer.Dispatch("login").Body!["user"]!["google_relation"]!.GetValue<int>() == 1,
+    "local Apple unlink clears only its own relation");
+var appleRelationReload = new OfflineServer(appleRelationDirectory, seed, "offline://resources/");
+appleRelationReload.Dispatch("game_init");
+Check(appleRelationReload.Dispatch("login").Body!["user"]!["apple_relation"]!.GetValue<int>() == 0
+    && appleRelationReload.Dispatch("user_apple_info_delete").Status == 0,
+    "local Apple unlink persists and is repeatable");
+Console.WriteLine("Passed 2 local Apple relation checks.");

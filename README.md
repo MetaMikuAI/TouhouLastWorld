@@ -229,7 +229,7 @@
 | UpdateProfileSettingAPIRequest | update_profile_setting | 业务实现 | 校验布局 JSON 字段类型并原样保存；不校验素材所有权，不授予素材 |
 | UpdateVersusReplayInfoRequest | update_multiple_spirits_weekly_replay_info | 业务实现 | 校验目标及非负等级，原样保存规则和重放；空内容删除，不验证战斗合法性 |
 | UpdateVoiceVersionRequest | update_voice_version | 最小响应 | 接收无参数通知并返回空响应；不修改资源版本或触发下载 |
-| UserAppleInfoDeleteRequest | 未确认 | 未实现 | — |
+| UserAppleInfoDeleteRequest | user_apple_info_delete | 业务实现 | 清除并保存本地 Apple 关联标记；不验证令牌、不撤销外部授权 |
 | UserAppleInfoUpdateRequest | 未确认 | 未实现 | — |
 | UserCreateRequest | user_create | 业务实现 | 本地身份创建、重复调用保留存档 |
 | UserGoogleInfoDeleteRequest | 未确认 | 未实现 | — |
