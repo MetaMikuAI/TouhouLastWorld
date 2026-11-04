@@ -19,7 +19,7 @@
 | BatchSearchRequest | 未确认 | 未实现 | — |
 | BattleEndRequest | battle_end | 最小响应 | 固定奖励，不含完整结算 |
 | BattlePassMissionEndRequest | battle_pass_mission_end | 业务实现 | 单个或批量领取本地已完成任务经验，按主表累计阈值升级并保存领取记录；仅纯经验任务，任务进度生成、附加奖励与周期重置未实现 |
-| BattlePassReceiveRewardRequest | 未确认 | 未实现 | — |
+| BattlePassReceiveRewardRequest | battle_pass_receive_reward | 业务实现 | 按本地档位状态领取已达等级的固定金币/晶体/物品，分别保存三档进度；要求完整等级定义，整批回滚，随机奖励与档位购买未实现 |
 | BattlePassTopRequest | battle_pass_top | 最小响应 | 返回本地任务及领取等级快照，默认空；不生成任务或奖励 |
 | BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 |
 | BattleStartRequest | battle_start | 最小响应 | 空响应 |

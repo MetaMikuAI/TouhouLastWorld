@@ -5,13 +5,65 @@ namespace TouhouLastWorld;
 public sealed record LocalBattlePassTask(int Id, int Required, int Experience, bool Active);
 public sealed record LocalBattlePassClaim(int Id, int All, int PassId, bool Active,
     LocalBattlePassTask[] Tasks, Dictionary<int, int> Levels);
+public sealed record LocalBattlePassLevelReward(int Level, LocalInventoryReward[]? Normal,
+    LocalInventoryReward[]? Premium, LocalInventoryReward[]? Premium2);
+public sealed record LocalBattlePassRewards(int PassId, bool Active, LocalBattlePassLevelReward[] Levels);
 
 public sealed partial class OfflineServer
 {
+    private LocalReply ReceiveBattlePassRewards(LocalBattlePassRewards? request)
+    {
+        var updated = user.DeepClone().AsObject();
+        if (request is null || !request.Active || request.PassId <= 0
+            || updated["battle_pass"] is not JsonObject status || status["battle_pass_id"]?.GetValue<int>() != request.PassId
+            || updated["_local_battle_pass_top"] is not JsonObject top)
+            return new(503, null, "Stage reward state unavailable.");
+        var level = status["battle_pass_level"]?.GetValue<int>() ?? -1;
+        var fields = new[] { "normal_received_reward_level", "premium_received_reward_level_1", "premium_received_reward_level_2" };
+        var enabled = new[] { true, (status["is_premium"]?.GetValue<int>() ?? 0) > 0, (status["is_premium_2"]?.GetValue<int>() ?? 0) > 0 };
+        var result = new JsonObject { ["not_receive_message"] = "" };
+        var rewards = new JsonArray();
+        var changed = false;
+        for (var track = 0; track < fields.Length; track++)
+        {
+            var field = fields[track];
+            var received = top[field]?.GetValue<int>() ?? 0;
+            if (received < 0 || level < received || level < 0) return new(503, null, "Invalid stage claim progress.");
+            if (enabled[track])
+            {
+                var pending = request.Levels.Where(row => row.Level > received && row.Level <= level).OrderBy(row => row.Level).ToArray();
+                if (pending.Length != level - received || pending.Where((row, index) => row.Level != received + index + 1).Any())
+                    return new(503, null, "Stage reward levels unavailable.");
+                foreach (var row in pending)
+                {
+                    var grants = track switch { 0 => row.Normal, 1 => row.Premium, _ => row.Premium2 };
+                    if (grants is null) return new(503, null, "Stage reward group unsupported.");
+                    foreach (var grant in grants)
+                    {
+                        var error = ApplyInventoryReward(updated, grant);
+                        if (error is not null) return error;
+                        rewards.Add(new JsonObject { ["object_id"] = grant.Id, ["object_type"] = grant.Type, ["object_value"] = grant.Count });
+                    }
+                }
+                if (received != level) changed = true;
+                received = level;
+                top[field] = received;
+            }
+            result[field] = received;
+        }
+        if (changed) Save(updated);
+        result["received_reward_list"] = rewards;
+        result["user_update"] = new JsonObject { ["gold"] = updated["gold"]!.DeepClone(),
+            ["crystal"] = updated["crystal"]!.DeepClone(), ["item"] = updated["item"]!.DeepClone() };
+        return new(0, result);
+    }
+
     private LocalReply BattlePassOverview()
     {
         var body = QueryTemplates["battle_pass_top"].DeepClone().AsObject();
-        if (user["_local_battle_pass_top"] is JsonObject saved) body = saved.DeepClone().AsObject();
+        if (user["_local_battle_pass_top"] is JsonObject saved)
+            foreach (var field in body.Select(pair => pair.Key).ToArray())
+                if (saved[field] is { } value) body[field] = value.DeepClone();
         return new(0, body);
     }
 

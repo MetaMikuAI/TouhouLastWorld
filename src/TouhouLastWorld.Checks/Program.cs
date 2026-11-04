@@ -3112,3 +3112,33 @@ Check(stageReload.Dispatch("battle_pass_mission_end", arguments: new(BattlePassC
     && stageReload.Dispatch("battle_pass_mission_end", arguments: new(BattlePassClaim: stageClaim)).Body!["user_update"]!["battle_pass"]!["battle_pass_exp"]!.GetValue<int>() == 250,
     "stage claims remain consumed after restart and cannot duplicate experience");
 Console.WriteLine("Passed 3 stage mission checks.");
+var stageRewardSeed = JsonNode.Parse(seed)!;
+stageRewardSeed["battle_pass"] = new JsonObject { ["battle_pass_id"] = 7, ["battle_pass_level"] = 1,
+    ["battle_pass_exp"] = 0, ["is_premium"] = 1, ["is_premium_2"] = 0 };
+stageRewardSeed["_local_battle_pass_top"] = new JsonObject { ["normal_received_reward_level"] = 0,
+    ["premium_received_reward_level_1"] = 0, ["premium_received_reward_level_2"] = 0 };
+var stageRewardDirectory = directory + "-stage-rewards";
+var stageRewardServer = new OfflineServer(stageRewardDirectory, stageRewardSeed.ToJsonString(), "offline://resources/");
+stageRewardServer.Dispatch("game_init");
+stageRewardServer.Dispatch("login");
+var stageRewardRule = new LocalBattlePassRewards(7, true, new[] { new LocalBattlePassLevelReward(1,
+    new[] { new LocalInventoryReward(3, 0, 100, 10000) },
+    new[] { new LocalInventoryReward(12, 99990, 3, 2) }, null) });
+Check(stageRewardServer.Dispatch("battle_pass_receive_reward", arguments: new(BattlePassRewards: stageRewardRule)).Status == 409
+    && stageRewardServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000
+    && stageRewardServer.Dispatch("battle_pass_top").Body!["normal_received_reward_level"]!.GetValue<int>() == 0,
+    "reward track failure rolls back earlier grants and claim progress");
+stageRewardRule.Levels[0] = stageRewardRule.Levels[0] with { Premium = new[] { new LocalInventoryReward(12, 99990, 3, 100) } };
+var stageRewards = stageRewardServer.Dispatch("battle_pass_receive_reward", arguments: new(BattlePassRewards: stageRewardRule)).Body!;
+Check(stageRewards["received_reward_list"]!.AsArray().Count == 2
+    && stageRewards["normal_received_reward_level"]!.GetValue<int>() == 1
+    && stageRewards["premium_received_reward_level_1"]!.GetValue<int>() == 1
+    && stageRewards["premium_received_reward_level_2"]!.GetValue<int>() == 0,
+    "stage rewards advance only entitled tracks and grant their inventory");
+var stageRewardReload = new OfflineServer(stageRewardDirectory, seed, "offline://resources/");
+stageRewardReload.Dispatch("game_init");
+stageRewardReload.Dispatch("login");
+Check(stageRewardReload.Dispatch("battle_pass_receive_reward", arguments: new(BattlePassRewards: stageRewardRule)).Body!["received_reward_list"]!.AsArray().Count == 0
+    && stageRewardReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5100,
+    "stage reward progress persists and prevents duplicate grants");
+Console.WriteLine("Passed 3 stage reward checks.");

@@ -44,7 +44,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalIntroGrant? IntroGrant = null, LocalHistoryQuery? HistoryQuery = null,
     LocalHistoryDefinitions? HistoryDefinitions = null, LocalUnitRecycle? UnitRecycle = null,
     LocalDispatchSettlement? DispatchSettlement = null, LocalRetryFix? RetryFix = null, LocalMissionClaim? MissionClaim = null,
-    LocalBattlePassClaim? BattlePassClaim = null);
+    LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null);
 
 public sealed partial class OfflineServer
 {

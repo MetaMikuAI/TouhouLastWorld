@@ -4,6 +4,33 @@ namespace TouhouLastWorld.Patches;
 
 public partial class NetworkSystemPatch
 {
+    private static LocalArguments? ReadBattlePassRewards()
+    {
+        var master = MasterDB.This();
+        var current = User.This()?.battle_pass;
+        var pass = current == null ? null : master?.BattlePass?.Find(current.battle_pass_id);
+        var levels = master?.BattlePassLevelReward?.ToList()?.ToArray();
+        var rewards = master?.BattlePassReward?.ToList()?.ToArray();
+        var setting = master?.Setting;
+        var time = GameSystem.This()?.Time;
+        if (pass == null || levels == null || rewards == null || setting == null || time == null) return null;
+        LocalInventoryReward[]? Group(int id)
+        {
+            if (id == 0) return Array.Empty<LocalInventoryReward>();
+            var entries = rewards.Where(row => row.battle_pass_reward_group_id == id).ToArray();
+            if (entries.Length != 1 || entries[0].custom_parameter != 0) return null;
+            var reward = entries[0];
+            return new[] { new LocalInventoryReward(reward.object_type, reward.object_id, reward.object_value, reward.object_type switch
+            {
+                3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
+                12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX, _ => 0
+            }) };
+        }
+        return new(BattlePassRewards: new(pass.id, time.IsActiveDate(pass.start_at, pass.end_at),
+            levels.Where(row => row.reward_set_id == pass.reward_set_id).Select(row => new LocalBattlePassLevelReward(row.level,
+                Group(row.normal_reward_group_id), Group(row.premium_reward_group_id), Group(row.premium_reward_group_id_2))).ToArray()));
+    }
+
     private static LocalArguments? ReadBattlePassClaim(BattlePassMissionEndRequest? request)
     {
         if (request == null) return null;
