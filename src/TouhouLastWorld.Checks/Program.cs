@@ -3596,3 +3596,50 @@ Check(versusRulesServer.Dispatch("multiple_spirits_weekly_battle_end", arguments
     && versusRulesServer.Dispatch("multiple_spirits_weekly_battle_end", arguments: new(VersusEnd: versusExtraEnd)).Status == 409,
     "defeat consumes the challenge without requiring rewards or granting progress");
 Console.WriteLine("Passed 6 versus settlement checks.");
+
+var batchSeed = JsonNode.Parse(seed)!;
+var batchUnit = batchSeed["unit"]!["unit_list"]![0]!["unit_id"]!.GetValue<int>();
+batchSeed["character_quest_list"] = new JsonArray(
+    new JsonObject { ["character_quest_id"] = 101, ["count"] = 1, ["lunatic"] = new JsonObject { ["status"] = 3 } },
+    new JsonObject { ["character_quest_id"] = 102, ["count"] = 0, ["lunatic"] = new JsonObject { ["status"] = 3 } });
+batchSeed["_local_batch_search_rewards"] = new JsonObject {
+    ["101"] = new JsonObject { ["count"] = 1, ["runs"] = new JsonArray(
+        new JsonArray(new JsonObject { ["object_type"] = 3, ["object_id"] = 0, ["object_value"] = 5 }),
+        new JsonArray(new JsonObject { ["object_type"] = 6, ["object_id"] = 0, ["object_value"] = 2 })) },
+    ["102"] = new JsonObject { ["count"] = 0, ["runs"] = new JsonArray(
+        new JsonArray(new JsonObject { ["object_type"] = 3, ["object_id"] = 0, ["object_value"] = 7 })) } };
+var batchDirectory = directory + "-batch";
+var batchServer = new OfflineServer(batchDirectory, batchSeed.ToJsonString(), "offline://resources/");
+batchServer.Dispatch("game_init");
+batchServer.Dispatch("login");
+var batchRule = new LocalBatchSearch([new(101, batchUnit, 3, true), new(102, batchUnit, 1, true)],
+    [new(3, 0, 0, 100000), new(6, 0, 0, 100000)]);
+Check(batchServer.Dispatch("batch_search", arguments: new(Batch: batchRule with { Quests = [batchRule.Quests[0], batchRule.Quests[0]] })).Status == 400
+    && batchServer.Dispatch("batch_search", arguments: new(Batch: batchRule with { Quests = [batchRule.Quests[0] with { Eligible = false }] })).Status == 409,
+    "batch duplicate selection and ineligible members reject without consuming attempts");
+Check(batchServer.Dispatch("batch_search", arguments: new(Batch: batchRule with {
+        Quests = [batchRule.Quests[0], batchRule.Quests[1] with { Limit = 2 }] })).Status == 503
+    && batchServer.Dispatch("batch_search", arguments: new(Batch: batchRule with {
+        Rewards = [batchRule.Rewards[0], new(6, 0, 0, 1)] })).Status == 409,
+    "later missing outcomes and reward capacity failures roll back the complete batch");
+var batchReply = batchServer.Dispatch("batch_search", arguments: new(Batch: batchRule));
+Check(batchReply.Status == 0 && batchReply.Body!["drop_list"]!.AsArray().Count == 3
+    && batchReply.Body["user_update"]!["gold"]!.GetValue<int>() == batchSeed["gold"]!.GetValue<int>() + 12
+    && batchReply.Body["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 64
+    && batchReply.Body["user_update"]!["character_quest_list"]![0]!["count"]!.GetValue<int>() == 3,
+    "batch grants prepared outcomes and charges twelve points per remaining attempt exactly once");
+var batchReload = new OfflineServer(batchDirectory, seed, "offline://resources/");
+batchReload.Dispatch("game_init");
+var batchSaved = batchReload.Dispatch("login").Body!["user"]!;
+Check(batchSaved["_local_batch_search_rewards"]!.AsObject().Count == 0
+    && batchReload.Dispatch("batch_search", arguments: new(Batch: batchRule)).Status == 409,
+    "consumed outcomes and attempt counts survive restart and reject repeated batches");
+var batchPoorSeed = batchSeed.DeepClone();
+batchPoorSeed["phantasm_point"]!["points"] = 35;
+var batchPoorServer = new OfflineServer(directory + "-batch-poor", batchPoorSeed.ToJsonString(), "offline://resources/");
+batchPoorServer.Dispatch("game_init");
+batchPoorServer.Dispatch("login");
+Check(batchPoorServer.Dispatch("batch_search", arguments: new(Batch: batchRule)).Status == 409
+    && batchPoorServer.Dispatch("batch_search", arguments: new(Batch: batchRule with { Quests = [batchRule.Quests[0]] })).Body!["drop_list"]!.AsArray().Count == 2,
+    "insufficient balance preserves prepared rewards for a smaller affordable batch");
+Console.WriteLine("Passed 5 batch settlement checks.");

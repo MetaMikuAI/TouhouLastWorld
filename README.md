@@ -16,7 +16,7 @@
 | ArenaBattleStartRequest | arena_battle_start | 业务实现 | 校验主表、本地入场规则、队伍及周常跨场成员限制，按配置扣点并保存待结算状态；重试不重复扣点，入场规则自动生成及结算未实现 |
 | AutoReplayEndRequest | 未确认 | 未实现 | — |
 | AutoReplayStartRequest | auto_replay_start | 最小响应 | 无运行任务时返回原生“未启动”状态，不扣费；已有任务拒绝覆盖；后台执行与奖励结算尚未实现 |
-| BatchSearchRequest | 未确认 | 未实现 | — |
+| BatchSearchRequest | batch_search | 业务实现 | 校验成员资格及最高难度完成状态，按主表与活动剩余次数每次扣 12 点，原子领取本地预置金币/晶体/物品结果并更新次数；随机结果生成、每日重置未实现 |
 | BattleEndRequest | battle_end | 最小响应 | 固定奖励，不含完整结算 |
 | BattlePassMissionEndRequest | battle_pass_mission_end | 业务实现 | 单个或批量领取本地已完成任务经验，按主表累计阈值升级并保存领取记录；仅纯经验任务，任务进度生成、附加奖励与周期重置未实现 |
 | BattlePassReceiveRewardRequest | battle_pass_receive_reward | 业务实现 | 按本地档位状态领取已达等级的固定金币/晶体/物品，分别保存三档进度；要求完整等级定义，整批回滚，随机奖励与档位购买未实现 |
