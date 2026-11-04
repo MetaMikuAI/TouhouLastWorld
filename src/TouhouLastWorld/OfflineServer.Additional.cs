@@ -4,11 +4,12 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
-    private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" or "set_age" || QueryTemplates.ContainsKey(api);
+    private static bool SupportsAdditional(string api) => api is "tutorial_update" or "logout" or "set_age" or "friend/search" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
         "tutorial_update" => UpdateProgress(arguments?.Value),
+        "friend/search" => new(2000, null, "No matching local contact."),
         "set_age" => arguments?.Value is >= 1 and <= 3
             ? SetUserInteger("age_limit_type", arguments.Value.Value)
             : new(400, null, "Age category must be 1, 2 or 3."),

@@ -70,7 +70,7 @@
 | FriendRefuseRequest | 未确认 | 未实现 | — |
 | FriendRequestCancelRequest | 未确认 | 未实现 | — |
 | FriendRequestRequest | 未确认 | 未实现 | — |
-| FriendSearchRequest | 未确认 | 未实现 | — |
+| FriendSearchRequest | friend/search | 最小响应 | 本地无远端用户目录，返回客户端无匹配状态 2000 |
 | FriendSettingHelperRequest | 未确认 | 未实现 | — |
 | FriendTopRequest | friend_top | 最小响应 | 联系人、申请和待确认列表为空；未设置助战 |
 | GachaDoRequest | gacha_do | 业务实现 | 仅固定本地池：扣费、入库、保存 |
