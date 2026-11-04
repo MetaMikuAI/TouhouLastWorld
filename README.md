@@ -81,7 +81,7 @@
 | GameInitRequest | game_init | 业务实现 | 本地会话与入口 |
 | GatherGoldRequest | 未确认 | 未实现 | — |
 | GatherPhantasmPointRequest | 未确认 | 未实现 | — |
-| GetAutoReplayInfoRequest | 未确认 | 未实现 | — |
+| GetAutoReplayInfoRequest | get_auto_replay_info | 最小响应 | 零值摘要；不含执行与胜率计算 |
 | GetDispatchListRequest | get_dispatch_list | 最小响应 | 空派遣列表；不含派遣开始与结算 |
 | GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
 | GetEventTotalPointRewardRequest | 未确认 | 未实现 | — |
