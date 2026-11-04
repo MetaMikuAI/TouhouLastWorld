@@ -6,6 +6,15 @@ public sealed partial class OfflineServer
 {
     private static readonly Dictionary<string, JsonObject> QueryTemplates = new()
     {
+        ["battle_pass_top"] = new()
+        {
+            ["battle_pass_mission"] = new JsonObject
+            {
+                ["unlock_list"] = new JsonArray(), ["clear_list"] = new JsonArray(), ["received_list"] = new JsonArray()
+            },
+            ["normal_received_reward_level"] = 0, ["premium_received_reward_level_1"] = 0,
+            ["premium_received_reward_level_2"] = 0
+        },
         ["multiple_spirits_weekly_top"] = new() { ["clear_info"] = new JsonArray() },
         ["get_raid_gauge"] = new() { ["raid_gauge_list"] = new JsonArray() },
         ["get_series_battle_ranking_list"] = new() { ["ranking"] = new JsonArray(), ["myrank"] = new JsonArray() },
