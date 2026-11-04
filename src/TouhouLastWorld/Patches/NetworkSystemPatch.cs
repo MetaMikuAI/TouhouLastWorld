@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "comic_read_end")
+        {
+            var pages = request.TryCast<ComicReadEndRequest>();
+            arguments = pages == null ? null : new LocalArguments(pages.comic_id, pages.page_number);
+        }
         if (api == "roguelite_top")
             arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.MAX_DECK_NO);
         if (api == "roguelite_deck_call")

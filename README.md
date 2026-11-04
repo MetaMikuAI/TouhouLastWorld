@@ -35,7 +35,7 @@
 | CollectRewardRequest | 未确认 | 未实现 | — |
 | Comic.UserInfoUpdateRequest | user_info_update | 业务实现 | 单独或同时更新两个名称；基础文本校验、原子保存，不含远端文本审核 |
 | ComicGetPagesRequest | 未确认 | 未实现 | — |
-| ComicReadEndRequest | 未确认 | 未实现 | — |
+| ComicReadEndRequest | comic_read_end | 业务实现 | 保存最大已读页数，拒绝未持有条目和超出可读范围的页数；不发放奖励 |
 | DailyArenaTopRequest | 未确认 | 未实现 | — |
 | DeleteAccountRequest | 未确认 | 未实现 | — |
 | DispatchBulkEndRequest | 未确认 | 未实现 | — |
