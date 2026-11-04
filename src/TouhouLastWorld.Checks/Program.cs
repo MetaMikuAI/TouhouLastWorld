@@ -2551,3 +2551,29 @@ Check(passShopReload.Dispatch("pass_card/buy_goods", arguments: new(Value: 8, Pa
     && passShopReload.Dispatch("pass_card/show_shop").Body!["user_pass_card"]!["coin"]!.GetValue<int>() == 5,
     "pass shop purchase limit and balance survive restart");
 Console.WriteLine("Passed 3 pass shop checks.");
+
+var passGiftSeed = passSeed.DeepClone();
+passGiftSeed["_local_pass_card"]!["level"] = 70;
+passGiftSeed["_local_pass_card"]!["is_had_gift"] = 0;
+passGiftSeed["orb"]!["free"] = 100L;
+passGiftSeed["orb"]!["purchased"] = 100L;
+var passGiftDirectory = directory + "-pass-gift";
+var passGiftServer = new OfflineServer(passGiftDirectory, passGiftSeed.ToJsonString(), "offline://resources/");
+passGiftServer.Dispatch("game_init");
+passGiftServer.Dispatch("login");
+Check(passGiftServer.Dispatch("pass_card/get_level_gift").Status == 503,
+    "level gift requires reward definitions before charging");
+var passGiftReply = passGiftServer.Dispatch("pass_card/get_level_gift", arguments: new(Value: 1, PassRewards: passRewardRules)).Body!;
+Check(passGiftReply["user_pass_card"]!["level"]!.GetValue<int>() == 80
+    && passGiftReply["user_pass_card"]!["is_had_gift"]!.GetValue<int>() == 1
+    && passGiftReply["user_pass_card"]!["current_exp"]!.GetValue<int>() == 140
+    && passGiftReply["user_update"]!["orb"]!["free"]!.GetValue<long>() == 0
+    && passGiftReply["user_update"]!["orb"]!["purchased"]!.GetValue<long>() == 50,
+    "level gift uses fixed pricing and caps gained levels while preserving experience");
+var passGiftReload = new OfflineServer(passGiftDirectory, seed, "offline://resources/");
+passGiftReload.Dispatch("game_init");
+passGiftReload.Dispatch("login");
+Check(passGiftReload.Dispatch("pass_card/get_level_gift", arguments: new(PassRewards: passRewardRules)).Status == 409
+    && passGiftReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 50,
+    "level gift purchase persists and cannot charge twice");
+Console.WriteLine("Passed 3 level gift checks.");

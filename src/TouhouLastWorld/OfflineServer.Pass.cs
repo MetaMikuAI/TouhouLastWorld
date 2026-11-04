@@ -36,11 +36,11 @@ public sealed partial class OfflineServer
         });
     }
 
-    private LocalReply BuyPassLevels(LocalArguments? request)
+    private LocalReply BuyPassLevels(LocalArguments? request, bool gift = false)
     {
-        if (request?.Value is null or <= 0 || request.Value % 20 != 0)
+        if (!gift && (request?.Value is null or <= 0 || request.Value % 20 != 0))
             return new(400, null, "Level purchase requires multiples of twenty.");
-        var rules = request.PassRewards;
+        var rules = request?.PassRewards;
         if (rules is null || rules.Length == 0 || rules.Any(row => row.Level is < 1 or > 80))
             return new(503, null, "Pass level definitions unavailable.");
         var updated = user.DeepClone().AsObject();
@@ -49,18 +49,22 @@ public sealed partial class OfflineServer
             || pass["had_got_vip_reward_level"] is not JsonArray vipReceived)
             return new(409, null, "Local pass progress unavailable.");
         var current = pass["level"]?.GetValue<int>() ?? 0;
-        var levels = request.Value.Value / 20;
+        if (gift && pass["is_had_gift"]?.GetValue<int>() != 0)
+            return new(409, null, "Level gift unavailable or already purchased.");
+        var cost = gift ? 150 : request!.Value!.Value;
+        var levels = gift ? Math.Min(20, 80 - current) : cost / 20;
         if (current is < 1 or >= 80 || levels > 80 - current)
             return new(409, null, "Pass level limit exceeded.");
         var orb = updated["orb"]!;
         var free = orb["free"]!.GetValue<long>();
         var purchased = orb["purchased"]!.GetValue<long>();
-        if (free < 0 || purchased < 0 || (decimal)free + purchased < request.Value.Value)
+        if (free < 0 || purchased < 0 || (decimal)free + purchased < cost)
             return new(20000, null, "Insufficient local balance.");
-        var freeSpent = Math.Min(free, request.Value.Value);
+        var freeSpent = Math.Min(free, cost);
         orb["free"] = free - freeSpent;
-        orb["purchased"] = purchased - (request.Value.Value - freeSpent);
+        orb["purchased"] = purchased - (cost - freeSpent);
         pass["level"] = current + levels;
+        if (gift) pass["is_had_gift"] = 1;
         var vip = pass["is_vip"]?.GetValue<int>() == 1;
         pass["is_reward"] = rules.Any(row => row.Level <= current + levels &&
             (row.Free.Length > 0 && !freeReceived.Any(id => id!.GetValue<int>() == row.Level)
