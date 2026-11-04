@@ -730,6 +730,8 @@ public partial class NetworkSystemPatch
             var update = request.TryCast<PictureNewUpdateRequest>();
             arguments = new LocalArguments(Ids: update?.user_picture_id_list?.ToArray());
         }
+        if (api is "home" or "gather_gold" or "gather_phantasm_point" or "gold_box_renovation_end" or "phantasm_box_renovation_end")
+            arguments = ReadFacilityIncome(arguments ?? new());
         var reply = Plugin.Server.Dispatch(api, gacha?.count, gacha?.gacha_id, gacha?.gacha_button_id, arguments);
         Log.Info($"Offline API: {api}; status={reply.Status}");
         network.m_recv.status = reply.Status;

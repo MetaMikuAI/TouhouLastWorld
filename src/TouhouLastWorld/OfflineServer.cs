@@ -33,7 +33,8 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalSeriesTeam[]? SeriesTeams = null, LocalFoodPurchase? FoodPurchase = null, LocalFoodDistribution? FoodDistribution = null,
     LocalTrainingStart? Training = null, LocalTrainingMaterial[]? TrainingMaterials = null, LocalPointReset? PointReset = null,
     LocalPointAllocation? PointAllocation = null, LocalIdleSet? Idle = null, LocalMailRules? MailRules = null,
-    LocalBoxRenovation? Renovation = null, LocalPointPurchase? PointPurchase = null, LocalRankMaterial? RankMaterial = null,
+    LocalBoxRenovation? Renovation = null, LocalBoxIncome? GoldIncome = null, LocalBoxIncome? SpiritIncome = null,
+    LocalPointPurchase? PointPurchase = null, LocalRankMaterial? RankMaterial = null,
     LocalRankPromotion? RankPromotion = null, LocalAwakening? Awakening = null, LocalLimitBreak? LimitBreak = null,
     LocalStatMaterial[]? StatMaterials = null, LocalStatUnlock? StatUnlock = null, LocalPictureGrowth? PictureGrowth = null,
     LocalDestinyGrowth? DestinyGrowth = null, LocalPictureLimitBreak? PictureLimitBreak = null, LocalPictureRecycle? PictureRecycle = null,
@@ -124,6 +125,7 @@ public sealed partial class OfflineServer
             return new(400, null, "Not enough gold.");
         if (api is "user_create" or "login") EnsureAccount();
         if (api == "login") lastLoginAt = DateTime.Now;
+        if (api == "home") RefreshFacilityStock(arguments);
         var operation = api switch
         {
             "unit_protection" => SetProtection(arguments, "unit", "unit_list", "user_unit_id"),
@@ -158,8 +160,8 @@ public sealed partial class OfflineServer
             "afk_top" => IdleOverview(),
             "home" => new()
             {
-                ["gathering_phantasm_point"] = user["_local_gathering_phantasm_point"]?.DeepClone() ?? JsonValue.Create(0),
-                ["gathering_gold"] = user["_local_gathering_gold"]?.DeepClone() ?? JsonValue.Create(0), ["unread_mail_num"] = 0,
+                ["gathering_phantasm_point"] = user[SpiritStock]?.DeepClone() ?? JsonValue.Create(0),
+                ["gathering_gold"] = user[GoldStock]?.DeepClone() ?? JsonValue.Create(0), ["unread_mail_num"] = 0,
                 ["put_facility_badge"] = 0, ["put_mission_badge"] = 0, ["put_mission_id_list"] = new JsonArray(),
                 ["put_dispatch_popup"] = 0, ["unread_talk_id_list"] = new JsonArray(), ["friend_receive_tips"] = 0,
                 ["is_pass_card"] = 0, ["avatar_tips"] = 0, ["free_value_pack_tips"] = 0, ["pb_point"] = 0,

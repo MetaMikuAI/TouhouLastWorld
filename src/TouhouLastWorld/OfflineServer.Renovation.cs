@@ -46,6 +46,12 @@ public sealed partial class OfflineServer
         if (level <= 0 || level == int.MaxValue || request?.Value != level || request.EntityId != (long)level + 1)
             return new(503, null, "Next facility level unavailable.");
         var updated = user.DeepClone().AsObject();
+        var gold = section == "gold_box";
+        var stockKey = gold ? GoldStock : SpiritStock;
+        var income = gold ? request.GoldIncome : request.SpiritIncome;
+        AccrueBox(updated, section, stockKey, income);
+        if (income is not null && updated[stockKey + "_at"]?.GetValue<long>() <= income.At)
+            updated[stockKey + "_at"] = income.At;
         updated[section]!["level"] = level + 1;
         updated[section]!["renovation_finish_time"] = "";
         Save(updated);

@@ -1781,6 +1781,33 @@ Check(gatherPointReload.Dispatch("gather_phantasm_point", arguments: new(9999, 1
     "point stock persists and repeated gathering does not duplicate credit");
 Console.WriteLine("Passed 4 point gathering checks.");
 
+var productionDirectory = directory + "-facility-income";
+var productionServer = new OfflineServer(productionDirectory, seed, "offline://resources/");
+productionServer.Dispatch("game_init");
+productionServer.Dispatch("login");
+var goldIncome = new LocalBoxIncome(1, 1200, 60, 900, 10_000);
+var spiritIncome = new LocalBoxIncome(1, 1200, 20, 300, 10_000);
+productionServer.Dispatch("home", arguments: new(GoldIncome: goldIncome, SpiritIncome: spiritIncome));
+var productionReload = new OfflineServer(productionDirectory, seed, "offline://resources/");
+productionReload.Dispatch("game_init");
+productionReload.Dispatch("login");
+var facilityHome = productionReload.Dispatch("home", arguments: new(GoldIncome: goldIncome with { At = 11_200 },
+    SpiritIncome: spiritIncome with { At = 11_199 })).Body!;
+Check(facilityHome["gathering_gold"]!.GetValue<int>() == 60
+    && facilityHome["gathering_phantasm_point"]!.GetValue<int>() == 0, "facility income accrues after a full interval across relogin");
+var collected = productionReload.Dispatch("gather_phantasm_point",
+    arguments: new(9999, 1, SpiritIncome: spiritIncome with { At = 11_200 })).Body!;
+Check(collected["gathering_phantasm_point"]!.GetValue<int>() == 0
+    && collected["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 120, "collection includes newly elapsed income");
+var fullGold = goldIncome with { At = 100_000 };
+var stockAtCap = productionReload.Dispatch("home", arguments: new(GoldIncome: fullGold)).Body!;
+Check(stockAtCap["gathering_gold"]!.GetValue<int>() == 900, "facility income respects stock capacity");
+var collectedGold = productionReload.Dispatch("gather_gold", arguments: new(9999, 1, GoldIncome: fullGold)).Body!;
+Check(collectedGold["gathering_gold"]!.GetValue<int>() == 0
+    && productionReload.Dispatch("home", arguments: new(GoldIncome: fullGold with { At = 101_199 }))
+        .Body!["gathering_gold"]!.GetValue<int>() == 0, "time spent at capacity does not refill a collected box");
+Console.WriteLine("Passed 4 facility income checks.");
+
 var renovationSeed = JsonNode.Parse(seed)!;
 renovationSeed["gold_box"]!["renovation_finish_time"] = DateTimeOffset.UtcNow.AddHours(1).ToString("O");
 var earlyRenovation = new OfflineServer(directory + "-early-renovation", renovationSeed.ToJsonString(), "offline://resources/");

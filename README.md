@@ -83,8 +83,8 @@
 | GachaTopRequest | gacha_top | 最小响应 | 固定本地列表 | 未测 |
 | GainFreeItemRequest | gain_free_item | 业务实现 | 领取本地商店唯一免费商品，按模块 UTC 日期限每日一次并保存；支持金币、晶体、物品，未配置或配置不明确时拒绝领取 | 未测 |
 | GameInitRequest | game_init | 业务实现 | 本地会话与入口 | 通过（登录链） |
-| GatherGoldRequest | gather_gold | 业务实现 | 收取本地已保存库存，按当前等级容量入账，超出部分保留；主页同步余量，不计算时间产出 | 未测 |
-| GatherPhantasmPointRequest | gather_phantasm_point | 业务实现 | 收取本地已保存点数库存，按当前等级容量入账，超出部分保留；同步主页余量，不计算时间产出 | 未测 |
+| GatherGoldRequest | gather_gold | 业务实现 | 按赛钱箱等级和经过时间产出，受设施库存上限约束，按玩家容量收取并保存余量 | 通过（一级赛钱箱） |
+| GatherPhantasmPointRequest | gather_phantasm_point | 业务实现 | 按灵点设施等级和经过时间产出，受设施库存上限约束，按玩家容量收取并保存余量 | 通过（一级神社） |
 | GetAutoReplayInfoRequest | get_auto_replay_info | 业务实现 | 按目标读取已保存测量值；无记录返回零，不重算战斗 | 未测 |
 | GetDispatchListRequest | get_dispatch_list | 业务实现 | 合并本地候选与已启动任务；未配置候选时为空，不生成候选 | 未测 |
 | GetEventTotalPointRewardAllRequest | get_event_total_point_reward_all | 业务实现 | 连续领取积分已达标的固定奖励，一次保存库存与进度；容量不足或含未支持奖励时整批不变，随机奖励未实现 | 未测 |
@@ -98,14 +98,14 @@
 | GetVersusReplayInfoRequest | get_multiple_spirits_weekly_replay_info | 业务实现 | 按目标读取本地重放；无记录返回空内容，客户端关闭重放模式 | 未测 |
 | GGTapAdRequest | get_tap_ad | 最小响应 | 返回空归因字段与 first_login=0，跳过调用方首次激活上传；不读取或保存设备标识 | 未测 |
 | GGTapAdSecRequest | tap_sec_day | 最小响应 | 返回 is_sec_day=0 与空日期，跳过调用方次日上传；不记录设备标识或计算留存 | 未测 |
-| GoldBoxRenovationEndRequest | gold_box_renovation_end | 业务实现 | 校验已保存升级时间及下一等级配置，到期升一级并清除计时，重复结算不升级；不调整时间产出 | 未测 |
-| GoldBoxRenovationStartRequest | gold_box_renovation_start | 业务实现 | 按下一等级配置校验等级、费用与时长，一次保存扣款及结束时间，拒绝重复开工；不调整时间产出 | 未测 |
+| GoldBoxRenovationEndRequest | gold_box_renovation_end | 业务实现 | 到期按原等级结算库存并切换产出等级，清除升级计时 | 未测 |
+| GoldBoxRenovationStartRequest | gold_box_renovation_start | 业务实现 | 按下一等级配置校验等级、费用与时长，一次保存扣款及结束时间，拒绝重复开工 | 未测 |
 | GoogleSwitchDoRequest | 未确认 | 未实现 | — | 未测 |
 | GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 | — | 未测 |
 | HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存非负音乐编号，零值恢复默认；不校验资源可用性，不解锁音乐 | 未测 |
 | HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 | 未测 |
 | HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式；外观、动作及音乐仅保存编号，不校验素材可用性 | 未测 |
-| HomeRequest | home | 最小响应 | 空摘要 | 通过（进入及返回主页） |
+| HomeRequest | home | 业务实现 | 同步设施产出库存；其余摘要按默认值返回 | 通过（进入及返回主页） |
 | IdleSearchCompleteUpgradeRequest | afk_complete_upgrade | 业务实现 | 到期后提升对应成长值一级并清槽；重验上限与开始快照，防重复领取；无附加奖励 | 未测 |
 | IdleSearchReceiveDropRequest | afk_receive_drop | 最小响应 | 仅空掉落响应；已有待领奖励返回 503，不生成、发放或清除奖励 | 未测 |
 | IdleSearchSetRequest | afk_set | 业务实现 | 按主数据时长和成长限制保存、取消槽位；校验归属与占用；不结算成长或奖励 | 未测 |
@@ -137,8 +137,8 @@
 | PaymentEndRequest | 未确认 | 未实现 | — | 未测 |
 | PaymentResumeRequest | 未确认 | 未实现 | — | 未测 |
 | PaymentStartRequest | 未确认 | 未实现 | — | 未测 |
-| PhantasmBoxRenovationEndRequest | phantasm_box_renovation_end | 业务实现 | 校验已保存升级时间及下一等级配置，到期升一级并清除计时，重复结算不升级；不调整时间产出 | 未测 |
-| PhantasmBoxRenovationStartRequest | phantasm_box_renovation_start | 业务实现 | 按下一等级配置校验等级、金币费用与时长，一次保存扣款及结束时间，拒绝重复开工；不调整时间产出 | 未测 |
+| PhantasmBoxRenovationEndRequest | phantasm_box_renovation_end | 业务实现 | 到期按原等级结算库存并切换产出等级，清除升级计时 | 未测 |
+| PhantasmBoxRenovationStartRequest | phantasm_box_renovation_start | 业务实现 | 按下一等级配置校验等级、金币费用与时长，一次保存扣款及结束时间，拒绝重复开工 | 未测 |
 | PhantasmPointBuyRequest | phantasm_point_buy | 业务实现 | 按次数价格及等级公式购买，优先扣免费额度，一次保存余额、点数和次数；容量不足整笔拒绝，不重置每日次数 | 未测 |
 | PictureBookReciveRequest | picture_book/get_reward | 业务实现 | 按已完成记录发放配置中的金币、晶体或物品，保存领奖标记；其他奖励类型及进度生成未实现 | 未测 |
 | PictureBookRequest | picture_book/get_user_picture_book_list | 业务实现 | 读取本地待领取与已领奖记录；不生成进度 | 未测 |
