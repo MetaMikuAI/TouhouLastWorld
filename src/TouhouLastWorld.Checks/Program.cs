@@ -510,3 +510,19 @@ foodExpansionReload.Dispatch("game_init");
 Check(foodExpansionReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 3
     && foodExpansionReload.LectureFoodExpansionRank == 1, "food expansion persists with debit");
 Console.WriteLine("Passed 4 food expansion checks.");
+Check(foodExpansionReload.Dispatch("training_room_expansion", arguments: new(1, 4)).Status == 409,
+    "training expansion requires sufficient funds");
+var trainingExpanded = foodExpansionReload.Dispatch("training_room_expansion", arguments: new(1, 2)).Body!["user_update"]!;
+Check(trainingExpanded["orb"]!["purchased"]!.GetValue<long>() == 1
+    && foodExpansionReload.TrainingExpansionRank == 1 && foodExpansionReload.LectureFoodExpansionRank == 1,
+    "training expansion updates its own level and balance");
+var trainingSnapshot = foodExpansionReload.Dispatch("training_room_update").Body!["user_update"]!["training_room"]!;
+Check(trainingSnapshot["expansion_rank"]!.GetValue<int>() == 1 && trainingSnapshot["unit_list"]!.AsArray().Count == 0,
+    "training snapshot reads saved state");
+trainingSnapshot["expansion_rank"] = 99;
+Check(foodExpansionReload.TrainingExpansionRank == 1, "training snapshot is isolated");
+var trainingReload = new OfflineServer(expansionDirectory, expansionSeed.ToJsonString(), "offline://resources/");
+trainingReload.Dispatch("game_init");
+Check(trainingReload.Dispatch("login").Body!["user"]!["orb"]!["purchased"]!.GetValue<long>() == 1
+    && trainingReload.TrainingExpansionRank == 1, "training expansion and payment persist");
+Console.WriteLine("Passed 5 training facility checks.");
