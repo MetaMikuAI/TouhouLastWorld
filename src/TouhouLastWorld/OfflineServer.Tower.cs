@@ -42,7 +42,9 @@ public sealed partial class OfflineServer
         var ids = new HashSet<long>();
         foreach (var line in csv.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            var fields = line.Split(',');
+            var record = line.TrimEnd('\r');
+            if (record.EndsWith(',')) record = record[..^1];
+            var fields = record.Split(',');
             if (fields.Length is not (27 or 29) ||
                 !long.TryParse(fields[0], out var id) || id <= 0 || !ids.Add(id) ||
                 user["unit"]?["unit_list"] is not JsonArray units ||

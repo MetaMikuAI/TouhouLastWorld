@@ -1568,7 +1568,7 @@ towerUnitServer.Dispatch("game_init");
 towerUnitServer.Dispatch("login");
 Check(towerUnitServer.Dispatch("get_tower_unit_info").Body!["tower_unit_info"]!.GetValue<string>() == towerUnitCsv,
     "saved unit continuation CSV is preserved without recovery or regeneration");
-foreach (var badCsv in new[] { "1,123", towerUnitCsv + "\n" + towerUnitCsv, "999" + towerUnitCsv[1..], towerUnitCsv + ",bad" })
+foreach (var badCsv in new[] { "1,123", towerUnitCsv + "\n" + towerUnitCsv, "999" + towerUnitCsv[1..], towerUnitCsv + ",bad", towerUnitCsv + ",,", towerUnitCsv.Replace("1,123", "1,,123") })
 {
     towerUnitSeed["_local_tower_unit_info"] = badCsv;
     var badTowerUnits = new OfflineServer(directory + "-tower-unit-invalid-" + Guid.NewGuid().ToString("N"), towerUnitSeed.ToJsonString(), "offline://resources/");
@@ -1576,7 +1576,13 @@ foreach (var badCsv in new[] { "1,123", towerUnitCsv + "\n" + towerUnitCsv, "999
     badTowerUnits.Dispatch("login");
     Check(badTowerUnits.Dispatch("get_tower_unit_info").Status == 503, "invalid, duplicate or unowned continuation records are rejected");
 }
-Console.WriteLine("Passed 6 unit continuation checks.");
+towerUnitSeed["_local_tower_unit_info"] = towerUnitCsv + ",\r\n";
+var nativeTowerCsv = new OfflineServer(directory + "-tower-native-csv", towerUnitSeed.ToJsonString(), "offline://resources/");
+nativeTowerCsv.Dispatch("game_init");
+nativeTowerCsv.Dispatch("login");
+Check(nativeTowerCsv.Dispatch("get_tower_unit_info").Body!["tower_unit_info"]!.GetValue<string>() == towerUnitCsv + ",\r\n",
+    "native continuation CSV accepts one trailing delimiter and retains its original snapshot");
+Console.WriteLine("Passed 9 unit continuation checks.");
 
 var deletionDirectory = directory + "-account-deletion";
 var deletionServer = new OfflineServer(deletionDirectory, seed, "offline://resources/");
