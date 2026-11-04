@@ -227,7 +227,7 @@
 | UpdateHomeMotionModeRequest | 未确认 | 未实现 | — |
 | UpdateProfileSetting2APIRequest | update_profile_setting2 | 业务实现 | 本地文本检查，拒绝缺失值和控制字符；允许清空，保存由布局接口完成，不含远端审核 |
 | UpdateProfileSettingAPIRequest | update_profile_setting | 业务实现 | 校验布局 JSON 字段类型并原样保存；不校验素材所有权，不授予素材 |
-| UpdateVersusReplayInfoRequest | 未确认 | 未实现 | — |
+| UpdateVersusReplayInfoRequest | update_multiple_spirits_weekly_replay_info | 业务实现 | 校验目标及非负等级，原样保存规则和重放；空内容删除，不验证战斗合法性 |
 | UpdateVoiceVersionRequest | 未确认 | 未实现 | — |
 | UserAppleInfoDeleteRequest | 未确认 | 未实现 | — |
 | UserAppleInfoUpdateRequest | 未确认 | 未实现 | — |

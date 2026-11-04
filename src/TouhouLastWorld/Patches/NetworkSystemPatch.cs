@@ -46,6 +46,12 @@ public partial class NetworkSystemPatch
         }
         if (api == "get_multiple_spirits_weekly_replay_info")
             arguments = new LocalArguments(EntityId: request.TryCast<GetVersusReplayInfoRequest>()?.multiple_spirits_weekly_master_id);
+        if (api == "update_multiple_spirits_weekly_replay_info")
+        {
+            var update = request.TryCast<UpdateVersusReplayInfoRequest>();
+            arguments = update == null ? null : new LocalArguments(ReplayContent: new(update.multiple_spirits_weekly_master_id,
+                update.level, update.add_rules, update.replay_info));
+        }
         if (api == "update_auto_replay_info")
         {
             var update = request.TryCast<UpdateAutoReplayInfoRequest>();

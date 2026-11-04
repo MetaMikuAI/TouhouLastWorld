@@ -5,6 +5,23 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply SaveReplay(LocalReplayContent? request)
+    {
+        if (request is null || request.TargetId <= 0 || request.Level < 0 || request.Content is null || request.Rules is null)
+            return new(400, null, "Replay target, level, rules and content required.");
+        var updated = user.DeepClone().AsObject();
+        var records = updated["_local_weekly_replays"] as JsonObject ?? new JsonObject();
+        if (records.Parent is null) updated["_local_weekly_replays"] = records;
+        var key = request.TargetId.ToString(CultureInfo.InvariantCulture);
+        if (request.Content.Length == 0) records.Remove(key);
+        else records[key] = new JsonObject
+        {
+            ["level"] = request.Level, ["add_rules"] = request.Rules, ["replay_info"] = request.Content
+        };
+        Save(updated);
+        return new(0, new());
+    }
+
     private LocalReply GetStoredReplay(long? target)
     {
         if (target is null or <= 0 or > int.MaxValue) return new(400, null, "Valid replay target required.");
