@@ -18,10 +18,11 @@ public sealed partial class OfflineServer
         or "training_room_cancel" or "unit_equip_picture_reset" or "unit_equip_picture"
         or "unit_equip_costume" or "dispatch_cancel" or "rhythm_game_start" or "rhythm_game_end"
         or "achievement_select" or "roguelite_deck_save" or "roguelite_deck_call" or "roguelite_top"
-        or "comic_read_end" or "comic_get_pages" || QueryTemplates.ContainsKey(api);
+        or "comic_read_end" or "comic_get_pages" or "series_battle_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "series_battle_reset" => ResetSeries(),
         "comic_get_pages" => AcquirePages(arguments?.Pages),
         "comic_read_end" => ReadPages(arguments),
         "roguelite_top" => DeckOverview(arguments?.Value),
@@ -94,6 +95,17 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply ResetSeries()
+    {
+        var updated = user.DeepClone().AsObject();
+        var state = updated["series_battle_status"]!.AsObject();
+        foreach (var field in new[] { "episode_id", "difficulty", "progress", "stage_group_master_id", "manage_id", "value1" })
+            state[field] = 0;
+        state["use_replays"] = new JsonArray();
+        Save(updated);
+        return new(0, new() { ["user_update"] = new JsonObject { ["series_battle_status"] = state.DeepClone() } });
+    }
 
     private LocalReply AchievementOverview()
     {

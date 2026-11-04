@@ -762,3 +762,24 @@ Check(pageUser["comic_point"]!.GetValue<int>() == 75 && pageUser["comic_data"]![
 Check(pageReload.Dispatch("comic_get_pages", arguments: new(Pages: new(1, int.MaxValue, int.MaxValue, int.MaxValue))).Status == 409
     && pageReload.Dispatch("login").Body!["user"]!["comic_point"]!.GetValue<int>() == 75, "overflow-sized request preserves balance");
 Console.WriteLine("Passed 7 page checks.");
+var seriesSeed = JsonNode.Parse(seed)!.AsObject();
+seriesSeed["series_battle_status"]!["episode_id"] = 10;
+seriesSeed["series_battle_status"]!["progress"] = 3;
+seriesSeed["series_battle_status"]!["use_replays"] = new JsonArray(1, 2);
+seriesSeed["_local_series_replays"] = new JsonObject { ["1:1"] = "saved" };
+var seriesDirectory = directory + "-series-reset";
+var series = new OfflineServer(seriesDirectory, seriesSeed.ToJsonString(), "offline://resources/");
+series.Dispatch("game_init");
+series.Dispatch("login");
+var resetSeries = series.Dispatch("series_battle_reset").Body!["user_update"]!["series_battle_status"]!;
+Check(resetSeries["episode_id"]!.GetValue<int>() == 0 && resetSeries["progress"]!.GetValue<int>() == 0
+    && resetSeries["use_replays"]!.AsArray().Count == 0, "series reset clears active state");
+Check(series.Dispatch("series_battle_reset").Status == 0, "series reset is repeatable");
+var seriesReload = new OfflineServer(seriesDirectory, seriesSeed.ToJsonString(), "offline://resources/");
+seriesReload.Dispatch("game_init");
+var seriesUser = seriesReload.Dispatch("login").Body!["user"]!;
+Check(seriesUser["series_battle_status"]!["progress"]!.GetValue<int>() == 0
+    && JsonNode.DeepEquals(seriesUser["_local_series_replays"], seriesSeed["_local_series_replays"])
+    && JsonNode.DeepEquals(seriesUser["unit"], seriesSeed["unit"])
+    && JsonNode.DeepEquals(seriesUser["gold"], seriesSeed["gold"]), "series reset persists without changing collection or rewards");
+Console.WriteLine("Passed 3 series reset checks.");

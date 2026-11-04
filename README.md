@@ -173,7 +173,7 @@
 | SeriesBattleRankingScoreSimulateRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingStartRequest | 未确认 | 未实现 | — |
 | SeriesBattleRankingTopRequest | 未确认 | 未实现 | — |
-| SeriesBattleResetRequest | 未确认 | 未实现 | — |
+| SeriesBattleResetRequest | series_battle_reset | 业务实现 | 将当前流程恢复未开始状态并持久化；保留编队和存储回放，不结算奖励或退款 |
 | SeriesBattleStartRequest | 未确认 | 未实现 | — |
 | SeriesBattleTeamUpdateRequest | 未确认 | 未实现 | — |
 | SeriesBattleUpdateReplayInfoRequest | update_series_battle_replay_info | 业务实现 | 校验关卡和 1–5 分区，保存原始重放；空内容清除对应分区，不验证战斗合法性 |
