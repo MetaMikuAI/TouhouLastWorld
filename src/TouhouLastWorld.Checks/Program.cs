@@ -3345,3 +3345,30 @@ Check(towerEndReload.Dispatch("tower_battle_start", arguments: new(TowerStart: t
     && towerEndReload.Dispatch("tower_battle_end", arguments: new(TowerEnd: towerEndWin)).Body!["drop_list"]![0]!["object_value"]!.GetValue<int>() == 2,
     "only the completed maximum floor receives repetition rewards");
 Console.WriteLine("Passed 5 floor settlement checks.");
+
+var treasureDrawSeed = JsonNode.Parse(seed)!;
+treasureDrawSeed["_local_treasure"] = new JsonObject
+{
+    ["event_id"] = 99, ["fd_status"] = 0,
+    ["info"] = new JsonObject { ["gift_id"] = 3, ["code"] = "prepared-local-result" }
+};
+var treasureDrawDirectory = directory + "-treasure-draw";
+var treasureDrawServer = new OfflineServer(treasureDrawDirectory, treasureDrawSeed.ToJsonString(), "offline://resources/");
+treasureDrawServer.Dispatch("game_init");
+treasureDrawServer.Dispatch("login");
+Check(treasureDrawServer.Dispatch("fudai/fudai_draw", arguments: new(TreasureDraw: new(99, false, [3]))).Status == 409
+    && treasureDrawServer.Dispatch("fudai/fudai_draw", arguments: new(TreasureDraw: new(99, true, [4]))).Status == 503
+    && treasureDrawServer.Dispatch("fudai/fudai_info", arguments: new(Value: 99)).Body!["fd_status"]!.GetValue<int>() == 0,
+    "inactive or unknown prepared rewards preserve eligibility");
+var treasureDrawResult = treasureDrawServer.Dispatch("fudai/fudai_draw", arguments: new(TreasureDraw: new(99, true, [3])));
+Check(treasureDrawResult.Status == 0 && treasureDrawResult.Body!["code"]!.GetValue<string>() == "prepared-local-result"
+    && treasureDrawServer.Dispatch("fudai/fudai_info", arguments: new(Value: 99)).Body!["fd_status"]!.GetValue<int>() == 1,
+    "prepared reward claim persists the claimed state");
+var treasureDrawReload = new OfflineServer(treasureDrawDirectory, seed, "offline://resources/");
+treasureDrawReload.Dispatch("game_init");
+treasureDrawReload.Dispatch("login");
+var treasureDrawRetry = treasureDrawReload.Dispatch("fudai/fudai_draw", arguments: new(TreasureDraw: new(99, true, [3])));
+Check(treasureDrawRetry.Status == 0 && treasureDrawRetry.Body!["gift_id"]!.GetValue<int>() == 3
+    && treasureDrawRetry.Body["code"]!.GetValue<string>() == "prepared-local-result",
+    "reward claim retries return the original receipt after restart");
+Console.WriteLine("Passed 3 prepared reward claim checks.");

@@ -2,6 +2,8 @@ using System.Text.Json.Nodes;
 
 namespace TouhouLastWorld;
 
+public sealed record LocalTreasureDraw(int EventId, bool Active, int[] GiftIds);
+
 public sealed record LocalEventRewardGroup(int Id, int Step, int Points, int IconType, LocalInventoryReward[] Rewards);
 public sealed record LocalEventRewards(int EventId, LocalEventRewardGroup[] Groups);
 
@@ -23,6 +25,29 @@ public sealed partial class OfflineServer
             return new(409, null, "Invalid local reward information.");
         return new(0, new() { ["fd_status"] = status,
             ["info"] = new JsonObject { ["gift_id"] = gift.Value, ["code"] = code } });
+    }
+
+    private LocalReply DrawTreasure(LocalArguments? request)
+    {
+        var rule = request?.TreasureDraw;
+        if (rule is null || rule.EventId <= 0 || rule.GiftIds.Length == 0)
+            return new(503, null, "Reward definitions unavailable.");
+        if (!rule.Active) return new(409, null, "Event is inactive.");
+        var overview = TreasureOverview(new(Value: rule.EventId));
+        if (overview.Status != 0) return overview;
+        var status = overview.Body!["fd_status"]!.GetValue<int>();
+        var info = overview.Body["info"]!.AsObject();
+        var gift = info["gift_id"]!.GetValue<int>();
+        if (status == -1) return new(409, null, "Reward is not available.");
+        if (!rule.GiftIds.Contains(gift) || string.IsNullOrWhiteSpace(info["code"]!.GetValue<string>()))
+            return new(503, null, "Prepared reward unavailable.");
+        if (status == 0)
+        {
+            var updated = user.DeepClone().AsObject();
+            updated["_local_treasure"]!["fd_status"] = 1;
+            Save(updated);
+        }
+        return new(0, info.DeepClone().AsObject());
     }
 
     private LocalReply ClaimEventPointReward(LocalArguments? request, bool all = false)

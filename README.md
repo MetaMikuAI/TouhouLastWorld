@@ -198,7 +198,7 @@
 | TrainingRoomStartRequest | training_room_start | 业务实现 | 校验容量、成员归属与占用，扣一本材料并保存秒级训练期限；暂不校验技能解锁、等级上限或结算成长 |
 | TrainingRoomUpdateRequest | training_room_update | 最小响应 | 返回已保存训练任务与等级；不推进训练时间或结算技能成长 |
 | TranscribeKpiRequest | transcribe_kpi | 最小响应 | 接受类型 1、2 的统计事件；不上传、不记录、不变更资产 |
-| TreasureGachaRequest | 未确认 | 未实现 | — |
+| TreasureGachaRequest | fudai/fudai_draw | 业务实现 | 领取预先配置的本地奖励编号与兑换码，校验活动和主表并保存领取状态；重复请求返回原结果，随机分配与外部兑换未实现 |
 | TreasureInfoRequest | fudai/fudai_info | 业务实现 | 查询与活动配置匹配的本地状态及已保存奖励信息；不生成奖励码，缺少快照时拒绝返回 |
 | TutorialFirstGachaConfirmRequest | tutorial_first_gacha_confirm | 最小响应 | 已确认初始库存时回传用户状态，恢复请求构造时清空的客户端数据；不新增奖励、不推进教学 |
 | TutorialFirstGachaDoRequest | tutorial_first_gacha_do | 最小响应 | 仅返回已确认初始库存的本地用户快照，不额外抽取或发放；尚未确认时拒绝 |

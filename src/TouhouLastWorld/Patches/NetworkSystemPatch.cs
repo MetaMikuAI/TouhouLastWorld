@@ -146,6 +146,16 @@ public partial class NetworkSystemPatch
         if (api == "votive_picture_exchange") arguments = ReadTicketExchange(request.TryCast<VotivePictureExchangeRequest>());
         if (api == "fudai/fudai_info" && request.TryCast<TreasureInfoRequest>() is not null)
             arguments = new LocalArguments(Value: MasterDB.This()?.Event?.ToList()?.ToArray().FirstOrDefault(row => row.event_type == 99)?.id);
+        if (api == "fudai/fudai_draw" && request.TryCast<TreasureGachaRequest>() is not null)
+        {
+            var master = MasterDB.This();
+            var row = master?.Event?.ToList()?.ToArray().FirstOrDefault(entry => entry.event_type == 99);
+            var gifts = master?.FuDaiGiftWeight?.ToList()?.ToArray();
+            var time = GameSystem.This()?.Time;
+            if (row != null && gifts != null && time != null)
+                arguments = new LocalArguments(TreasureDraw: new(row.id,
+                    time.IsActiveDate(row.start_at, row.end_at), gifts.Select(gift => gift.id).ToArray()));
+        }
         if (api == "get_event_total_point_reward")
             arguments = ReadEventRewards(request.TryCast<GetEventTotalPointRewardRequest>()?.event_id);
         if (api == "get_event_total_point_reward_all")
