@@ -89,7 +89,7 @@
 | GetProfileSettingAPIRequest | 未确认 | 未实现 | — |
 | GetQuestClearedTeamInfoRequest | 未确认 | 未实现 | — |
 | GetRaidGaugeRequest | 未确认 | 未实现 | — |
-| GetShrineOfficeShopListRequest | 未确认 | 未实现 | — |
+| GetShrineOfficeShopListRequest | get_shrine_office_shop_list | 最小响应 | 空目录；不含兑换或购买 |
 | GetSwitchCodeRequest | 未确认 | 未实现 | — |
 | GetVersusReplayInfoRequest | 未确认 | 未实现 | — |
 | GGTapAdRequest | 未确认 | 未实现 | — |
