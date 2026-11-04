@@ -2791,3 +2791,29 @@ Check(goldExchangeReload.Dispatch("exchange", arguments: new(GoldExchange: goldE
     && goldExchangeReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4800,
     "gold exchange stock and balance survive restart");
 Console.WriteLine("Passed 3 gold exchange checks.");
+var introSeed = JsonNode.Parse(seed)!;
+var introUnitId = introSeed["unit"]!["unit_list"]![0]!["unit_id"]!.GetValue<int>();
+introSeed["_local_first_draw_candidate"] = new JsonObject
+{
+    ["unit_ids"] = new JsonArray(new JsonObject { ["unit_id"] = introUnitId, ["voice_set_id"] = 1, ["voice_set_file_id"] = 1 }),
+    ["picture_ids"] = new JsonArray()
+};
+var introDirectory = directory + "-intro";
+var introServer = new OfflineServer(introDirectory, introSeed.ToJsonString(), "offline://resources/");
+introServer.Dispatch("game_init");
+var introLogin = introServer.Dispatch("login").Body!;
+var introPublicId = introLogin["public_id"]!.GetValue<string>();
+var introRules = new LocalIntroDefinitions(new[] { introUnitId }, Array.Empty<int>());
+Check(introServer.Dispatch("first_draw_data", arguments: new(Text: "invalid", IntroDefinitions: introRules)).Status == 403
+    && introServer.Dispatch("first_draw_data", arguments: new(Text: introPublicId, IntroDefinitions: introRules with { UnitIds = Array.Empty<int>() })).Status == 503,
+    "initial draw requires the local identity and known definitions");
+var introReply = introServer.Dispatch("first_draw_data", arguments: new(Text: introPublicId, IntroDefinitions: introRules)).Body!;
+Check(introReply["unit_ids"]!.AsArray().Count == 1 && introReply["picture_ids"]!.AsArray().Count == 0
+    && introServer.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]!.AsArray().Count == introLogin["user"]!["unit"]!["unit_list"]!.AsArray().Count,
+    "initial draw stages a result without granting inventory");
+var introReload = new OfflineServer(introDirectory, seed, "offline://resources/");
+introReload.Dispatch("game_init");
+introReload.Dispatch("login");
+Check(introReload.Dispatch("first_draw_data", arguments: new(Text: introPublicId, IntroDefinitions: introRules)).Body!["unit_ids"]![0]!["unit_id"]!.GetValue<int>() == introUnitId,
+    "initial draw pending result survives restart");
+Console.WriteLine("Passed 3 initial draw checks.");

@@ -35,6 +35,15 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "first_draw_data")
+        {
+            var change = request.TryCast<FirstGachaDrawRequest>();
+            var master = MasterDB.This();
+            var units = master?.Unit?.ToList()?.ToArray();
+            var pictures = master?.Picture?.ToList()?.ToArray();
+            arguments = new LocalArguments(Text: change?.public_id, IntroDefinitions: units == null || pictures == null ? null
+                : new(units.Select(row => row.id).ToArray(), pictures.Select(row => row.id).ToArray()));
+        }
         if (api == "exchange")
         {
             var change = request.TryCast<ExchangeRequest>();
@@ -638,7 +647,7 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api is "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
+            if (api is "first_draw_data" or "exchange" or "update_gold_exchange_shop_list" or "votive_picture_exchange" or "gain_free_item" or "get_event_total_point_reward" or "get_event_total_point_reward_all")
             {
                 PentopSystem.This()?.EnableEvent();
                 PopupSystem.This()?.CreateMessage(reply.Error);
