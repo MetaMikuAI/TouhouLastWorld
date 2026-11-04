@@ -4,6 +4,26 @@ namespace TouhouLastWorld.Patches;
 
 public partial class NetworkSystemPatch
 {
+    private static LocalArguments? ReadBattlePassClaim(BattlePassMissionEndRequest? request)
+    {
+        if (request == null) return null;
+        var master = MasterDB.This();
+        var current = User.This()?.battle_pass;
+        var pass = current == null ? null : master?.BattlePass?.Find(current.battle_pass_id);
+        var tasks = master?.BattlePassMission?.ToList()?.ToArray();
+        var levels = master?.BattlePassExp?.ToList()?.ToArray();
+        var time = GameSystem.This()?.Time;
+        if (pass == null || tasks == null || levels == null || time == null) return null;
+        return new(BattlePassClaim: new(request.mission_id, request.is_all, pass.id,
+            time.IsActiveDate(pass.start_at, pass.end_at),
+            tasks.Where(row => row.battle_pass_id == pass.id && row.reward_group1_id == 0 && row.reward_group2_id == 0
+                && row.reward_group3_id == 0 && row.reward_group4_id == 0)
+                .Select(row => new LocalBattlePassTask(row.id, row.complete_value, row.reward_battle_pass_exp,
+                    (string.IsNullOrWhiteSpace(row.start_at) && string.IsNullOrWhiteSpace(row.end_at))
+                    || time.IsActiveDate(row.start_at, row.end_at))).ToArray(),
+            levels.Where(row => row.exp_group_id == pass.exp_group_id).ToDictionary(row => row.level, row => row.exp)));
+    }
+
     private static LocalArguments? ReadMissionClaim(MissionEndRequest? request)
     {
         if (request == null) return null;

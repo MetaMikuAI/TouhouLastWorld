@@ -40,6 +40,7 @@ public partial class NetworkSystemPatch
         if (api == "friend_get_history") arguments = ReadHistoryPlayer(request.TryCast<FriendGetHistoryRequest>()?.player_id);
         if (api == "tower_unit_recovery") arguments = new(Text: request.TryCast<TowerUnitRecoveryRequest>()?.tower_unit_info);
         if (api == "mission_end") arguments = ReadMissionClaim(request.TryCast<MissionEndRequest>());
+        if (api == "battle_pass_mission_end") arguments = ReadBattlePassClaim(request.TryCast<BattlePassMissionEndRequest>());
         if (api == "dispatch_end") arguments = ReadDispatchSettlement(request.TryCast<DispatchEndRequest>());
         if (api == "retry_gacha_fix")
         {
@@ -699,7 +700,7 @@ public partial class NetworkSystemPatch
         network.m_recv.body = "";
         if (reply.Status != 0)
         {
-            if (api == "mission_end")
+            if (api is "mission_end" or "battle_pass_mission_end")
             {
                 var panel = UnityEngine.Object.FindObjectOfType<MissionBehavior>();
                 if (panel != null) panel.m_rcvflg = false;

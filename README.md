@@ -18,9 +18,9 @@
 | AutoReplayStartRequest | auto_replay_start | 最小响应 | 无运行任务时返回原生“未启动”状态，不扣费；已有任务拒绝覆盖；后台执行与奖励结算尚未实现 |
 | BatchSearchRequest | 未确认 | 未实现 | — |
 | BattleEndRequest | battle_end | 最小响应 | 固定奖励，不含完整结算 |
-| BattlePassMissionEndRequest | 未确认 | 未实现 | — |
+| BattlePassMissionEndRequest | battle_pass_mission_end | 业务实现 | 单个或批量领取本地已完成任务经验，按主表累计阈值升级并保存领取记录；仅纯经验任务，任务进度生成、附加奖励与周期重置未实现 |
 | BattlePassReceiveRewardRequest | 未确认 | 未实现 | — |
-| BattlePassTopRequest | battle_pass_top | 最小响应 | 三类任务列表为空、领取等级为 0；不开放活动、不生成任务或奖励 |
+| BattlePassTopRequest | battle_pass_top | 最小响应 | 返回本地任务及领取等级快照，默认空；不生成任务或奖励 |
 | BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 |
 | BattleStartRequest | battle_start | 最小响应 | 空响应 |
 | BootRequest | boot | 最小响应 | 初始化后确认启动；无需建号，不收集广告标识，不变更账号 |

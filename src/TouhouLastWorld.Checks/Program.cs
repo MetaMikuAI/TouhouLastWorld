@@ -3077,3 +3077,38 @@ Check(missionReload.Dispatch("mission_end", arguments: new(MissionClaim: mission
     && missionReload.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim)).Body!["reward_list"]!.AsArray().Count == 0,
     "mission receipts survive restart and repeated batch claims grant no duplicate reward");
 Console.WriteLine("Passed 3 mission claim checks.");
+var stageSeed = JsonNode.Parse(seed)!;
+stageSeed["battle_pass"] = new JsonObject { ["battle_pass_id"] = 7, ["battle_pass_level"] = 1, ["battle_pass_exp"] = 0,
+    ["is_premium"] = 0, ["is_premium_2"] = 0 };
+stageSeed["_local_battle_pass_top"] = new JsonObject { ["battle_pass_mission"] = new JsonObject
+{
+    ["unlock_list"] = new JsonArray(), ["received_list"] = new JsonArray(),
+    ["clear_list"] = new JsonArray(new JsonObject { ["id"] = 20, ["battle_pass_id"] = 7,
+        ["complete_value"] = 1, ["current_value"] = 1, ["reward_battle_pass_exp"] = 100 },
+        new JsonObject { ["id"] = 21, ["battle_pass_id"] = 7, ["complete_value"] = 1,
+            ["current_value"] = 1, ["reward_battle_pass_exp"] = 150 })
+} };
+var stageDirectory = directory + "-stage-missions";
+var stageServer = new OfflineServer(stageDirectory, stageSeed.ToJsonString(), "offline://resources/");
+stageServer.Dispatch("game_init");
+stageServer.Dispatch("login");
+var stageClaim = new LocalBattlePassClaim(0, 1, 7, true,
+    new[] { new LocalBattlePassTask(20, 1, 100, true), new LocalBattlePassTask(21, 1, 150, false) },
+    new() { [1] = 0, [2] = 100, [3] = 250 });
+Check(stageServer.Dispatch("battle_pass_mission_end", arguments: new(BattlePassClaim: stageClaim)).Status == 503
+    && stageServer.Dispatch("login").Body!["user"]!["battle_pass"]!["battle_pass_exp"]!.GetValue<int>() == 0
+    && stageServer.Dispatch("battle_pass_top").Body!["battle_pass_mission"]!["clear_list"]!.AsArray().Count == 2,
+    "stage mission batch validation leaves experience and claim lists unchanged");
+stageClaim.Tasks[1] = stageClaim.Tasks[1] with { Active = true };
+var stageResult = stageServer.Dispatch("battle_pass_mission_end", arguments: new(BattlePassClaim: stageClaim)).Body!;
+Check(stageResult["user_update"]!["battle_pass"]!["battle_pass_exp"]!.GetValue<int>() == 250
+    && stageResult["user_update"]!["battle_pass"]!["battle_pass_level"]!.GetValue<int>() == 3
+    && stageResult["battle_pass_mission"]!["received_list"]!.AsArray().Count == 2,
+    "stage mission rewards use cumulative thresholds and persist received entries");
+var stageReload = new OfflineServer(stageDirectory, seed, "offline://resources/");
+stageReload.Dispatch("game_init");
+stageReload.Dispatch("login");
+Check(stageReload.Dispatch("battle_pass_mission_end", arguments: new(BattlePassClaim: stageClaim with { Id = 20, All = 0 })).Status == 404
+    && stageReload.Dispatch("battle_pass_mission_end", arguments: new(BattlePassClaim: stageClaim)).Body!["user_update"]!["battle_pass"]!["battle_pass_exp"]!.GetValue<int>() == 250,
+    "stage claims remain consumed after restart and cannot duplicate experience");
+Console.WriteLine("Passed 3 stage mission checks.");
