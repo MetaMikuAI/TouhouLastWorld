@@ -93,7 +93,7 @@
 | GetSwitchCodeRequest | 未确认 | 未实现 | — |
 | GetVersusReplayInfoRequest | get_multiple_spirits_weekly_replay_info | 业务实现 | 按目标读取本地重放；无记录返回空内容，客户端关闭重放模式 |
 | GGTapAdRequest | get_tap_ad | 最小响应 | 返回空归因字段与 first_login=0，跳过调用方首次激活上传；不读取或保存设备标识 |
-| GGTapAdSecRequest | 未确认 | 未实现 | — |
+| GGTapAdSecRequest | tap_sec_day | 最小响应 | 返回 is_sec_day=0 与空日期，跳过调用方次日上传；不记录设备标识或计算留存 |
 | GoldBoxRenovationEndRequest | 未确认 | 未实现 | — |
 | GoldBoxRenovationStartRequest | 未确认 | 未实现 | — |
 | GoogleSwitchDoRequest | 未确认 | 未实现 | — |

@@ -7,6 +7,7 @@ public sealed partial class OfflineServer
     private static readonly Dictionary<string, JsonObject> QueryTemplates = new()
     {
         ["popup"] = new(),
+        ["tap_sec_day"] = new() { ["is_sec_day"] = "0", ["first_login_date"] = "" },
         ["get_tap_ad"] = new()
         {
             ["idfa"] = "", ["idfa_md5"] = "", ["caid"] = "", ["anid"] = "", ["imei"] = "",
