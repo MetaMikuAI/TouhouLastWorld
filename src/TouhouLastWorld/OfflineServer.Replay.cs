@@ -5,6 +5,20 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply SaveSeriesReplay(LocalArguments? request)
+    {
+        if (request?.EntityId is null or <= 0 or > int.MaxValue || request.Value is null or < 1 or > 5 || request.Text is null)
+            return new(400, null, "Stage, area index 1 through 5 and replay content required.");
+        var updated = user.DeepClone().AsObject();
+        var records = updated["_local_series_replays"] as JsonObject ?? new JsonObject();
+        if (records.Parent is null) updated["_local_series_replays"] = records;
+        var key = string.Create(CultureInfo.InvariantCulture, $"{request.EntityId}:{request.Value}");
+        if (request.Text.Length == 0) records.Remove(key);
+        else records[key] = request.Text;
+        Save(updated);
+        return new(0, new());
+    }
+
     private LocalReply GetSeriesReplays(LocalArguments? request)
     {
         if (request?.EntityId is null or <= 0 or > int.MaxValue || request.Ids is null || request.Ids.Any(area => area is < 1 or > 5))

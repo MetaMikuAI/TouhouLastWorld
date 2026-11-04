@@ -45,6 +45,11 @@ public partial class NetworkSystemPatch
             arguments = query == null ? null : new LocalArguments(EntityId: query.stage_id,
                 Ids: query.area_index?.ToArray().Select(area => (long)area).ToArray());
         }
+        if (api == "update_series_battle_replay_info")
+        {
+            var update = request.TryCast<SeriesBattleUpdateReplayInfoRequest>();
+            arguments = update == null ? null : new LocalArguments(update.stage_id, update.area_index, Text: update.replay_info);
+        }
         if (api == "get_auto_replay_info")
         {
             var query = request.TryCast<GetAutoReplayInfoRequest>();
