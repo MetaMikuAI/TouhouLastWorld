@@ -454,3 +454,26 @@ Check(facilityUser["lecture_room"]!["unit"]!["unit_list"]!.AsArray().Count == 0
     && facilityUser["unit"]!["unit_list"]![0]!["is_lecture"]!.GetValue<int>() == 0, "facility removal persists");
 Check(JsonNode.DeepEquals(facilitySeed["lecture_room"]!["food"], facilityUser["lecture_room"]!["food"]), "removal preserves food state");
 Console.WriteLine("Passed 7 facility checks.");
+Check(facilityReload.Dispatch("lecture_room_unit_set", arguments: new(1)).Status == 503, "joining requires resolved capacity");
+Check(facilityReload.Dispatch("lecture_room_unit_set", arguments: new(999, 1)).Status == 404, "joining requires ownership");
+var joined = facilityReload.Dispatch("lecture_room_unit_set", arguments: new(1, 1)).Body!["user_update"]!;
+Check(joined["lecture_room"]!["unit"]!["unit_list"]!.AsArray().Count == 1
+    && joined["unit"]!["unit_list"]![0]!["is_lecture"]!.GetValue<int>() == 1, "joining updates membership and flag");
+Check(facilityReload.Dispatch("lecture_room_unit_set", arguments: new(1, 1)).Body!["user_update"]!["lecture_room"]!["unit"]!["unit_list"]!.AsArray().Count == 1,
+    "repeated joining does not duplicate members");
+var joinedReload = new OfflineServer(facilityDirectory, facilitySeed.ToJsonString(), "offline://resources/");
+joinedReload.Dispatch("game_init");
+Check(joinedReload.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![0]!["is_lecture"]!.GetValue<int>() == 1,
+    "joining persists");
+var fullSeed = facilitySeed.DeepClone().AsObject();
+var secondUnit = fullSeed["unit"]!["unit_list"]![0]!.DeepClone();
+secondUnit["user_unit_id"] = 2L;
+secondUnit["is_lecture"] = 0;
+fullSeed["unit"]!["unit_list"]!.AsArray().Add(secondUnit);
+var fullFacility = new OfflineServer(directory + "-full-facility", fullSeed.ToJsonString(), "offline://resources/");
+fullFacility.Dispatch("game_init");
+fullFacility.Dispatch("login");
+Check(fullFacility.Dispatch("lecture_room_unit_set", arguments: new(2, 1)).Status == 409
+    && fullFacility.Dispatch("login").Body!["user"]!["unit"]!["unit_list"]![1]!["is_lecture"]!.GetValue<int>() == 0,
+    "full facility rejects without mutation");
+Console.WriteLine("Passed 6 facility joining checks.");

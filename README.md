@@ -112,7 +112,7 @@
 | LectureRoomFoodExpansionRequest | 未确认 | 未实现 | — |
 | LectureRoomUnitExpansionRequest | 未确认 | 未实现 | — |
 | LectureRoomUnitRemoveRequest | lecture_room_unit_remove | 业务实现 | 移出本地成员并清除占用标记；重复移出幂等，不结算计时收益 |
-| LectureRoomUnitSetRequest | 未确认 | 未实现 | — |
+| LectureRoomUnitSetRequest | lecture_room_unit_set | 业务实现 | 校验持有与主数据容量，保存成员和占用标记；不推进计时收益 |
 | LectureRoomUnitTrustUpRequest | 未确认 | 未实现 | — |
 | LectureRoomUpdateRequest | lecture_room_update | 最小响应 | 返回已保存设施状态及零结算；未实现时间推进、食物消耗与经验增长 |
 | LevelGiftRequest | 未确认 | 未实现 | — |

@@ -13,7 +13,7 @@ public sealed partial class OfflineServer
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
         or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
         or "unit_voice_update" or "transcribe_kpi" or "lecture_room_unit_remove"
-        or "lecture_room_update" || QueryTemplates.ContainsKey(api);
+        or "lecture_room_update" or "lecture_room_unit_set" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
@@ -22,6 +22,7 @@ public sealed partial class OfflineServer
         "mail_delete" => DeleteReadMail(),
         "unit_voice_update" => SetVoice(arguments),
         "lecture_room_unit_remove" => RemoveLectureUnit(arguments?.EntityId),
+        "lecture_room_unit_set" => AddLectureUnit(arguments),
         "lecture_room_update" => new(0, new()
         {
             ["spend_info"] = new JsonObject { ["passage_time"] = 0, ["food"] = 0, ["exp"] = 0 },

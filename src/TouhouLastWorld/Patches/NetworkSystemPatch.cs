@@ -43,6 +43,11 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<ReadUnitTalkRequest>()?.talk_id);
         if (api == "lecture_room_unit_remove")
             arguments = new LocalArguments(EntityId: request.TryCast<LectureRoomUnitRemoveRequest>()?.user_unit_id);
+        if (api == "lecture_room_unit_set")
+        {
+            var capacity = MasterDB.This()?.LectureRoomUnitExpansion?.Find(Plugin.Server.LectureExpansionRank)?.slot_count;
+            arguments = new LocalArguments(request.TryCast<LectureRoomUnitSetRequest>()?.user_unit_id, capacity);
+        }
         if (api == "transcribe_kpi")
             arguments = new LocalArguments(Value: request.TryCast<TranscribeKpiRequest>()?.transcribe_value);
         if (api == "unit_voice_update")
