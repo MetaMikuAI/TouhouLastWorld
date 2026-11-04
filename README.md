@@ -126,7 +126,7 @@
 | MissionTopRequest | mission_top | 最小响应 | 空分类、未完成与已完成列表；不含奖励 |
 | MultipleSpiritsWeeklyTopRequest | 未确认 | 未实现 | — |
 | MusicLikeRequest | 未确认 | 未实现 | — |
-| MusicShowRequest | 未确认 | 未实现 | — |
+| MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 |
 | NewsRequest | 未确认 | 未实现 | — |
 | PaymentEndCnRequest | 未确认 | 未实现 | — |
 | PaymentEndNewRequest | 未确认 | 未实现 | — |
