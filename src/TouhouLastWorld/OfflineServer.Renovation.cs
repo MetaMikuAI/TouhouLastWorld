@@ -3,8 +3,35 @@ using System.Text.Json.Nodes;
 
 namespace TouhouLastWorld;
 
+public sealed record LocalBoxRenovation(int CurrentLevel, int NextLevel, int RequiredLevel, int GoldCost, int Seconds);
+
 public sealed partial class OfflineServer
 {
+    private LocalReply StartBoxRenovation(string section, LocalBoxRenovation? rule)
+    {
+        if (user[section] is not JsonObject box)
+            return new(503, null, "Local facility unavailable.");
+        var level = box["level"]!.GetValue<int>();
+        if (rule is null || level <= 0 || level == int.MaxValue || rule.CurrentLevel != level || rule.NextLevel != level + 1
+            || rule.RequiredLevel <= 0 || rule.GoldCost < 0 || rule.Seconds < 0)
+            return new(503, null, "Next facility level unavailable.");
+        if (!string.IsNullOrEmpty(box["renovation_finish_time"]?.GetValue<string>()))
+            return new(409, null, "Renovation already in progress.");
+        if (user["level"]!.GetValue<int>() < rule.RequiredLevel)
+            return new(409, null, "Required account level not reached.");
+        var gold = user["gold"]!.GetValue<int>();
+        if (gold < rule.GoldCost) return new(409, null, "Insufficient gold.");
+        var updated = user.DeepClone().AsObject();
+        updated["gold"] = gold - rule.GoldCost;
+        updated[section]!["renovation_finish_time"] = DateTimeOffset.UtcNow.AddSeconds(rule.Seconds)
+            .ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        Save(updated);
+        return new(0, new()
+        {
+            ["user_update"] = new JsonObject { ["gold"] = gold - rule.GoldCost, [section] = user[section]!.DeepClone() }
+        });
+    }
+
     private LocalReply CompleteBoxRenovation(string section, LocalArguments? request)
     {
         if (user[section] is not JsonObject box)

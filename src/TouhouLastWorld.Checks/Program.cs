@@ -1748,3 +1748,32 @@ Check(renovationReload.Dispatch("gold_box_renovation_end", arguments: new(3, 2))
     && renovationReload.Dispatch("login").Body!["user"]!["gold_box"]!["level"]!.GetValue<int>() == 2,
     "completed renovation survives restart and cannot advance again");
 Console.WriteLine("Passed 4 renovation completion checks.");
+
+var startBoxDirectory = directory + "-start-box";
+var startBoxServer = new OfflineServer(startBoxDirectory, seed, "offline://resources/");
+startBoxServer.Dispatch("game_init");
+startBoxServer.Dispatch("login");
+Check(startBoxServer.Dispatch("gold_box_renovation_start", arguments: new(Renovation: new(1, 2, 2, 10, 60))).Status == 409
+    && startBoxServer.Dispatch("gold_box_renovation_start", arguments: new(Renovation: new(1, 2, 1, 6000, 60))).Status == 409
+    && startBoxServer.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 5000,
+    "renovation start validates level and funds before charging");
+var startBoxReply = startBoxServer.Dispatch("gold_box_renovation_start", arguments: new(Renovation: new(1, 2, 1, 100, 3600))).Body!;
+Check(startBoxReply["user_update"]!["gold"]!.GetValue<int>() == 4900
+    && startBoxReply["user_update"]!["gold_box"]!["level"]!.GetValue<int>() == 1
+    && !string.IsNullOrEmpty(startBoxReply["user_update"]!["gold_box"]!["renovation_finish_time"]!.GetValue<string>()),
+    "renovation start charges once and records a timer without advancing the level");
+var startBoxReload = new OfflineServer(startBoxDirectory, seed, "offline://resources/");
+startBoxReload.Dispatch("game_init");
+startBoxReload.Dispatch("login");
+Check(startBoxReload.Dispatch("gold_box_renovation_start", arguments: new(Renovation: new(1, 2, 1, 100, 3600))).Status == 409
+    && startBoxReload.Dispatch("gold_box_renovation_end", arguments: new(2, 1)).Status == 409
+    && startBoxReload.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
+    "pending renovation survives restart without duplicate charge or early completion");
+var instantBox = new OfflineServer(directory + "-instant-box", seed, "offline://resources/");
+instantBox.Dispatch("game_init");
+instantBox.Dispatch("login");
+instantBox.Dispatch("gold_box_renovation_start", arguments: new(Renovation: new(1, 2, 1, 100, 0)));
+Check(instantBox.Dispatch("gold_box_renovation_end", arguments: new(2, 1)).Body!["user_update"]!["gold_box"]!["level"]!.GetValue<int>() == 2
+    && instantBox.Dispatch("login").Body!["user"]!["gold"]!.GetValue<int>() == 4900,
+    "zero-duration configuration completes through the same start and end flow");
+Console.WriteLine("Passed 4 renovation start checks.");
