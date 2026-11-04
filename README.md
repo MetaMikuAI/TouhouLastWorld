@@ -201,7 +201,7 @@
 | TreasureGachaRequest | 未确认 | 未实现 | — |
 | TreasureInfoRequest | fudai/fudai_info | 业务实现 | 查询与活动配置匹配的本地状态及已保存奖励信息；不生成奖励码，缺少快照时拒绝返回 |
 | TutorialFirstGachaConfirmRequest | 未确认 | 未实现 | — |
-| TutorialFirstGachaDoRequest | 未确认 | 未实现 | — |
+| TutorialFirstGachaDoRequest | tutorial_first_gacha_do | 最小响应 | 仅返回已确认初始库存的本地用户快照，不额外抽取或发放；尚未确认时拒绝 |
 | TutorialUpdateRequest | tutorial_update | 业务实现 | 校验并保存单调进度；不含阶段奖励 |
 | UnitAllocatePointsRequest | allocate_points | 业务实现 | 按目标等级逐级校验主数据费用与提交前已用点数门槛，统一扣点并保存；拒绝降级和重复类型，不重算历史点数来源 |
 | UnitBGMUpdateRequest | unit_bgm_update | 业务实现 | 校验成员归属，保存非负音乐编号；不校验资源可用性，不解锁音乐 |

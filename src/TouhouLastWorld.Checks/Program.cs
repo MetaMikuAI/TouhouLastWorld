@@ -2844,3 +2844,12 @@ Check(introPictureGrant["user_update"]!["picture"]!["picture_list"]!.AsArray().C
     && introPictureGrant["user_update"]!["picture"]!["picture_list"]!.AsArray().Select(row => row!["user_picture_id"]!.GetValue<long>()).Distinct().Count() == 2,
     "initial confirmation creates distinct equipment and a single album entry");
 Console.WriteLine("Passed 5 initial confirmation checks.");
+Check(server.Dispatch("tutorial_first_gacha_do").Status == 409,
+    "tutorial inventory refuses an unconfirmed initial selection");
+var tutorialSnapshot = introConfirmedReload.Dispatch("tutorial_first_gacha_do").Body!["user"]!;
+Check(tutorialSnapshot["unit"]!["unit_list"]!.AsArray().Count == 2,
+    "tutorial inventory returns the already granted roster");
+tutorialSnapshot["unit"]!["unit_list"]!.AsArray().Clear();
+Check(introConfirmedReload.Dispatch("tutorial_first_gacha_do").Body!["user"]!["unit"]!["unit_list"]!.AsArray().Count == 2,
+    "tutorial inventory does not mutate or duplicate the saved roster");
+Console.WriteLine("Passed 3 tutorial inventory checks.");

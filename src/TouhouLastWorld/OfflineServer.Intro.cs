@@ -8,6 +8,13 @@ public sealed record LocalIntroGrant(int UnitCapacity, int PictureCapacity, Loca
 
 public sealed partial class OfflineServer
 {
+    private LocalReply TutorialInventory()
+    {
+        if (user["_local_first_draw_confirmed"]?.GetValue<bool>() != true)
+            return new(409, null, "Confirmed initial inventory required.");
+        return new(0, new() { ["user"] = user.DeepClone() });
+    }
+
     public int[] PendingIntroPictures => (user["_local_first_draw_pending"]?["picture_ids"] as JsonArray)?
         .Select(value => value!.GetValue<int>()).Distinct().ToArray() ?? Array.Empty<int>();
 
