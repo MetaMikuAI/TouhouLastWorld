@@ -305,3 +305,38 @@ allReplayReload.Dispatch("update_replay_info", arguments: new(Text: "", ReplayMe
 Check(allReplayReload.Dispatch("get_replay_info", arguments: new(ReplayMeasure: ordinaryTarget)).Body!["replay_info"]!.GetValue<string>() == "",
     "ordinary replay cleared");
 Console.WriteLine("Passed 12 partitioned replay checks.");
+var teamSeed = JsonNode.Parse(seed)!;
+teamSeed["achievement"]!["recently_received_achievement_id_list"] = new JsonArray(11, 12);
+var teamDirectory = directory + "-teams";
+var teams = new OfflineServer(teamDirectory, teamSeed.ToJsonString(), "offline://resources/");
+teams.Dispatch("game_init");
+teams.Dispatch("login");
+Check(teams.Dispatch("achievement_new_update", arguments: new(Ids: [11, -1])).Status == 400, "invalid marker batch rejected");
+var markers = teams.Dispatch("achievement_new_update", arguments: new(Ids: [11, 11])).Body!["user_update"]!["achievement"]!["recently_received_achievement_id_list"]!.AsArray();
+Check(markers.Count == 1 && markers[0]!.GetValue<int>() == 12, "only requested markers cleared");
+Check(teams.Dispatch("achievement_new_update", arguments: new(Ids: [11])).Status == 0, "marker clear is idempotent");
+Check(teams.Dispatch("team_update", arguments: new(Team: new(1, "Renamed", null, 0, null, 0))).Status == 0, "team name update");
+Check(teams.Dispatch("login").Body!["user"]!["team"]!["team_list"]![0]!["user_unit_id_list"]![0]!.GetValue<long>() == 1,
+    "name update preserves members");
+Check(teams.Dispatch("team_update", arguments: new(Team: new(1, null, [1, 1], 0, null, 0))).Status == 400, "duplicate team members rejected");
+Check(teams.Dispatch("team_update", arguments: new(Team: new(1, "Rejected", [999], 0, null, 0))).Status == 404,
+    "unowned team member rejected");
+Check(teams.Dispatch("login").Body!["user"]!["team"]!["team_list"]![0]!["name"]!.GetValue<string>() == "Renamed",
+    "rejected team update preserves name");
+Check(teams.Dispatch("team_update", arguments: new(Team: new(1, null, [1, 0], 5, [0, 1], 5))).Status == 400,
+    "enhanced member must match slot");
+var savedTeam = teams.Dispatch("team_update", arguments: new(Team: new(1, null, [0, 1], 5, [0, 1], 6)))
+    .Body!["user_update"]!["team"]!["team_list"]![0]!;
+Check(savedTeam["user_unit_id_list"]!.AsArray().Count == 6 && savedTeam["use_cost"]!.GetValue<int>() == 5,
+    "team slots normalized and cost stored");
+Check(teams.Dispatch("friend_setting_helper", arguments: new(999, 100)).Status == 404, "helper ownership required");
+Check(teams.Dispatch("friend_setting_helper", arguments: new(1, 100)).Body!["helper_user_unit_id1"]!.GetValue<long>() == 1,
+    "helper selected");
+var teamReload = new OfflineServer(teamDirectory, teamSeed.ToJsonString(), "offline://resources/");
+teamReload.Dispatch("game_init");
+var savedUser = teamReload.Dispatch("login").Body!["user"]!;
+Check(savedUser["team"]!["team_list"]![0]!["user_unit_id_list"]![1]!.GetValue<long>() == 1
+    && savedUser["achievement"]!["recently_received_achievement_id_list"]!.AsArray().Count == 1,
+    "team and markers persist");
+Check(teamReload.Dispatch("friend_top").Body!["helper_user_unit_id1"]!.GetValue<long>() == 1, "helper persists and overview reads selection");
+Console.WriteLine("Passed 14 team, marker and helper checks.");
