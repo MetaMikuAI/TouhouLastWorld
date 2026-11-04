@@ -1452,3 +1452,17 @@ Check(clearedTeamServer.Dispatch("get_quest_cleared_team_info", arguments: new(R
 Check(clearedTeamServer.Dispatch("get_quest_cleared_team_info", arguments: new(ReplayMeasure: new(3, 10, 0))).Status == 400,
     "cleared team query rejects unknown types");
 Console.WriteLine("Passed 3 cleared team query checks.");
+var helperListSeed = JsonNode.Parse(seed)!.AsObject();
+helperListSeed["_local_friend_players"] = new JsonArray(new JsonObject { ["player_id"] = "contact" });
+helperListSeed["_local_friend_requests"] = new JsonArray(new JsonObject { ["player_id"] = "pending" });
+var helperListServer = new OfflineServer(directory + "-helper-list", helperListSeed.ToJsonString(), "offline://resources/");
+helperListServer.Dispatch("game_init");
+helperListServer.Dispatch("login");
+var helperList = helperListServer.Dispatch("friend_helper_select", arguments: new(Value: 1)).Body!;
+Check(helperList["helper_list"]!.AsArray().Count == 0 && helperList["is_friend_max"]!.GetValue<int>() == 1
+    && helperList["friend_request_count"]!.GetValue<int>() == 1 && helperList["user_update"] is null,
+    "helper listing reports local capacity and outgoing count without producing candidates or rewards");
+Check(helperListServer.Dispatch("friend_helper_select", arguments: new(Value: 2)).Body!["is_friend_max"]!.GetValue<int>() == 0
+    && helperListServer.Dispatch("friend_helper_select").Status == 503,
+    "helper listing uses a known capacity definition");
+Console.WriteLine("Passed 2 helper list checks.");

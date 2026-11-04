@@ -148,7 +148,7 @@
 | PopupAdWindowRequest | popup | 最小响应 | 确认弹窗打开通知，恢复调用方交互；不上传、不记录、不改变资产 |
 | previewAvatarAPIAsyncRequest | avatar/preview | 业务实现 | 保存指定条目的已读状态，按剩余未读且已解锁条目返回提示；列表读取本地条目，不自动解锁 |
 | ProfileUserInfoUpdateRequest | user_info_update | 业务实现 | 三种派生请求更新名称或简介，基础文本校验、原子保存；不含远端文本审核 |
-| QuestHelperSelectRequest | 未确认 | 未实现 | — |
+| QuestHelperSelectRequest | friend_helper_select | 最小响应 | 空候选列表，支持不使用援助；返回本地容量及申请数；无积分与远端匹配 |
 | ReadUnitTalkRequest | read_unit_talk | 业务实现 | 保存正数对话 ID 的已读标记，重复提交幂等；不校验内容存在性，不生成解锁或奖励 |
 | ReincarnationReleaseRequest | 未确认 | 未实现 | — |
 | replaceAvatarRequest | avatar/update | 业务实现 | 仅选择本地已解锁条目，保存编号与资源描述；不授予解锁，不验证资源文件是否存在 |

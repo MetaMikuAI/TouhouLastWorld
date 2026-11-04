@@ -35,6 +35,8 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "friend_helper_select")
+            arguments = new LocalArguments(Value: MasterDB.This()?.Setting?.FRIEND_COUNT_MAX);
         if (api == "get_quest_cleared_team_info")
         {
             var query = request.TryCast<GetQuestClearedTeamInfoRequest>();

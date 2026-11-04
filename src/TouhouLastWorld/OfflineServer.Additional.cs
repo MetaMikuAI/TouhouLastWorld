@@ -22,10 +22,11 @@ public sealed partial class OfflineServer
         or "lecture_room_food_addition" or "lecture_room_food_distribution" or "training_room_shortened_finish_time"
         or "avatar/preview" or "avatar/update" or "friend/refuse_apply" or "friend/accept_apply" or "friend/apply"
         or "friend/info" or "friend_delete" or "friend_request_cancel" or "friend_request" or "friend_approve" or "reset_point_allocation" or "allocate_points"
-        or "get_quest_cleared_team_info" or "afk_receive_drop" or "afk_complete_upgrade" or "afk_set" or "episode_end" or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
+        or "friend_helper_select" or "get_quest_cleared_team_info" or "afk_receive_drop" or "afk_complete_upgrade" or "afk_set" or "episode_end" or "event_top" or "daily_arena_top" or "weekly_arena_top" or "weekly_arena_battle_score_reset" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
+        "friend_helper_select" => HelperCandidates(arguments?.Value),
         "get_quest_cleared_team_info" => ClearedTeam(arguments?.ReplayMeasure),
         "afk_set" => SetIdleSlot(arguments?.Idle),
         "afk_complete_upgrade" => CompleteIdleSlot(arguments),
@@ -134,6 +135,17 @@ public sealed partial class OfflineServer
             ? new(0, new()) : new(403, null, "Local identity does not match."),
         _ => QueryTemplates.TryGetValue(api, out var body) ? new(0, body.DeepClone().AsObject()) : null
     };
+
+    private LocalReply HelperCandidates(int? capacity)
+    {
+        if (capacity is null or <= 0) return new(503, null, "Contact capacity unavailable.");
+        return new(0, new()
+        {
+            ["helper_list"] = new JsonArray(), ["daily_fp_gain_limit_flag"] = 0,
+            ["is_friend_max"] = ((user["_local_friend_players"] as JsonArray)?.Count ?? 0) >= capacity ? 1 : 0,
+            ["friend_request_count"] = (user["_local_friend_requests"] as JsonArray)?.Count ?? 0
+        });
+    }
 
     private LocalReply CompleteEpisode(LocalArguments? request)
     {
