@@ -35,6 +35,7 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "dispatch_start") arguments = ReadDispatchStart(request.TryCast<DispatchStartRequest>());
         if (api == "personal_info_update")
         {
             var change = request.TryCast<EventPersonalInfoUpdateAPIRequest>();

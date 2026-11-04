@@ -35,7 +35,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalRankPromotion? RankPromotion = null, LocalAwakening? Awakening = null, LocalLimitBreak? LimitBreak = null,
     LocalStatMaterial[]? StatMaterials = null, LocalStatUnlock? StatUnlock = null, LocalPictureGrowth? PictureGrowth = null,
     LocalDestinyGrowth? DestinyGrowth = null, LocalPictureLimitBreak? PictureLimitBreak = null, LocalPictureRecycle? PictureRecycle = null,
-    LocalItemExchange? ItemExchange = null, LocalContactDetails? ContactDetails = null);
+    LocalItemExchange? ItemExchange = null, LocalContactDetails? ContactDetails = null, LocalDispatchStart? DispatchStart = null);
 
 public sealed partial class OfflineServer
 {

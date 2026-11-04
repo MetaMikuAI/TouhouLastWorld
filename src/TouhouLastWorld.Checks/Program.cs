@@ -2337,3 +2337,38 @@ Check(contactDetailsReload.Dispatch("personal_info_get").Body!["user_name"]!.Get
     && contactDetailsReload.Dispatch("anniversary_info_get").Body!["mail_address"]!.GetValue<string>() == "local@example.invalid",
     "local contact details persist independently of mail details");
 Console.WriteLine("Passed 3 local contact detail checks.");
+
+var dispatchStartSeed = JsonNode.Parse(seed)!;
+var dispatchMemberId = dispatchStartSeed["unit"]!["unit_list"]![0]!["user_unit_id"]!.GetValue<long>();
+var dispatchMemberType = dispatchStartSeed["unit"]!["unit_list"]![0]!["unit_id"]!.GetValue<int>();
+dispatchStartSeed["_local_dispatch_offers"] = new JsonArray(new JsonObject
+{
+    ["user_dispatch_id"] = 701L, ["dispatch_id"] = 7, ["end_time"] = "",
+    ["appearance_finish_time"] = "", ["user_unit_id_list"] = new JsonArray()
+});
+var dispatchStartDirectory = directory + "-dispatch-start";
+var dispatchStartServer = new OfflineServer(dispatchStartDirectory, dispatchStartSeed.ToJsonString(), "offline://resources/");
+dispatchStartServer.Dispatch("game_init");
+dispatchStartServer.Dispatch("login");
+var dispatchStartRule = new LocalDispatchStart(7, 600, 10, 1, 1, 10, 1,
+    new[] { new LocalDispatchMember(dispatchMemberId, dispatchMemberType, 10, true) });
+var dispatchStartArgs = new LocalArguments(701, Ids: new[] { dispatchMemberId }, DispatchStart: dispatchStartRule);
+Check(dispatchStartServer.Dispatch("dispatch_start", arguments: dispatchStartArgs with { EntityId = 702 }).Status == 404
+    && dispatchStartServer.Dispatch("dispatch_start", arguments: dispatchStartArgs with { DispatchStart = dispatchStartRule with { RequiredLevel = 11 } }).Status == 409
+    && dispatchStartServer.Dispatch("dispatch_start", arguments: dispatchStartArgs with { DispatchStart = dispatchStartRule with { Cost = int.MaxValue } }).Status == 409,
+    "dispatch start rejects missing offers, unmet levels and insufficient points without mutation");
+var dispatchStartReply = dispatchStartServer.Dispatch("dispatch_start", arguments: dispatchStartArgs).Body!["user_update"]!;
+Check(dispatchStartReply["phantasm_point"]!["points"]!.GetValue<int>() == 90
+    && dispatchStartReply["dispatch"]!["dispatch_list"]![0]!["user_unit_id_list"]![0]!.GetValue<long>() == dispatchMemberId
+    && DateTime.Parse(dispatchStartReply["dispatch"]!["dispatch_list"]![0]!["end_time"]!.GetValue<string>()) > DateTime.UtcNow.AddMinutes(9),
+    "dispatch start deducts cost and records members and finish time");
+var dispatchStartReload = new OfflineServer(dispatchStartDirectory, seed, "offline://resources/");
+dispatchStartReload.Dispatch("game_init");
+dispatchStartReload.Dispatch("login");
+Check(dispatchStartReload.Dispatch("dispatch_start", arguments: dispatchStartArgs).Status == 409
+    && dispatchStartReload.Dispatch("get_dispatch_list").Body!["dispatch_list"]![0]!["user_unit_id_list"]!.AsArray().Count == 1,
+    "dispatch start persists and cannot charge twice");
+dispatchStartReload.Dispatch("dispatch_cancel", arguments: new(701));
+Check(dispatchStartReload.Dispatch("get_dispatch_list").Body!["dispatch_list"]![0]!["user_unit_id_list"]!.AsArray().Count == 0,
+    "cancelled dispatch returns to the candidate state");
+Console.WriteLine("Passed 4 dispatch start checks.");

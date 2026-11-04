@@ -41,7 +41,7 @@
 | DispatchBulkEndRequest | 未确认 | 未实现 | — |
 | DispatchCancelRequest | dispatch_cancel | 业务实现 | 删除本地任务并返回客户端删除标记；不发放奖励，本地不退款；不存在的任务返回未找到 |
 | DispatchEndRequest | 未确认 | 未实现 | — |
-| DispatchStartRequest | 未确认 | 未实现 | — |
+| DispatchStartRequest | dispatch_start | 业务实现 | 启动已配置的本地候选任务，校验成员、等级、职业、容量、有效期并扣点计时；候选生成与奖励结算未实现 |
 | EpisodeEndRequest | episode_end | 业务实现 | 校验主数据剧情类型，持久化 scenario_status 并同步进度；重复完成不新增记录，保留战斗状态；不校验开放条件、不结算奖励或推进教程 |
 | EventAnniversaryInfoGetAPIRequest | anniversary_info_get | 最小响应 | 返回未填写邮箱；不提交报名或发放奖励 |
 | EventAnniversaryInfoUpdateAPIRequest | anniversary_info_update | 业务实现 | 本地保存邮箱及申请状态，读取可回显；不提交外部活动 |
@@ -82,7 +82,7 @@
 | GatherGoldRequest | gather_gold | 业务实现 | 收取本地已保存库存，按当前等级容量入账，超出部分保留；主页同步余量，不计算时间产出 |
 | GatherPhantasmPointRequest | gather_phantasm_point | 业务实现 | 收取本地已保存点数库存，按当前等级容量入账，超出部分保留；同步主页余量，不计算时间产出 |
 | GetAutoReplayInfoRequest | get_auto_replay_info | 业务实现 | 按目标读取已保存测量值；无记录返回零，不重算战斗 |
-| GetDispatchListRequest | get_dispatch_list | 最小响应 | 空派遣列表；不含派遣开始与结算 |
+| GetDispatchListRequest | get_dispatch_list | 业务实现 | 合并本地候选与已启动任务；未配置候选时为空，不生成候选 |
 | GetEventTotalPointRewardAllRequest | 未确认 | 未实现 | — |
 | GetEventTotalPointRewardRequest | 未确认 | 未实现 | — |
 | GetHistoryRequest | get_history | 最小响应 | 零值历史摘要；不计算累计统计 |
