@@ -98,8 +98,8 @@
 | GetVersusReplayInfoRequest | get_multiple_spirits_weekly_replay_info | 业务实现 | 按目标读取本地重放；无记录返回空内容，客户端关闭重放模式 | 未测 |
 | GGTapAdRequest | get_tap_ad | 最小响应 | 返回空归因字段与 first_login=0，跳过调用方首次激活上传；不读取或保存设备标识 | 未测 |
 | GGTapAdSecRequest | tap_sec_day | 最小响应 | 返回 is_sec_day=0 与空日期，跳过调用方次日上传；不记录设备标识或计算留存 | 未测 |
-| GoldBoxRenovationEndRequest | gold_box_renovation_end | 业务实现 | 到期按原等级结算库存并切换产出等级，清除升级计时 | 未测 |
-| GoldBoxRenovationStartRequest | gold_box_renovation_start | 业务实现 | 按下一等级配置校验等级、费用与时长，一次保存扣款及结束时间，拒绝重复开工 | 未测 |
+| GoldBoxRenovationEndRequest | gold_box_renovation_end | 业务实现 | 到期按原等级结算库存并切换产出等级，清除升级计时 | 通过（一级升二级） |
+| GoldBoxRenovationStartRequest | gold_box_renovation_start | 业务实现 | 按主表校验等级和费用，保存扣款及带时区的截止时间 | 通过（一级升二级） |
 | GoogleSwitchDoRequest | 未确认 | 未实现 | — | 未测 |
 | GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 | — | 未测 |
 | HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存非负音乐编号，零值恢复默认；不校验资源可用性，不解锁音乐 | 未测 |
@@ -138,7 +138,7 @@
 | PaymentResumeRequest | 未确认 | 未实现 | — | 未测 |
 | PaymentStartRequest | 未确认 | 未实现 | — | 未测 |
 | PhantasmBoxRenovationEndRequest | phantasm_box_renovation_end | 业务实现 | 到期按原等级结算库存并切换产出等级，清除升级计时 | 未测 |
-| PhantasmBoxRenovationStartRequest | phantasm_box_renovation_start | 业务实现 | 按下一等级配置校验等级、金币费用与时长，一次保存扣款及结束时间，拒绝重复开工 | 未测 |
+| PhantasmBoxRenovationStartRequest | phantasm_box_renovation_start | 业务实现 | 按主表校验等级和费用，保存扣款及带时区的截止时间 | 未测 |
 | PhantasmPointBuyRequest | phantasm_point_buy | 业务实现 | 按次数价格及等级公式购买，优先扣免费额度，一次保存余额、点数和次数；容量不足整笔拒绝，不重置每日次数 | 未测 |
 | PictureBookReciveRequest | picture_book/get_reward | 业务实现 | 按已完成记录发放配置中的金币、晶体或物品，保存领奖标记；其他奖励类型及进度生成未实现 | 未测 |
 | PictureBookRequest | picture_book/get_user_picture_book_list | 业务实现 | 读取本地待领取与已领奖记录；不生成进度 | 未测 |

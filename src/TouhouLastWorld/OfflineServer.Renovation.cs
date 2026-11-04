@@ -24,7 +24,7 @@ public sealed partial class OfflineServer
         var updated = user.DeepClone().AsObject();
         updated["gold"] = gold - rule.GoldCost;
         updated[section]!["renovation_finish_time"] = DateTimeOffset.UtcNow.AddSeconds(rule.Seconds)
-            .ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            .ToString("O", CultureInfo.InvariantCulture);
         Save(updated);
         return new(0, new()
         {
