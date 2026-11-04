@@ -3163,3 +3163,19 @@ rankingReply["area1_team_info"]![0]!["unit_id"] = 0;
 Check(rankingServer.Dispatch("get_series_battle_ranking_teaminfo", arguments: rankingQuery).Body!["area1_team_info"]![0]!["unit_id"]!.GetValue<int>() == 1001,
     "ranking response mutation does not alter stored history");
 Console.WriteLine("Passed 3 ranking history checks.");
+var miniOverviewSeed = JsonNode.Parse(seed)!;
+miniOverviewSeed["_local_mini_game_claims"] = new JsonObject { ["2"] = 1 };
+miniOverviewSeed["_local_mini_game_remaining_points"] = 12;
+var miniOverviewServer = new OfflineServer(directory + "-mini-overview", miniOverviewSeed.ToJsonString(), "offline://resources/");
+miniOverviewServer.Dispatch("game_init");
+miniOverviewServer.Dispatch("login");
+var miniOverview = miniOverviewServer.Dispatch("mini_game_top", arguments: new(Ids: new[] { 1L, 2L })).Body!;
+Check(miniOverview["first_clear_reward_info"]!.AsArray().Count == 2
+    && miniOverview["first_clear_reward_info"]![0]!["get_reward_flg"]!.GetValue<int>() == 0
+    && miniOverview["first_clear_reward_info"]![1]!["get_reward_flg"]!.GetValue<int>() == 1
+    && miniOverview["get_phantasm_point"]!.GetValue<int>() == 12,
+    "entry overview supplies every master entry and retains stored flags and remaining points");
+Check(miniOverviewServer.Dispatch("mini_game_top", arguments: new(Ids: new[] { 1L, 1L })).Status == 503
+    && miniOverviewServer.Dispatch("login").Body!["user"]!["phantasm_point"]!["points"]!.GetValue<int>() == 100,
+    "entry overview rejects duplicate definitions and grants no points");
+Console.WriteLine("Passed 2 entry overview checks.");

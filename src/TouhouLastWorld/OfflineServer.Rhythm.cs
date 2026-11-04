@@ -4,6 +4,24 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private LocalReply MiniGameOverview(LocalArguments? request)
+    {
+        if (request?.Ids is not { Length: > 0 } ids || ids.Any(id => id <= 0 || id > int.MaxValue)
+            || ids.Distinct().Count() != ids.Length)
+            return new(503, null, "Entry definitions unavailable.");
+        var remaining = user["_local_mini_game_remaining_points"]?.GetValue<int>() ?? 0;
+        if (remaining < 0) return new(503, null, "Remaining points are invalid.");
+        var flags = user["_local_mini_game_claims"] as JsonObject;
+        var entries = new JsonArray();
+        foreach (var id in ids)
+        {
+            var flag = flags?[id.ToString(System.Globalization.CultureInfo.InvariantCulture)]?.GetValue<int>() ?? 0;
+            if (flag is < 0 or > 1) return new(503, null, "Reward claim state is invalid.");
+            entries.Add(new JsonObject { ["mini_game_master_id"] = (int)id, ["get_reward_flg"] = flag });
+        }
+        return new(0, new() { ["first_clear_reward_info"] = entries, ["get_phantasm_point"] = remaining });
+    }
+
     private LocalReply EndRhythm(LocalRhythmResult? result)
     {
         if (result is null || result.MusicId <= 0 || result.Difficulty is < 2 or > 4
