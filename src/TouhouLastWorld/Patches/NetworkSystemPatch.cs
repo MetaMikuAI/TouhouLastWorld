@@ -35,6 +35,11 @@ public partial class NetworkSystemPatch
         var battle = api == "battle_end" ? request.TryCast<BattleEndRequest>() : null;
         var protection = api == "unit_protection" ? request.TryCast<UnitProtectionRequest>() : null;
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
+        if (api == "personal_info_update")
+        {
+            var change = request.TryCast<EventPersonalInfoUpdateAPIRequest>();
+            if (change != null) arguments = new LocalArguments(ContactDetails: new(change.user_name, change.zip_code, change.address, change.phone_number));
+        }
         if (api == "anniversary_info_update")
         {
             var change = request.TryCast<EventAnniversaryInfoUpdateAPIRequest>();

@@ -2325,3 +2325,15 @@ applicationReload.Dispatch("login");
 Check(applicationReload.Dispatch("anniversary_info_get").Body!["mail_address"]!.GetValue<string>() == "local@example.invalid",
     "local application address persists and can be read");
 Console.WriteLine("Passed 3 local application checks.");
+
+Check(applicationReload.Dispatch("personal_info_update", arguments: new(ContactDetails: new("", "000", "Local", "000"))).Status == 400,
+    "local contact details reject missing fields");
+Check(applicationReload.Dispatch("personal_info_update", arguments: new(ContactDetails: new("Sample", "000", "Local", "000"))).Body!["user_update"]!["figure_present"]!["applied"]!.GetValue<int>() == 1,
+    "local contact details update the application state");
+var contactDetailsReload = new OfflineServer(applicationDirectory, seed, "offline://resources/");
+contactDetailsReload.Dispatch("game_init");
+contactDetailsReload.Dispatch("login");
+Check(contactDetailsReload.Dispatch("personal_info_get").Body!["user_name"]!.GetValue<string>() == "Sample"
+    && contactDetailsReload.Dispatch("anniversary_info_get").Body!["mail_address"]!.GetValue<string>() == "local@example.invalid",
+    "local contact details persist independently of mail details");
+Console.WriteLine("Passed 3 local contact detail checks.");
