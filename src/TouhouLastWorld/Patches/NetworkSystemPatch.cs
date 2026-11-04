@@ -41,6 +41,14 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
         if (api == "home_select_unit_update")
             arguments = new LocalArguments(Value: request.TryCast<HomeCustomSelectUnitUpdateRequest>()?.select_unit_index);
+        if (api == "favorite_unit_update")
+        {
+            var update = request.TryCast<HomeCustomSetUpdateRequest>();
+            arguments = update == null ? null : new LocalArguments(Home: new(update.unit_param?.ToArray()
+                .Select(entry => entry == null ? new LocalHomeEntry(0, 0, 0, 0, 0)
+                    : new LocalHomeEntry(entry.unit_id, entry.user_unit_id, entry.costume_id, entry.home_motion, entry.bgm)).ToArray(),
+                update.select_unit_index, update.random_select_mode));
+        }
         if (api == "home_bgm_update")
             arguments = new LocalArguments(Value: request.TryCast<HomeBGMUpdateRequest>()?.select_bgm_id);
         if (api == "unit_bgm_update")

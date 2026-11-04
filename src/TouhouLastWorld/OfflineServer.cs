@@ -9,9 +9,11 @@ public sealed record LocalProfileUpdate(string? PlayerName = null, string? HeroN
 public sealed record LocalReplayMeasure(int QuestType, int TargetId, int Difficulty, int? WinRate = null, int? ActionNum = null);
 public sealed record LocalReplayContent(int TargetId, int Level, string? Rules, string? Content);
 public sealed record LocalTeamUpdate(int Number, string? Name, long[]? Units, int Cost, long[]? EnhancedUnits, int CostWithFriend);
+public sealed record LocalHomeEntry(int UnitId, long UserUnitId, int CostumeId, int Motion, int Music);
+public sealed record LocalHomeUpdate(LocalHomeEntry[]? Units, int SelectedIndex, int RandomMode);
 public sealed record LocalArguments(long? EntityId = null, int? Value = null, long[]? Ids = null, string? Text = null,
     LocalProfileUpdate? Profile = null, LocalReplayMeasure? ReplayMeasure = null, LocalReplayContent? ReplayContent = null,
-    LocalTeamUpdate? Team = null);
+    LocalTeamUpdate? Team = null, LocalHomeUpdate? Home = null);
 
 public sealed partial class OfflineServer
 {

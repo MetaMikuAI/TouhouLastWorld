@@ -100,7 +100,7 @@
 | GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 | — |
 | HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存非负音乐编号，零值恢复默认；不校验资源可用性，不解锁音乐 |
 | HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 |
-| HomeCustomSetUpdateRequest | 未确认 | 未实现 | — |
+| HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式；外观、动作及音乐仅保存编号，不校验素材可用性 |
 | HomeRequest | home | 最小响应 | 空摘要 |
 | IdleSearchCompleteUpgradeRequest | 未确认 | 未实现 | — |
 | IdleSearchReceiveDropRequest | 未确认 | 未实现 | — |
