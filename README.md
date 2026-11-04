@@ -197,7 +197,7 @@
 | TrainingRoomShortenedFinishTimeRequest | 未确认 | 未实现 | — |
 | TrainingRoomStartRequest | 未确认 | 未实现 | — |
 | TrainingRoomUpdateRequest | 未确认 | 未实现 | — |
-| TranscribeKpiRequest | 未确认 | 未实现 | — |
+| TranscribeKpiRequest | transcribe_kpi | 最小响应 | 接受类型 1、2 的统计事件；不上传、不记录、不变更资产 |
 | TreasureGachaRequest | 未确认 | 未实现 | — |
 | TreasureInfoRequest | 未确认 | 未实现 | — |
 | TutorialFirstGachaConfirmRequest | 未确认 | 未实现 | — |

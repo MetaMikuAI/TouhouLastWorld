@@ -12,7 +12,7 @@ public sealed partial class OfflineServer
         or "get_replay_info" or "update_replay_info" or "achievement_new_update" or "team_update"
         or "friend_setting_helper" or "home_select_unit_update" or "home_bgm_update" or "unit_bgm_update"
         or "favorite_unit_update" or "update_home_motion_mode" or "read_unit_talk" or "mail_delete"
-        or "unit_voice_update" || QueryTemplates.ContainsKey(api);
+        or "unit_voice_update" or "transcribe_kpi" || QueryTemplates.ContainsKey(api);
 
     private LocalReply? DispatchAdditional(string api, LocalArguments? arguments) => api switch
     {
@@ -20,6 +20,8 @@ public sealed partial class OfflineServer
         "read_unit_talk" => MarkTalkRead(arguments?.Value),
         "mail_delete" => DeleteReadMail(),
         "unit_voice_update" => SetVoice(arguments),
+        "transcribe_kpi" => arguments?.Value is 1 or 2 ? new(0, new())
+            : new(400, null, "Unknown local telemetry event."),
         "favorite_unit_update" => UpdateHome(arguments?.Home),
         "home_select_unit_update" => SelectHomeUnit(arguments?.Value),
         "unit_bgm_update" => SetUnitPreference(arguments, "select_bgm"),

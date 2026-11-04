@@ -41,6 +41,8 @@ public partial class NetworkSystemPatch
             arguments = new LocalArguments(Value: request.TryCast<SetAgeRequest>()?.age_type);
         if (api == "read_unit_talk")
             arguments = new LocalArguments(Value: request.TryCast<ReadUnitTalkRequest>()?.talk_id);
+        if (api == "transcribe_kpi")
+            arguments = new LocalArguments(Value: request.TryCast<TranscribeKpiRequest>()?.transcribe_value);
         if (api == "unit_voice_update")
         {
             var update = request.TryCast<UnitVoiceUpdateRequest>();
