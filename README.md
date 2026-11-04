@@ -15,7 +15,7 @@
 | ArenaBattleEndRequest | 未确认 | 未实现 | — |
 | ArenaBattleStartRequest | 未确认 | 未实现 | — |
 | AutoReplayEndRequest | 未确认 | 未实现 | — |
-| AutoReplayStartRequest | 未确认 | 未实现 | — |
+| AutoReplayStartRequest | auto_replay_start | 最小响应 | 无运行任务时返回原生“未启动”状态，不扣费；已有任务拒绝覆盖；后台执行与奖励结算尚未实现 |
 | BatchSearchRequest | 未确认 | 未实现 | — |
 | BattleEndRequest | battle_end | 最小响应 | 固定奖励，不含完整结算 |
 | BattlePassMissionEndRequest | 未确认 | 未实现 | — |

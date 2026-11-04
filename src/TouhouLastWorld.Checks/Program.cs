@@ -2269,3 +2269,22 @@ Check(googleRelationReload.Dispatch("login").Body!["user"]!["google_relation"]!.
     && googleRelationReload.Dispatch("user_google_info_delete").Status == 0,
     "local Google unlink persists and is repeatable");
 Console.WriteLine("Passed 2 local Google relation checks.");
+
+var replayStartServer = new OfflineServer(directory + "-replay-start", seed, "offline://resources/");
+replayStartServer.Dispatch("game_init");
+replayStartServer.Dispatch("login");
+Check(replayStartServer.Dispatch("auto_replay_start", arguments: new(Value: 0, ReplayMeasure: new(0, 1, 1))).Status == 400,
+    "background replay rejects empty execution count");
+var replayStartBefore = replayStartServer.Dispatch("login").Body!["user"]!.ToJsonString();
+Check(replayStartServer.Dispatch("auto_replay_start", arguments: new(Value: 10, ReplayMeasure: new(0, 1, 1))).Body!["user_update"]!["auto_replay"]!["target_id"]!.GetValue<long>() == 0
+    && replayStartServer.Dispatch("login").Body!["user"]!.ToJsonString() == replayStartBefore,
+    "unavailable background replay follows cancelled branch without changing state or charging");
+var activeReplaySeed = JsonNode.Parse(seed)!;
+activeReplaySeed["auto_replay"]!["target_id"] = 1L;
+var activeReplayServer = new OfflineServer(directory + "-replay-active", activeReplaySeed.ToJsonString(), "offline://resources/");
+activeReplayServer.Dispatch("game_init");
+activeReplayServer.Dispatch("login");
+Check(activeReplayServer.Dispatch("auto_replay_start", arguments: new(Value: 10, ReplayMeasure: new(0, 2, 1))).Status == 409
+    && activeReplayServer.Dispatch("login").Body!["user"]!["auto_replay"]!["target_id"]!.GetValue<long>() == 1,
+    "background replay does not overwrite an existing task");
+Console.WriteLine("Passed 3 background replay boundary checks.");
