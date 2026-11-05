@@ -113,24 +113,25 @@ public sealed partial class OfflineServer
         {
             var rule = task.Rule;
             var receivedToday = claimed.Contains(rule.Id);
-            var completed = receivedToday || (task.CompleteType switch
+            var progress = receivedToday ? rule.Required : Math.Min(rule.Required, task.CompleteType switch
             {
-                1 => lastLoginAt >= start && lastLoginAt <= daily.Now,
-                DailyQuestMissionType => HasDailyQuestWin(daily.Day),
-                _ => false
+                1 => lastLoginAt >= start && lastLoginAt <= daily.Now ? 1 : 0,
+                BattleWinMissionType => user[DailyBattleWins]?.GetValue<int>() ?? 0,
+                DailyQuestMissionType => HasDailyQuestWin(daily.Day) ? 1 : 0,
+                _ => 0
             });
             var row = new JsonObject
             {
                 ["id"] = rule.Id, ["type"] = 1, ["name"] = task.Name, ["complete_type"] = task.CompleteType,
                 ["complete_id"] = 0, ["complete_value"] = rule.Required, ["display_order"] = task.DisplayOrder,
-                ["open_mission_id"] = 0, ["event_id"] = 0, ["chapter_id"] = 0, ["current_value"] = completed ? 1 : 0,
+                ["open_mission_id"] = 0, ["event_id"] = 0, ["chapter_id"] = 0, ["current_value"] = progress,
                 ["start_at"] = startAt, ["end_at"] = endAt, ["battle_pass_id"] = daily.PassId,
                 ["reward_battle_pass_exp"] = rule.Experience
             };
             SetMissionRewardGroups(row, task.RewardGroups);
             // 原生任务面板从开放列表创建卡片，再通过完成及已领奖列表设置状态。
             open.Add(row);
-            if (completed && !receivedToday) ready.Add(row.DeepClone());
+            if (progress >= rule.Required && !receivedToday) ready.Add(row.DeepClone());
         }
         return rules;
     }

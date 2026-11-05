@@ -137,7 +137,7 @@ public sealed partial class OfflineServer
             "picture_new_update" => ClearNewFlags(arguments, "picture", "picture_list", "user_picture_id"),
             "unit_voice_autoset_update" => SetVoiceAutoset(arguments?.Value),
             "battle_start" => StartQuestBattle(arguments?.QuestBattleStart),
-            "battle_end" => EndQuestBattle(arguments?.QuestBattleEnd),
+            "battle_end" => EndQuestBattle(arguments?.QuestBattleEnd, arguments?.DailyQuestDay),
             _ => DispatchAdditional(api, arguments)
         };
         if (operation is { Status: not 0 }) return operation;

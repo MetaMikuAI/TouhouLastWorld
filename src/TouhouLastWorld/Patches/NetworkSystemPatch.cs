@@ -735,8 +735,7 @@ public partial class NetworkSystemPatch
         }
         if (api is "home" or "gather_gold" or "gather_phantasm_point" or "gold_box_renovation_end" or "phantasm_box_renovation_end")
             arguments = ReadFacilityIncome(arguments ?? new());
-        if (api is "home" or "login" || arguments?.QuestBattleStart?.Daily is not null
-            || api == "battle_end" && Plugin.Server.PendingDailyQuestStage > 0)
+        if (api is "home" or "login" or "battle_end" || arguments?.QuestBattleStart?.Daily is not null)
             arguments = (arguments ?? new()) with { DailyQuestDay = ReadDailyQuestDay() };
         var reply = Plugin.Server.Dispatch(api, gacha?.count, gacha?.gacha_id, gacha?.gacha_button_id, arguments);
         Log.Info($"Offline API: {api}; status={reply.Status}");

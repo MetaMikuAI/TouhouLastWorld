@@ -173,8 +173,9 @@ public partial class NetworkSystemPatch
         foreach (var task in tasks)
         {
             if (task.battle_pass_id != 0 || task.type != (int)BattlePassMissionEndRequest.MissionType.Daily
-                || task.complete_type is not (1 or OfflineServer.DailyQuestMissionType) || task.complete_id != 0
-                || task.complete_value != 1 || task.event_id != 0 || task.chapter_id != 0 || task.reward_battle_pass_exp <= 0
+                || task.complete_type is not (1 or OfflineServer.BattleWinMissionType or OfflineServer.DailyQuestMissionType)
+                || task.complete_id != 0 || task.complete_value <= 0 || task.event_id != 0 || task.chapter_id != 0
+                || task.reward_battle_pass_exp <= 0
                 || !string.IsNullOrWhiteSpace(task.start_at) || !string.IsNullOrWhiteSpace(task.end_at))
                 continue;
             var groups = new[] { task.reward_group1_id, task.reward_group2_id, task.reward_group3_id, task.reward_group4_id };

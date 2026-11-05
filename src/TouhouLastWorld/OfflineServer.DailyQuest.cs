@@ -17,6 +17,8 @@ public sealed partial class OfflineServer
 {
     private const string DailyQuestDay = "_local_daily_quest_day";
     private const string DailyQuestList = "daily_quest_count_list";
+    private const string DailyBattleWins = "_local_daily_battle_wins";
+    internal const int BattleWinMissionType = 7;
 
     internal int PendingDailyQuestStage => user[PendingQuestBattle]?["daily_stage_id"]?.GetValue<int>() ?? 0;
 
@@ -30,6 +32,7 @@ public sealed partial class OfflineServer
         if (day is null || day.Date <= (user[DailyQuestDay]?.GetValue<int>() ?? 0)) return false;
         var updated = user.DeepClone().AsObject();
         updated[DailyQuestDay] = day.Date;
+        updated.Remove(DailyBattleWins);
         var changed = false;
         if (updated[DailyQuestList] is JsonArray quests && user[DailyQuestDay] is not null)
         {

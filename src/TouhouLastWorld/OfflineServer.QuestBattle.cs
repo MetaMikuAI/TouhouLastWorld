@@ -86,7 +86,7 @@ public sealed partial class OfflineServer
         ["user_update"] = new JsonObject { ["phantasm_point"] = user["phantasm_point"]!.DeepClone() }
     });
 
-    private LocalReply EndQuestBattle(LocalQuestBattleEnd? request)
+    private LocalReply EndQuestBattle(LocalQuestBattleEnd? request, LocalDailyQuestDay? day)
     {
         if (request is null || request.BattleId <= 0 || request.Result is not (0 or 1))
             return new(400, null, "Invalid quest battle result.");
@@ -123,6 +123,8 @@ public sealed partial class OfflineServer
             if (!isDaily && request.ClearScore is { } score && participants.SetEquals(PendingQuestBattleOwnedUnits))
                 RecordQuestClear(updated, request.BattleId, PendingQuestBattleOwnedUnits, score);
             updated[QuestWinCount] = (int)Math.Min((long)QuestWins() + 1, int.MaxValue);
+            if (day is not null && updated[DailyQuestDay]?.GetValue<int>() == day.Date)
+                updated[DailyBattleWins] = (int)Math.Min((long)(updated[DailyBattleWins]?.GetValue<int>() ?? 0) + 1, int.MaxValue);
             for (var index = 0; index < rewards.DefeatLimits.Length; index++)
                 if (request.Defeated.Length <= rewards.DefeatLimits[index]) challenges.Add(index + 1);
             var gold = updated["gold"]!.GetValue<int>();
