@@ -303,7 +303,7 @@ public sealed partial class OfflineServer
     {
         // 旧存档的角色与服装 ID 错置；仅迁移这一已知组合。
         var updated = user.DeepClone().AsObject();
-        var changed = false;
+        var changed = RefundInterruptedQuest(updated);
         foreach (var unit in updated["unit"]!["unit_list"]!.AsArray())
         {
             if (unit!["unit_id"]!.GetValue<int>() != 100101 || unit["equip_costume_id"]!.GetValue<int>() != 1001) continue;

@@ -56,7 +56,7 @@ Check(fresh.Dispatch("battle_start", arguments: new(QuestBattleStart: admission 
 foreach (var _ in Enumerable.Range(0, 2))
 {
     var started = fresh.Dispatch("battle_start", arguments: new(QuestBattleStart: admission)).Body!;
-    Check(started["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 95, "battle entry charges once");
+    Check(started["user_update"]!["phantasm_point"]!["points"]!.GetValue<int>() == 100, "battle entry keeps spirit points until victory");
 }
 var rewards = new LocalBattleRewards(100, 100, 99999, 25, 10, [2, 1, 0],
     [new(1, 0), new(2, 20), new(3, 40)], [new(1L, [new(1, 0), new(2, 10)])]);
@@ -66,6 +66,7 @@ Check(fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: settlement wit
 var win = fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: settlement)).Body!;
 var battleUpdate = win["user_update"]!;
 Check(battleUpdate["gold"]!.GetValue<int>() == 20100 && battleUpdate["exp"]!.GetValue<long>() == 25
+    && battleUpdate["phantasm_point"]!["points"]!.GetValue<int>() == 95
     && battleUpdate["level"]!.GetValue<int>() == 2 && battleUpdate["unit"]!["unit_list"]![0]!["level"]!.GetValue<int>() == 2
     && battleUpdate["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3
     && win["battle_challenge_result"]!.GetValue<int>() == 3, "win uses master rewards and records progression");
@@ -94,7 +95,7 @@ Check(clearRecord["action"]!.GetValue<int>() == 3 && clearRecord["damage"]!.GetV
     && clearRecord["team_units"]![0]!["total_power"]!.GetValue<int>() == 238,
     "personal clear history preserves the battle team before awarding experience");
 Check(saved["gold"]!.GetValue<int>() == 5100 && saved["crystal"]!.GetValue<int>() == 0
-    && saved["phantasm_point"]!["points"]!.GetValue<int>() == 90 && saved["exp"]!.GetValue<long>() == 25
+    && saved["phantasm_point"]!["points"]!.GetValue<int>() == 95 && saved["exp"]!.GetValue<long>() == 25
     && saved["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3, "gameplay changes survive restart");
 Check(saved["unit"]!["unit_list"]!.AsArray().Select(unit => unit!["user_unit_id"]!.GetValue<long>()).Distinct().Count() == 11, "unique saved unit ids");
 var npcAdmission = admission with { TeamNumber = 0, Participants = [long.MaxValue - 807], OwnedParticipants = [] };

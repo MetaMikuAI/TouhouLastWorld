@@ -14,6 +14,7 @@ public sealed record LocalQuestBattleEnd(int BattleId, int Result, long[] Defeat
 public sealed partial class OfflineServer
 {
     private const string PendingQuestBattle = "_local_quest_battle_pending";
+    private const string ChargeQuestOnWin = "charge_on_win";
     private static readonly string[] QuestDifficulties = ["normal", "hard", "lunatic"];
 
     internal int PendingQuestBattleEpisode => user[PendingQuestBattle]?["episode_id"]?.GetValue<int>() ?? 0;
@@ -44,6 +45,8 @@ public sealed partial class OfflineServer
                 return new(409, null, "Battle formation does not match the saved team.");
         }
 
+        var points = user["phantasm_point"]!["points"]!.GetValue<int>();
+        if (points < request.Cost) return new(409, null, "Not enough spirit points.");
         var pending = user[PendingQuestBattle];
         if (pending?["episode_id"]?.GetValue<int>() == request.EpisodeId
             && pending["battle_id"]?.GetValue<int>() == request.BattleId
@@ -53,14 +56,12 @@ public sealed partial class OfflineServer
             && pending["participants"]!.AsArray().Select(id => id!.GetValue<long>()).SequenceEqual(request.Participants))
             return QuestBattleAdmissionReply();
 
-        var points = user["phantasm_point"]!["points"]!.GetValue<int>();
-        if (points < request.Cost) return new(409, null, "Not enough spirit points.");
         var updated = user.DeepClone().AsObject();
-        updated["phantasm_point"]!["points"] = points - request.Cost;
         updated[PendingQuestBattle] = new JsonObject
         {
             ["episode_id"] = request.EpisodeId, ["battle_id"] = request.BattleId,
             ["difficulty"] = request.Difficulty, ["team_number"] = request.TeamNumber, ["cost"] = request.Cost,
+            [ChargeQuestOnWin] = true,
             ["participants"] = new JsonArray(request.Participants.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray()),
             ["owned"] = new JsonArray(request.OwnedParticipants.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray())
         };
@@ -113,6 +114,11 @@ public sealed partial class OfflineServer
         var changes = new JsonObject();
         if (won && rewards is not null)
         {
+            var points = updated["phantasm_point"]!["points"]!.GetValue<int>();
+            var cost = pending["cost"]!.GetValue<int>();
+            if (points < cost) return new(409, null, "Not enough spirit points.");
+            updated["phantasm_point"]!["points"] = points - cost;
+            changes["phantasm_point"] = updated["phantasm_point"]!.DeepClone();
             if (request.ClearScore is { } score && participants.SetEquals(PendingQuestBattleOwnedUnits))
                 RecordQuestClear(updated, request.BattleId, PendingQuestBattleOwnedUnits, score);
             updated[QuestWinCount] = (int)Math.Min((long)MainQuestWins() + 1, int.MaxValue);
@@ -147,6 +153,18 @@ public sealed partial class OfflineServer
             ["drop_list"] = drops, ["destiny_drop_list"] = new JsonArray(),
             ["battle_challenge_result"] = challenges.Count, ["user_update"] = changes
         });
+    }
+
+    private static bool RefundInterruptedQuest(JsonObject updated)
+    {
+        if (updated[PendingQuestBattle] is not JsonObject pending || pending[ChargeQuestOnWin]?.GetValue<bool>() == true
+            || pending["cost"]?.GetValue<int>() is not >= 0)
+            return false;
+        var balance = updated["phantasm_point"]!;
+        balance["points"] = (int)Math.Min(int.MaxValue,
+            (long)balance["points"]!.GetValue<int>() + pending["cost"]!.GetValue<int>());
+        updated.Remove(PendingQuestBattle);
+        return true;
     }
 
     private static void AddBattleExperience(JsonObject entity, int amount, LocalBattleLevel[] levels)
