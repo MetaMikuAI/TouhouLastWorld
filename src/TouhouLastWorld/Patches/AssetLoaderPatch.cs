@@ -44,7 +44,9 @@ public partial class AssetLoaderPatch
         yield return Cysharp.Threading.Tasks.UniTaskExtensions.ToCoroutine(loader.m_manifest.AppendTextAsync(text), null);
         loader.m_updateManifestInfoList.Add(new AssetLoader.UpdateManifestInfo
         {
-            remotePath = remotePath, manifestPath = manifestPath, manifestText = text
+            remotePath = remotePath,
+            manifestPath = manifestPath,
+            manifestText = text
         });
     }
 

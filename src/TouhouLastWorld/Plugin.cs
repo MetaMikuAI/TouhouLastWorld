@@ -27,7 +27,7 @@ public sealed class Plugin : BasePlugin
         var paths = ReadResourcePaths();
         using var stream = typeof(Plugin).Assembly.GetManifestResourceStream("TouhouLastWorld.user-seed.json")!;
         using var reader = new StreamReader(stream);
-        Server = new OfflineServer(Path.Combine(Paths.BepInExRootPath, "offline-data"), reader.ReadToEnd(), resourceRoot, paths);
+        Server = new OfflineServer(new JsonStateStore(Path.Combine(Paths.BepInExRootPath, "offline-data")), reader.ReadToEnd(), resourceRoot, paths);
         PatchRegistry.ApplyAll(harmony);
         Log.LogInfo("Embedded server ready. SDK unchanged; no HTTP transport.");
     }

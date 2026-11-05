@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup><ItemGroup>    <ProjectReference Include="../../src/TouhouLastWorld.Core/TouhouLastWorld.Core.csproj" />
+    <ProjectReference Include="../../src/TouhouLastWorld.Storage/TouhouLastWorld.Storage.csproj" />
+    <ProjectReference Include="../../src/TouhouLastWorld.Protocol/TouhouLastWorld.Protocol.csproj" />
+</ItemGroup></Project>

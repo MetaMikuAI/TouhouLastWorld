@@ -1,0 +1,246 @@
+using System.Text.Json.Nodes;
+using TouhouLastWorld;
+
+internal sealed partial class RegressionSuite
+{
+    private void Scenario01()
+    {
+        var gachaServer = new OfflineServer(new JsonStateStore(directory + "-gacha"), fundedSeed.ToJsonString(), "offline://resources/");
+        gachaServer.Dispatch("game_init");
+        gachaServer.Dispatch("login");
+        Check(gachaServer.Dispatch("gacha_do", 0, gachaId: 1000, gachaButtonId: 102).Status == 501, "unsupported pool rejected");
+        Check(gachaServer.Dispatch("gacha_do", 10, gachaId: 10, gachaButtonId: 102).Status == 400, "button/count mismatch rejected");
+        var single = gachaServer.Dispatch("gacha_do", 0, gachaId: 10, gachaButtonId: 102).Body!;
+        Check(single["gacha_drop_list"]!.AsArray().Count == 1 && single["gacha_drop_list"]![0]!["object_type"]!.GetValue<int>() == 9, "native default count resolves to unit drop");
+        Check(single["user_update"]!["gold"]!.GetValue<int>() == 18500 && single["user_update"]!["crystal"]!.GetValue<int>() == 45, "native button costs applied once");
+        Console.WriteLine("Passed 4 native gacha request checks.");
+        var flagSeed = JsonNode.Parse(seed)!;
+        flagSeed["picture"]!["picture_list"]!.AsArray().Add(new JsonObject { ["user_picture_id"] = 7L, ["picture_id"] = 1001, ["is_protection"] = 0, ["is_new"] = 1 });
+        var flagDirectory = directory + "-flags";
+        flags = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        flags.Dispatch("game_init");
+        Check(flags.Dispatch("unit_protection", arguments: new(1, 1)).Status == 401, "flag update requires identity");
+        flags.Dispatch("login");
+        var unitKey = flagSeed["unit"]!["unit_list"]![0]!["user_unit_id"]!.GetValue<long>();
+        foreach (var (section, id) in new[]
+        {
+        ("unit", unitKey),
+        ("picture", 7L)
+    }
+
+        )
+        {
+            Check(flags.Dispatch(section + "_protection", arguments: new(id, 2)).Status == 400, "invalid flag rejected");
+            Check(flags.Dispatch(section + "_protection", arguments: new(long.MaxValue, 1)).Status == 404, "missing entity rejected");
+            Check(flags.Dispatch(section + "_protection", arguments: new(id, 1)).Status == 0, "protection update");
+            Check(flags.Dispatch(section + "_new_update", arguments: new(Ids: [id, long.MaxValue])).Status == 404, "mixed batch rejected");
+            var unchanged = flags.Dispatch("login").Body!["user"]![section]![section + "_list"]![0]!;
+            Check(unchanged["is_new"]!.GetValue<int>() == 1, "mixed batch has no partial write");
+            Check(flags.Dispatch(section + "_new_update", arguments: new(Ids: [id, id])).Status == 0, "duplicate IDs are idempotent");
+            var reload = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+            reload.Dispatch("game_init");
+            var entry = reload.Dispatch("login").Body!["user"]![section]![section + "_list"]![0]!;
+            Check(entry["is_protection"]!.GetValue<int>() == 1 && entry["is_new"]!.GetValue<int>() == 0, "flags persist across restart");
+        }
+
+        Check(flags.Dispatch("mail_top").Body!["mail"]!.AsArray().Count == 0, "empty mail list contract");
+        var friends = flags.Dispatch("friend/list").Body!;
+        Check(friends["data"]!.AsArray().Count == 0 && friends["request_tips"]!.GetValue<int>() == 0, "empty friend list contract");
+        Console.WriteLine("Passed 17 entity flag and minimal response checks.");
+        Check(flags.Dispatch("unit_voice_autoset_update", arguments: new(Value: -1)).Status == 400, "invalid preference rejected");
+        Check(flags.Dispatch("unit_voice_autoset_update", arguments: new(Value: 1)).Status == 0, "preference enabled");
+        var preferenceReload = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        preferenceReload.Dispatch("game_init");
+        Check(preferenceReload.Dispatch("login").Body!["user"]!["unit_voice_autoset"]!.GetValue<int>() == 1, "preference persists");
+        Check(preferenceReload.Dispatch("unit_voice_autoset_update", arguments: new(Value: 0)).Body!["user_update"]!["unit_voice_autoset"]!.GetValue<int>() == 0, "preference disabled");
+        foreach (var route in new[]
+        {
+        "friend/apply_list",
+        "friend/recommend"
+    }
+
+        )
+            Check(flags.Dispatch(route).Body!["data"]!.AsArray().Count == 0, "empty list contract: " + route);
+        var catalog = flags.Dispatch("get_shop_list").Body!;
+        Check(catalog["shop_list"]!.AsArray().Count == 0 && catalog["feature_product_shop_list"]!.AsArray().Count == 0, "empty catalog contract");
+        Console.WriteLine("Passed 7 preference and list response checks.");
+        foreach (var (route, field) in new[]
+        {
+        ("get_history", "unit_get_count"),
+        ("achievement_top", "achievement_list"),
+        ("get_dispatch_list", "dispatch_list"),
+        ("mission_top", "mission"),
+        ("friend_get_candidate_list", "helper_list"),
+        ("picture_book/get_user_picture_book_list", "user_completed_info"),
+        ("avatar/list", "avatar_list"),
+        ("get_shrine_office_shop_list", "shop_list")
+    }
+
+        )
+        {
+            var query = flags.Dispatch(route);
+            Check(query.Status == 0 && query.Body![field] is not null, "query contract: " + route);
+            query.Body![field] = null;
+            Check(flags.Dispatch(route).Body![field] is not null, "query response isolation: " + route);
+        }
+
+        Check(flags.Dispatch("mission_top").Body!["mission"]!["clear_list"]!.AsArray().Count == 0, "nested mission lists");
+        Check(flags.Dispatch("tutorial_update", arguments: new(Value: -1)).Status == 400, "negative progress rejected");
+        Check(flags.Dispatch("tutorial_update", arguments: new(Value: 10000)).Body!["user_update"]!["progress_value"]!.GetValue<int>() == 10000, "progress advances");
+        Check(flags.Dispatch("tutorial_update", arguments: new(Value: 1)).Body!["user_update"]!["progress_value"]!.GetValue<int>() == 10000, "progress does not regress");
+        var progressReload = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        progressReload.Dispatch("game_init");
+        Check(progressReload.Dispatch("login").Body!["user"]!["progress_value"]!.GetValue<int>() == 10000, "progress persists");
+        Console.WriteLine("Passed 21 query and progress checks.");
+        var music = flags.Dispatch("music_list").Body!;
+        Check(music["collect"]!.AsArray().Count == 0 && music["unlock"]!.AsArray().Count == 0, "empty music lists");
+        foreach (var route in new[]
+        {
+        "pass_card/show_task",
+        "pass_card/show_shop"
+    }
+
+        )
+        {
+            var pass = flags.Dispatch(route).Body!["user_pass_card"]!;
+            Check(pass["is_vip"]!.GetValue<int>() == 0 && pass["tasks"]!.AsArray().Count == 0 && pass["pass_card_goods"]!.AsArray().Count == 0, "inactive pass contract: " + route);
+        }
+
+        var history = flags.Dispatch("get_clear_history", arguments: new(HistoryQuery: new(1, 201, 0, 0, null))).Body!;
+        Check(history.ContainsKey("best") && history["best"] is null && history["ranking"]!.AsArray().Count == 0 && history["justnow"]!.AsArray().Count == 0, "absent history contract");
+        var contacts = flags.Dispatch("friend_top").Body!;
+        Check(new[] { "friend_list", "friend_request_list", "friend_approval_pending_list", "new_approve_list" }.All(field => contacts[field]!.AsArray().Count == 0), "empty contact overview");
+        var beforeLogout = flags.Dispatch("login").Body!;
+        var localId = beforeLogout["user_id"]!.GetValue<string>();
+        Check(flags.Dispatch("logout", arguments: new(Text: "unknown")).Status == 403 && flags.Dispatch("check_user").Status == 0, "identity mismatch preserves session");
+        var logout = flags.Dispatch("logout", arguments: new(Text: localId));
+        Check(logout.Status == 0 && logout.Body!["session_id"]!.GetValue<string>() == beforeLogout["session_id"]!.GetValue<string>(), "logout replies in current session");
+        Check(flags.Dispatch("check_user").Status == 401 && flags.Dispatch("login").Status == 401, "logout invalidates session");
+        flags.Dispatch("game_init");
+        var afterLogout = flags.Dispatch("login").Body!;
+        Check(afterLogout["user_id"]!.GetValue<string>() == localId && JsonNode.DeepEquals(afterLogout["user"], beforeLogout["user"]), "logout preserves identity and save");
+        Console.WriteLine("Passed 9 query and session checks.");
+        Check(flags.Dispatch("set_age", arguments: new(Value: 0)).Status == 400 && flags.Dispatch("set_age", arguments: new(Value: 4)).Status == 400, "age category bounds");
+        Check(flags.Dispatch("set_age", arguments: new(Value: 2)).Body!["user_update"]!["age_limit_type"]!.GetValue<int>() == 2, "age category update");
+        Check(flags.Dispatch("friend/search").Status == 2000, "contact search uses missing result status");
+        var playerSearch = flags.Dispatch("friend_player_search").Body!;
+        Check(playerSearch["result"]!.GetValue<int>() != 0 && playerSearch["search_result"]!.AsArray().Count == 0, "player search does not expose empty success result");
+        Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(PlayerName: "Local", HeroName: "Second"))).Status == 0, "combined name update");
+        Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(Comment: "Profile"))).Status == 0, "partial profile update");
+        var profileBeforeInvalid = flags.Dispatch("login").Body!["user"]!.DeepClone();
+        Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(PlayerName: "Changed", HeroName: " "))).Status == 1000, "invalid name rejects whole update");
+        Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(Comment: "bad\ntext"))).Status == 1000, "control characters rejected");
+        Check(JsonNode.DeepEquals(flags.Dispatch("login").Body!["user"], profileBeforeInvalid), "invalid profile has no partial writes");
+        Check(flags.Dispatch("user_info_update", arguments: new(Profile: new(Comment: ""))).Status == 0, "comment can be cleared");
+        var profileReload = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        profileReload.Dispatch("game_init");
+        var persistedProfile = profileReload.Dispatch("login").Body!["user"]!;
+        Check(persistedProfile["player_name"]!.GetValue<string>() == "Local" && persistedProfile["hero_name"]!.GetValue<string>() == "Second" && persistedProfile["comment"]!.GetValue<string>() == "" && persistedProfile["age_limit_type"]!.GetValue<int>() == 2, "profile and category survive restart");
+        Console.WriteLine("Passed 11 profile and search checks.");
+        Check(flags.Dispatch("get_profile_setting").Body!["profile_setting"]!.GetValue<string>() == "", "new layout uses client defaults");
+        var layoutText = "{\"characterId\":1001,\"comment\":\"Layout\",\"playerInfoPos\":true,\"efudaScale\":{\"x\":1,\"y\":1,\"z\":1}}";
+        Check(flags.Dispatch("update_profile_setting", arguments: new(Text: layoutText)).Status == 0, "valid layout saved");
+        foreach (var invalidLayout in new[]
+        {
+        "{",
+        "[]",
+        "{\"characterId\":-1}",
+        "{\"comment\":1}",
+        "{\"playerInfoPos\":1}",
+        "{\"efudaScale\":{\"x\":1}}"
+    }
+
+        )
+            Check(flags.Dispatch("update_profile_setting", arguments: new(Text: invalidLayout)).Status == 400, "invalid layout rejected");
+        var layoutReload = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        layoutReload.Dispatch("game_init");
+        layoutReload.Dispatch("login");
+        Check(layoutReload.Dispatch("get_profile_setting").Body!["profile_setting"]!.GetValue<string>() == layoutText, "layout survives restart and rejected writes");
+        Check(flags.Dispatch("update_profile_setting2", arguments: new(Text: "")).Body!["text_value"]!.GetValue<int>() == 0, "layout comment may be empty");
+        Check(flags.Dispatch("update_profile_setting2", arguments: new(Text: "bad\ntext")).Body!["text_value"]!.GetValue<int>() != 0, "layout comment rejects controls");
+        Check(flags.Dispatch("update_profile_setting2").Body!["text_value"]!.GetValue<int>() != 0, "layout comment requires input");
+        Check(flags.Dispatch("get_profile_setting").Body!["profile_setting"]!.GetValue<string>() == layoutText, "text check does not save layout");
+        Console.WriteLine("Passed 13 layout checks.");
+        Check(flags.Dispatch("get_auto_replay_info").Status == 400, "measurement query requires target");
+        Check(flags.Dispatch("update_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0, -1, 1))).Status == 400, "negative measurement rejected");
+        Check(flags.Dispatch("update_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0, 120, 5))).Status == 0, "win measurement preserves counts above 100");
+        Check(flags.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 1))).Body!["win_rate"]!.GetValue<int>() == 0, "measurement difficulty isolation");
+        var measure = flags.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0))).Body!;
+        Check(measure["win_rate"]!.GetValue<int>() == 120 && measure["action_num"]!.GetValue<int>() == 5, "measurement round trip");
+        measure["win_rate"] = 0;
+        Check(flags.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0))).Body!["win_rate"]!.GetValue<int>() == 120, "measurement response isolation");
+        const string readReplay = "get_multiple_spirits_weekly_replay_info";
+        const string writeReplay = "update_multiple_spirits_weekly_replay_info";
+        Check(flags.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!["replay_info"]!.GetValue<string>() == "", "absent replay is empty");
+        Check(flags.Dispatch(writeReplay, arguments: new(ReplayContent: new(1, 10, "", null))).Status == 400, "missing replay content rejected");
+        Check(flags.Dispatch(writeReplay, arguments: new(ReplayContent: new(1, 10, "rules", "opaque-content"))).Status == 0, "replay content saved without reinterpretation");
+        Check(flags.Dispatch(readReplay, arguments: new(EntityId: 2)).Body!["replay_info"]!.GetValue<string>() == "", "replay target isolation");
+        var replayReload = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        replayReload.Dispatch("game_init");
+        replayReload.Dispatch("login");
+        var replayBody = replayReload.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!;
+        Check(replayBody["replay_info"]!.GetValue<string>() == "opaque-content" && replayBody["level"]!.GetValue<int>() == 10 && replayBody["add_rules"]!.GetValue<string>() == "rules", "replay persists across restart");
+        Check(replayReload.Dispatch("get_auto_replay_info", arguments: new(ReplayMeasure: new(0, 1, 0))).Body!["win_rate"]!.GetValue<int>() == 120, "measurement persists across restart");
+        Check(replayReload.Dispatch(writeReplay, arguments: new(ReplayContent: new(1, 10, "", ""))).Status == 0 && replayReload.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!["replay_info"]!.GetValue<string>() == "", "empty replay clears record");
+        var clearedReplay = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        clearedReplay.Dispatch("game_init");
+        clearedReplay.Dispatch("login");
+        Check(clearedReplay.Dispatch(readReplay, arguments: new(EntityId: 1)).Body!["replay_info"]!.GetValue<string>() == "", "replay deletion persists");
+        Console.WriteLine("Passed 14 replay checks.");
+        const string readSeries = "get_series_battle_replay_info";
+        const string writeSeries = "update_series_battle_replay_info";
+        Check(flags.Dispatch(writeSeries, arguments: new(10, 0, Text: "invalid")).Status == 400, "series rejects zero area");
+        Check(flags.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [6])).Status == 400, "series rejects out of range area");
+        Check(flags.Dispatch(writeSeries, arguments: new(10, 1, Text: "area-one")).Status == 0 && flags.Dispatch(writeSeries, arguments: new(10, 5, Text: "area-five")).Status == 0, "series boundary areas saved");
+        var seriesSubset = flags.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [5, 5])).Body!;
+        Check(seriesSubset["replay_info1"]!.GetValue<string>() == "" && seriesSubset["replay_info5"]!.GetValue<string>() == "area-five", "series query respects selected areas and duplicate indices");
+        Check(flags.Dispatch(readSeries, arguments: new(EntityId: 11, Ids: [1])).Body!["replay_info1"]!.GetValue<string>() == "", "series stages are isolated");
+        var ordinaryTarget = new LocalReplayMeasure(0, 10, 1);
+        Check(flags.Dispatch("update_replay_info", arguments: new(ReplayMeasure: ordinaryTarget)).Status == 400, "ordinary replay requires content");
+        Check(flags.Dispatch("update_replay_info", arguments: new(Text: "ordinary", ReplayMeasure: ordinaryTarget)).Status == 0, "ordinary replay saved");
+        Check(flags.Dispatch("get_replay_info", arguments: new(ReplayMeasure: new(1, 10, 1))).Body!["replay_info"]!.GetValue<string>() == "", "ordinary replay task types are isolated");
+        var allReplayReload = new OfflineServer(new JsonStateStore(flagDirectory), flagSeed.ToJsonString(), "offline://resources/");
+        allReplayReload.Dispatch("game_init");
+        allReplayReload.Dispatch("login");
+        Check(allReplayReload.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [1, 5])).Body!["replay_info1"]!.GetValue<string>() == "area-one", "series replay persists");
+        Check(allReplayReload.Dispatch("get_replay_info", arguments: new(ReplayMeasure: ordinaryTarget)).Body!["replay_info"]!.GetValue<string>() == "ordinary", "ordinary replay persists");
+        allReplayReload.Dispatch(writeSeries, arguments: new(10, 1, Text: ""));
+        var afterAreaClear = allReplayReload.Dispatch(readSeries, arguments: new(EntityId: 10, Ids: [1, 5])).Body!;
+        Check(afterAreaClear["replay_info1"]!.GetValue<string>() == "" && afterAreaClear["replay_info5"]!.GetValue<string>() == "area-five", "series deletion only clears selected area");
+        allReplayReload.Dispatch("update_replay_info", arguments: new(Text: "", ReplayMeasure: ordinaryTarget));
+        Check(allReplayReload.Dispatch("get_replay_info", arguments: new(ReplayMeasure: ordinaryTarget)).Body!["replay_info"]!.GetValue<string>() == "", "ordinary replay cleared");
+        Console.WriteLine("Passed 12 partitioned replay checks.");
+        teamSeed = JsonNode.Parse(seed)!;
+        teamSeed["achievement"]!["recently_received_achievement_id_list"] = new JsonArray(11, 12);
+        teamDirectory = directory + "-teams";
+        teams = new OfflineServer(new JsonStateStore(teamDirectory), teamSeed.ToJsonString(), "offline://resources/");
+        teams.Dispatch("game_init");
+        teams.Dispatch("login");
+        Check(teams.Dispatch("achievement_new_update", arguments: new(Ids: [11, -1])).Status == 400, "invalid marker batch rejected");
+        var markers = teams.Dispatch("achievement_new_update", arguments: new(Ids: [11, 11])).Body!["user_update"]!["achievement"]!["recently_received_achievement_id_list"]!.AsArray();
+        Check(markers.Count == 1 && markers[0]!.GetValue<int>() == 12, "only requested markers cleared");
+        Check(teams.Dispatch("achievement_new_update", arguments: new(Ids: [11])).Status == 0, "marker clear is idempotent");
+        Check(teams.Dispatch("team_update", arguments: new(Team: new(1, "Renamed", null, 0, null, 0))).Status == 0, "team name update");
+        Check(teams.Dispatch("login").Body!["user"]!["team"]!["team_list"]![0]!["user_unit_id_list"]![0]!.GetValue<long>() == 1, "name update preserves members");
+        Check(teams.Dispatch("team_update", arguments: new(Team: new(1, null, [1, 1], 0, null, 0))).Status == 400, "duplicate team members rejected");
+        Check(teams.Dispatch("team_update", arguments: new(Team: new(1, "Rejected", [999], 0, null, 0))).Status == 404, "unowned team member rejected");
+        Check(teams.Dispatch("login").Body!["user"]!["team"]!["team_list"]![0]!["name"]!.GetValue<string>() == "Renamed", "rejected team update preserves name");
+        Check(teams.Dispatch("team_update", arguments: new(Team: new(1, null, [1, 0], 5, [0, 1], 5))).Status == 400, "enhanced member must match slot");
+        var savedTeam = teams.Dispatch("team_update", arguments: new(Team: new(1, null, [0, 1], 5, [0, 1], 6))).Body!["user_update"]!["team"]!["team_list"]![0]!;
+        Check(savedTeam["user_unit_id_list"]!.AsArray().Count == 6 && savedTeam["use_cost"]!.GetValue<int>() == 5, "team slots normalized and cost stored");
+        Check(teams.Dispatch("team_update", arguments: new(Team: new(0, null, new long[6], 0, new long[6], 0))).Status == 0 && teams.Dispatch("team_update", arguments: new(Team: new(0, null, [0, 999], 5, null, 0))).Status == 404, "temporary story teams require owned members");
+        var mixedStoryTeam = teams.Dispatch("team_update", arguments: new(Team: new(0, null, [0, 1], 5, null, 0))).Body!["user_update"]!["team"]!["team_list"]![0]!;
+        Check(mixedStoryTeam["number"]!.GetValue<int>() == 0 && mixedStoryTeam["user_unit_id_list"]![1]!.GetValue<long>() == 1 && !teams.Dispatch("login").Body!["user"]!["team"]!["team_list"]!.AsArray().Any(row => row!["number"]!.GetValue<int>() == 0), "story team update returns a temporary row without saving a normal team slot");
+        Check(teams.Dispatch("team_update", arguments: new(Team: new(2, null, [1], 5, null, 0, 10))).Status == 0 && teams.Dispatch("team_update", arguments: new(Team: new(11, null, [1], 5, null, 0, 10))).Status == 404, "new normal teams are created within the master slot limit");
+        Check(teams.Dispatch("friend_setting_helper", arguments: new(999, 100)).Status == 404, "helper ownership required");
+        Check(teams.Dispatch("friend_setting_helper", arguments: new(1, 100)).Body!["helper_user_unit_id1"]!.GetValue<long>() == 1, "helper selected");
+        var teamReload = new OfflineServer(new JsonStateStore(teamDirectory), teamSeed.ToJsonString(), "offline://resources/");
+        teamReload.Dispatch("game_init");
+        var savedUser = teamReload.Dispatch("login").Body!["user"]!;
+        Check(savedUser["team"]!["team_list"]![0]!["user_unit_id_list"]![1]!.GetValue<long>() == 1 && savedUser["achievement"]!["recently_received_achievement_id_list"]!.AsArray().Count == 1, "team and markers persist");
+        var persistedTeams = savedUser["team"]!["team_list"]!.AsArray();
+        Check(persistedTeams.Count == 2 && persistedTeams[1]!["number"]!.GetValue<int>() == 2 && persistedTeams[1]!["user_unit_id_list"]![0]!.GetValue<long>() == 1, "only normal team slot is persisted");
+        Check(teamReload.Dispatch("friend_top").Body!["helper_user_unit_id1"]!.GetValue<long>() == 1, "helper persists and overview reads selection");
+        Console.WriteLine("Passed 17 team, marker and helper checks.");
+    }
+}

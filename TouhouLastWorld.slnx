@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TouhouLastWorld.Core/TouhouLastWorld.Core.csproj" />
+    <Project Path="src/TouhouLastWorld.Generators/TouhouLastWorld.Generators.csproj" />
+    <Project Path="src/TouhouLastWorld.Protocol/TouhouLastWorld.Protocol.csproj" />
+    <Project Path="src/TouhouLastWorld.Storage/TouhouLastWorld.Storage.csproj" />
+    <Project Path="src/TouhouLastWorld/TouhouLastWorld.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TouhouLastWorld.Checks/TouhouLastWorld.Checks.csproj" />
+  </Folder>
+</Solution>

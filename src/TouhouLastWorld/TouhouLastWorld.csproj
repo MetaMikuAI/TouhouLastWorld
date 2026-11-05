@@ -7,6 +7,9 @@
     <InteropDir Condition="'$(InteropDir)' == ''">$(MSBuildProjectDirectory)/../../.local/interop</InteropDir>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../TouhouLastWorld.Core/TouhouLastWorld.Core.csproj" Condition="'$(BundleSources)' != 'true'" />
+    <ProjectReference Include="../TouhouLastWorld.Storage/TouhouLastWorld.Storage.csproj" Condition="'$(BundleSources)' != 'true'" />
+    <ProjectReference Include="../TouhouLastWorld.Protocol/TouhouLastWorld.Protocol.csproj" Condition="'$(BundleSources)' != 'true'" />
     <EmbeddedResource Include="user-seed.json" />
     <ProjectReference Include="../TouhouLastWorld.Generators/TouhouLastWorld.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Reference Include="$(InteropDir)/*.dll" Private="false" />
@@ -15,5 +18,9 @@
     <Reference Include="$(BepInExCore)/BepInEx.Core.dll" Private="false" />
     <Reference Include="$(BepInExCore)/BepInEx.Unity.IL2CPP.dll" Private="false" />
     <Reference Include="$(BepInExCore)/0Harmony.dll" Private="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(BundleSources)' == 'true'">
+    <Compile Include="../TouhouLastWorld.Core/**/*.cs;../TouhouLastWorld.Storage/**/*.cs;../TouhouLastWorld.Protocol/**/*.cs"
+             Exclude="../*/obj/**/*.cs;../*/bin/**/*.cs;../TouhouLastWorld.Core/Properties/**/*.cs" />
   </ItemGroup>
 </Project>
