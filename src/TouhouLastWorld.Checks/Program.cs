@@ -210,6 +210,9 @@ migrated.Dispatch("game_init");
 var migratedUser = migrated.Dispatch("login").Body!["user"]!;
 Check(migratedUser["unit"]!["unit_list"]![0]!["unit_id"]!.GetValue<int>() == 1001
     && migratedUser["unit"]!["unit_list"]![0]!["equip_costume_id"]!.GetValue<int>() == 100101, "legacy unit/costume repaired");
+Check(DateTimeOffset.TryParse(migratedUser["unit"]!["unit_list"]![0]!["last_motivation_at"]?.GetValue<string>(), out _)
+    && JsonNode.DeepEquals(migratedUser["unit"]!["unit_list"]![0]!["motivation"], legacy["unit"]!["unit_list"]![0]!["motivation"]),
+    "legacy motivation starts recovering from its saved value");
 Check(migratedUser["gold"]!.GetValue<int>() == 321 && File.Exists(Path.Combine(migrationDir, "user.json.before-seed-fix")), "migration preserves balance and backup");
 Check(migratedUser["phantasm_box"]!["level"]!.GetValue<int>() == 1 && migratedUser["gold_box"]!["level"]!.GetValue<int>() == 1, "facility minimum levels");
 Check(migratedUser["avatar_filename"]!.GetValue<string>() == "Icon1001", "available avatar asset");
@@ -220,7 +223,7 @@ Check(migratedTeam["user_unit_id_list"]!.AsArray().Select(id => id!.GetValue<lon
 var afk = migrated.Dispatch("afk_top").Body!;
 Check(afk["unit_slot_list"]!.AsArray().Count == 0 && afk["picture_slot_list"]!.AsArray().Count == 0
     && afk["search_elapsed_time"]!.GetValue<int>() == 0 && afk["search_max_time"]!.GetValue<int>() > 0, "empty AFK summary has finite progress");
-Console.WriteLine("Passed 6 seed migration/AFK checks.");
+Console.WriteLine("Passed 7 seed migration/AFK checks.");
 var gachaServer = new OfflineServer(directory + "-gacha", fundedSeed.ToJsonString(), "offline://resources/");
 gachaServer.Dispatch("game_init");
 gachaServer.Dispatch("login");
@@ -678,7 +681,7 @@ cancelSeed["training_room"]!["unit_list"] = new JsonArray(
 var cancelDirectory = directory + "-cancel";
 var cancel = new OfflineServer(cancelDirectory, cancelSeed.ToJsonString(), "offline://resources/");
 cancel.Dispatch("game_init");
-cancel.Dispatch("login");
+var beforeTrainingCancel = cancel.Dispatch("login").Body!["user"]!;
 Check(cancel.Dispatch("training_room_cancel", arguments: new(Value: 0)).Status == 400, "zero training slot rejected");
 Check(cancel.Dispatch("training_room_cancel", arguments: new(Value: 3)).Status == 404, "missing training task rejected");
 var remainingTraining = cancel.Dispatch("training_room_cancel", arguments: new(Value: 1)).Body!["user_update"]!["training_room"]!["unit_list"]!.AsArray();
@@ -689,7 +692,7 @@ var cancelReload = new OfflineServer(cancelDirectory, cancelSeed.ToJsonString(),
 cancelReload.Dispatch("game_init");
 var cancelledUser = cancelReload.Dispatch("login").Body!["user"]!;
 Check(cancelledUser["training_room"]!["unit_list"]!.AsArray().Count == 1, "cancellation persists");
-Check(JsonNode.DeepEquals(cancelSeed["unit"], cancelledUser["unit"])
+Check(JsonNode.DeepEquals(beforeTrainingCancel["unit"], cancelledUser["unit"])
     && JsonNode.DeepEquals(cancelSeed["orb"], cancelledUser["orb"]), "cancellation does not grant growth or currency");
 Console.WriteLine("Passed 6 training cancellation checks.");
 var equipmentSeed = JsonNode.Parse(seed)!.AsObject();
@@ -772,7 +775,7 @@ dispatchSeed["dispatch"]!["dispatch_list"] = new JsonArray(
 var dispatchDirectory = directory + "-dispatch";
 var dispatches = new OfflineServer(dispatchDirectory, dispatchSeed.ToJsonString(), "offline://resources/");
 dispatches.Dispatch("game_init");
-dispatches.Dispatch("login");
+var beforeDispatchCancel = dispatches.Dispatch("login").Body!["user"]!;
 Check(dispatches.Dispatch("dispatch_cancel", arguments: new(EntityId: 0)).Status == 400, "invalid dispatch ID rejected");
 Check(dispatches.Dispatch("dispatch_cancel", arguments: new(EntityId: 99)).Status == 404, "unknown dispatch rejected");
 var cancelledDispatch = dispatches.Dispatch("dispatch_cancel", arguments: new(EntityId: 10)).Body!;
@@ -784,7 +787,7 @@ dispatchReload.Dispatch("game_init");
 var dispatchUser = dispatchReload.Dispatch("login").Body!["user"]!;
 Check(dispatchUser["dispatch"]!["dispatch_list"]![0]!["user_dispatch_id"]!.GetValue<long>() == 11,
     "dispatch cancellation persists and preserves unrelated task");
-Check(JsonNode.DeepEquals(dispatchSeed["unit"], dispatchUser["unit"])
+Check(JsonNode.DeepEquals(beforeDispatchCancel["unit"], dispatchUser["unit"])
     && JsonNode.DeepEquals(dispatchSeed["orb"], dispatchUser["orb"]), "dispatch cancellation does not fabricate rewards");
 Console.WriteLine("Passed 5 dispatch cancellation checks.");
 var weeklyInfo = dispatchReload.Dispatch("multiple_spirits_weekly_top", arguments: new(Ids: [])).Body!;
@@ -915,7 +918,7 @@ seriesSeed["_local_series_replays"] = new JsonObject { ["1:1"] = "saved" };
 var seriesDirectory = directory + "-series-reset";
 var series = new OfflineServer(seriesDirectory, seriesSeed.ToJsonString(), "offline://resources/");
 series.Dispatch("game_init");
-series.Dispatch("login");
+var beforeSeriesReset = series.Dispatch("login").Body!["user"]!;
 var resetSeries = series.Dispatch("series_battle_reset").Body!["user_update"]!["series_battle_status"]!;
 Check(resetSeries["episode_id"]!.GetValue<int>() == 0 && resetSeries["progress"]!.GetValue<int>() == 0
     && resetSeries["use_replays"]!.AsArray().Count == 0, "series reset clears active state");
@@ -925,7 +928,7 @@ seriesReload.Dispatch("game_init");
 var seriesUser = seriesReload.Dispatch("login").Body!["user"]!;
 Check(seriesUser["series_battle_status"]!["progress"]!.GetValue<int>() == 0
     && JsonNode.DeepEquals(seriesUser["_local_series_replays"], seriesSeed["_local_series_replays"])
-    && JsonNode.DeepEquals(seriesUser["unit"], seriesSeed["unit"])
+    && JsonNode.DeepEquals(seriesUser["unit"], beforeSeriesReset["unit"])
     && JsonNode.DeepEquals(seriesUser["gold"], seriesSeed["gold"]), "series reset persists without changing collection or rewards");
 Console.WriteLine("Passed 3 series reset checks.");
 var seriesOverview = seriesReload.Dispatch("series_battle_ranking_top").Body!;
@@ -1002,14 +1005,14 @@ var secondFinish = DateTimeOffset.Parse(effectsAfter[0]!["add_effect_finish_time
 Check(effectsAfter.Count == 1 && secondFinish - firstFinish == TimeSpan.FromMinutes(10)
     && fedUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 0, "effect extension and consumed inventory persist");
 Check(fedUser["phantasm_point"]!["points"]!.GetValue<int>() == 70
-    && JsonNode.DeepEquals(fedUser["unit"], foodSeed["unit"]), "distribution does not fabricate growth or charge purchase cost again");
+    && JsonNode.DeepEquals(fedUser["unit"], foodUser["unit"]), "distribution does not fabricate growth or charge purchase cost again");
 Console.WriteLine("Passed 5 food distribution checks.");
 var trainingSeed = JsonNode.Parse(seed)!.AsObject();
 trainingSeed["item"]!["item_list"] = new JsonArray(new JsonObject { ["item_id"] = 12, ["num"] = 2 });
 var startTrainingDirectory = directory + "-start-training";
 var startTraining = new OfflineServer(startTrainingDirectory, trainingSeed.ToJsonString(), "offline://resources/");
 startTraining.Dispatch("game_init");
-startTraining.Dispatch("login");
+var beforeTrainingStart = startTraining.Dispatch("login").Body!["user"]!;
 Check(startTraining.Dispatch("training_room_start").Status == 503
     && startTraining.Dispatch("training_room_start", arguments: new(Training: new(1, 1, 12, 3, 2, 600))).Status == 400,
     "training requires definition and available slot number");
@@ -1031,7 +1034,7 @@ startTrainingReload.Dispatch("game_init");
 var trainingUser = startTrainingReload.Dispatch("login").Body!["user"]!;
 Check(trainingUser["item"]!["item_list"]![0]!["num"]!.GetValue<int>() == 1
     && trainingUser["training_room"]!["unit_list"]!.AsArray().Count == 1
-    && JsonNode.DeepEquals(trainingUser["unit"], trainingSeed["unit"]), "training persists without fabricated skill growth");
+    && JsonNode.DeepEquals(trainingUser["unit"], beforeTrainingStart["unit"]), "training persists without fabricated skill growth");
 Console.WriteLine("Passed 5 training start checks.");
 Check(startTrainingReload.Dispatch("training_room_shortened_finish_time", arguments: new(EntityId: 1,
     TrainingMaterials: [new(12, 1, 60), new(99, 1, 60)])).Status == 409,
@@ -3547,7 +3550,7 @@ var towerStartTeam = towerStartSeed["team"]!["team_list"]!.AsArray()
 var towerStartDirectory = directory + "-tower-start";
 var towerStartServer = new OfflineServer(towerStartDirectory, towerStartSeed.ToJsonString(), "offline://resources/");
 towerStartServer.Dispatch("game_init");
-towerStartServer.Dispatch("login");
+var beforeTowerStart = towerStartServer.Dispatch("login").Body!["user"]!;
 var towerStartRule = new LocalTowerStart(1, 101, 1, towerStartTeam);
 Check(towerStartServer.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { Floor = 2 })).Status == 409
     && towerStartServer.Dispatch("tower_battle_start", arguments: new(TowerStart: towerStartRule with { TeamNumber = 99999 })).Status == 409
@@ -3562,7 +3565,7 @@ towerStartReload.Dispatch("game_init");
 var towerStartSaved = towerStartReload.Dispatch("login").Body!["user"]!;
 Check(towerStartSaved["_local_tower_pending"]!["battle_id"]!.GetValue<int>() == 101
     && towerStartSaved["tower"]!["cleared_floor"]!.GetValue<int>() == 0
-    && JsonNode.DeepEquals(towerStartSaved["unit"], towerStartSeed["unit"]),
+    && JsonNode.DeepEquals(towerStartSaved["unit"], beforeTowerStart["unit"]),
     "floor entry persists without changing completion or restoring units");
 Console.WriteLine("Passed 3 floor entry checks.");
 var towerEndEnemies = "100," + string.Join(",", Enumerable.Repeat("0", 25)) + "\n";

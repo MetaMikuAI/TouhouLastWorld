@@ -333,12 +333,18 @@ public sealed partial class OfflineServer
 
     private void MigrateInitialData()
     {
-        // 旧存档的角色与服装 ID 错置；仅迁移这一已知组合。
         var updated = user.DeepClone().AsObject();
         var changed = RefundInterruptedQuest(updated);
+        var recoveryStart = DateTimeOffset.UtcNow.ToString("O");
         foreach (var unit in updated["unit"]!["unit_list"]!.AsArray())
         {
-            if (unit!["unit_id"]!.GetValue<int>() != 100101 || unit["equip_costume_id"]!.GetValue<int>() != 1001) continue;
+            if (string.IsNullOrWhiteSpace(unit!["last_motivation_at"]?.GetValue<string>()))
+            {
+                unit["last_motivation_at"] = recoveryStart;
+                changed = true;
+            }
+            // 旧存档的角色与服装 ID 错置，仅迁移这一已知组合。
+            if (unit["unit_id"]!.GetValue<int>() != 100101 || unit["equip_costume_id"]!.GetValue<int>() != 1001) continue;
             unit["unit_id"] = 1001;
             unit["equip_costume_id"] = 100101;
             changed = true;
