@@ -126,8 +126,8 @@
 | MailReceiveRequest | mail_receive | 业务实现 | 无期限邮件的金币、结晶、道具入库并标记；按主数据限额整批校验、防重领；限期、特殊奖励或超额整批保留 | 未测 |
 | MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 | 通过（空邮箱） |
 | MiniGameRequest | mini_game_top | 最小响应 | 为全部主表项目返回本地首次奖励标记，默认未领取；剩余点数默认零，不生成进度或发放奖励 | 未测 |
-| MissionEndRequest | mission_end | 业务实现 | 单领或批领已完成任务的固定奖励并保存领取记录；每日登录按游戏日防重，扫荡券过期和随机奖励待补 | 通过（每日登录、序章剧情） |
-| MissionTopRequest | mission_top | 业务实现 | 生成每日登录任务及符合主表条件的主线剧情任务，读取登录及通关进度 | 通过（每日登录、序章剧情） |
+| MissionEndRequest | mission_end | 业务实现 | 领取登录、每日探索和主线剧情任务的固定奖励，每日任务按游戏日防重；扫荡券过期和随机奖励待补 | 通过（普通任务） |
+| MissionTopRequest | mission_top | 业务实现 | 从登录、每日探索及主线剧情的实际进度生成普通任务列表 | 通过（普通任务） |
 | MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 业务实现 | 按有效主表返回本地通关进度，未通关项返回初始记录；不生成奖励或排名 | 未测 |
 | MusicLikeRequest | music_collect | 未实现 | 请求 bgm_id/status，响应 is_success；status 取值含义待调用逻辑确认 | 未测 |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 | 未测 |

@@ -108,11 +108,19 @@ dailyServer.Dispatch("user_create");
 var dailyDay = new LocalDailyQuestDay(20261105, [20000]);
 var dailyAdmission = admission with { EpisodeId = 0, Daily = new(20000, 200001, 1, 1) };
 var dailyStart = new LocalArguments(QuestBattleStart: dailyAdmission, DailyQuestDay: dailyDay);
+var dailyMission = new LocalDailyQuestMission(300030, "通关1次每日探索", 3, [(1, 20), (2, 2), (3, 2), (4, 5)], dailyDay, 4);
+var dailyMissions = new LocalArguments(DailyQuestMission: dailyMission, DailyQuestDay: dailyDay,
+    MissionClaim: new(300030, 0, 3, 0, 0, [new(300030, 3, 0, 1, true,
+        [new(2, 0, 20, 1000), new(12, 403, 2, 999), new(6, 0, 2, 999), new(104, 0, 5, 999)])]));
+Check(dailyServer.Dispatch("mission_end", arguments: dailyMissions).Status == 404, "daily quest mission requires victory");
 Check(dailyServer.Dispatch("battle_start", arguments: dailyStart).Status == 0, "daily battle admits an eligible team");
 var dailyResult = new LocalArguments(QuestBattleEnd: settlement, DailyQuestDay: dailyDay);
 var dailyWin = dailyServer.Dispatch("battle_end", arguments: dailyResult).Body!["user_update"]!["daily_quest_count_list"]![0]!;
 Check(dailyWin["count"]!.GetValue<int>() == 1 && dailyWin["cleared_info"]![0]!["normal"]!["status"]!.GetValue<int>() == 3
     && dailyServer.Dispatch("battle_end", arguments: dailyResult).Status == 409, "daily win consumes one attempt");
+var dailyGrant = dailyServer.Dispatch("mission_end", arguments: dailyMissions).Body!["user_update"]!;
+Check(dailyGrant["phantasm_point"]!["points"]!.GetValue<int>() == 115
+    && dailyServer.Dispatch("mission_end", arguments: dailyMissions).Status == 404, "daily quest mission grants spirit once");
 var anotherStage = dailyAdmission with { Daily = dailyAdmission.Daily! with { StageId = 200002 } };
 Check(dailyServer.Dispatch("battle_start", arguments: dailyStart with { QuestBattleStart = anotherStage }).Status == 409,
     "daily stages share the category attempt limit");

@@ -10,9 +10,11 @@ public partial class NetworkSystemPatch
         var definitions = master?.Mission?.ToList()?.ToArray();
         var rewards = master?.MissionReward?.ToList()?.ToArray().ToLookup(row => row.mission_reward_group_id);
         var setting = master?.Setting;
+        var day = ReadDailyQuestDay();
         return definitions == null || rewards == null || setting == null ? null
             : new(DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR),
-                StoryMissions: ReadStoryMissions(master!, definitions, rewards));
+                StoryMissions: ReadStoryMissions(master!, definitions, rewards), DailyQuestDay: day,
+                DailyQuestMission: ReadDailyQuestMission(definitions, rewards, day, setting.GAME_DATE_SWITCHING_HOUR));
     }
 
     private static LocalDailyLoginMission? ReadDailyLoginMission(MissionRecord[] definitions, ILookup<int, MissionRewardRecord> rewards,
@@ -26,6 +28,21 @@ public partial class NetworkSystemPatch
         var fixedRewards = ReadFixedMissionRewards(row, rewards);
         return fixedRewards is null ? null
             : new(row.id, row.name, row.display_order, MissionRewardDisplay(fixedRewards), switchingHour, DateTime.Now);
+    }
+
+    private static LocalDailyQuestMission? ReadDailyQuestMission(MissionRecord[] definitions,
+        ILookup<int, MissionRewardRecord> rewards, LocalDailyQuestDay? day, int switchingHour)
+    {
+        if (day is null) return null;
+        var daily = definitions.Where(row => row.type == MissionBehavior.c_menu_daily
+            && row.complete_type == OfflineServer.DailyQuestMissionType && row.complete_id == 0 && row.complete_value == 1
+            && row.event_id == 0
+            && string.IsNullOrWhiteSpace(row.start_at) && string.IsNullOrWhiteSpace(row.end_at)).Take(2).ToArray();
+        if (daily.Length != 1) return null;
+        var row = daily[0];
+        var groups = ReadFixedMissionRewards(row, rewards);
+        return groups is null || !groups.Any(group => group.Reward != null) ? null
+            : new(row.id, row.name, row.display_order, MissionRewardDisplay(groups), day, switchingHour);
     }
 
     private static LocalStoryMission[] ReadStoryMissions(MasterDB master, MissionRecord[] definitions, ILookup<int, MissionRewardRecord> rewards)
@@ -136,6 +153,7 @@ public partial class NetworkSystemPatch
             var grants = groups.Select(group => group.Reward).OfType<MissionRewardRecord>()
                 .Select(reward => new LocalInventoryReward(reward.object_type, reward.object_id, reward.object_value, reward.object_type switch
                 {
+                    2 => setting.PHANTASM_POINT_MAX,
                     3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
                     12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX,
                     OfflineServer.DailySweepRewardType => int.MaxValue,
@@ -145,8 +163,10 @@ public partial class NetworkSystemPatch
                 (string.IsNullOrWhiteSpace(definition.start_at) && string.IsNullOrWhiteSpace(definition.end_at))
                     || time.IsActiveDate(definition.start_at, definition.end_at), grants));
         }
+        var day = ReadDailyQuestDay();
         return new(MissionClaim: new(request.mission_id, request.is_all, request.mission_type, request.event_id, request.chapter_id, rules.ToArray()),
             DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR),
-            StoryMissions: ReadStoryMissions(master!, definitions, rewards));
+            StoryMissions: ReadStoryMissions(master!, definitions, rewards), DailyQuestDay: day,
+            DailyQuestMission: ReadDailyQuestMission(definitions, rewards, day, setting.GAME_DATE_SWITCHING_HOUR));
     }
 }
