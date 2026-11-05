@@ -457,7 +457,9 @@ Check(teams.Dispatch("home_select_unit_update", arguments: new(Value: 1)).Status
     && teams.Dispatch("home_select_unit_update", arguments: new(Value: -1)).Status == 400, "home selection bounds");
 Check(teams.Dispatch("home_select_unit_update", arguments: new(Value: 0)).Body!["user_update"]!["home_unit_info"]!["select_unit_index"]!.GetValue<int>() == 0,
     "home selection saved");
-Check(teams.Dispatch("home_bgm_update", arguments: new(Value: -1)).Status == 400, "negative home music rejected");
+Check(teams.Dispatch("home_bgm_update", arguments: new(Value: -2)).Status == 400, "invalid negative home music rejected");
+Check(teams.Dispatch("home_bgm_update", arguments: new(Value: -1)).Body!["user_update"]!["select_bgm"]!.GetValue<int>() == -1,
+    "home music can be turned off");
 Check(teams.Dispatch("home_bgm_update", arguments: new(Value: 123)).Status == 0, "home music saved");
 Check(teams.Dispatch("unit_bgm_update", arguments: new(999, 123)).Status == 404, "unit music requires owned unit");
 Check(teams.Dispatch("unit_bgm_update", arguments: new(1, -2)).Status == 400, "invalid negative unit music rejected");
@@ -471,7 +473,7 @@ Check(homeUser["select_bgm"]!.GetValue<int>() == 123 && homeUser["unit"]!["unit_
     && homeUser["bgm_item"]!["received_bgm_item_id_list"]!.AsArray().Count == 0, "music preferences persist without granting items");
 Check(homeReload.Dispatch("home_bgm_update", arguments: new(Value: 0)).Body!["user_update"]!["select_bgm"]!.GetValue<int>() == 0,
     "home music default restored");
-Console.WriteLine("Passed 9 home preference checks.");
+Console.WriteLine("Passed 10 home preference checks.");
 var homeEntry = new LocalHomeEntry(1001, 1, 100101, 0, 123);
 Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([], 0, 0))).Status == 400, "home requires an entry");
 Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry], 1, 0))).Status == 400, "home configuration selection bounds");

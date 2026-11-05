@@ -102,7 +102,7 @@
 | GoldBoxRenovationStartRequest | gold_box_renovation_start | 业务实现 | 按主表校验等级和费用，保存扣款及带时区的截止时间 | 通过（一级升二级） |
 | GoogleSwitchDoRequest | 未确认 | 未实现 | — | 未测 |
 | GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 | — | 未测 |
-| HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存非负音乐编号，零值恢复默认；不校验资源可用性，不解锁音乐 | 未测 |
+| HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存旧版首页曲目编号或关闭状态 | 通过（原生探针） |
 | HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 | 未测 |
 | HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式，支持关闭音乐 | 通过（音乐配置） |
 | HomeRequest | home | 业务实现 | 同步设施产出库存；其余摘要按默认值返回 | 通过（进入及返回主页） |

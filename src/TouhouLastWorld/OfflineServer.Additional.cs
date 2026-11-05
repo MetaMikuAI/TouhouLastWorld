@@ -192,7 +192,7 @@ public sealed partial class OfflineServer
         "home_select_unit_update" => SelectHomeUnit(arguments?.Value),
         "unit_bgm_update" => SetUnitPreference(arguments, "select_bgm", minimum: NoBgm),
         "update_home_motion_mode" => SetUnitPreference(arguments, "home_motion"),
-        "home_bgm_update" => arguments?.Value is >= 0 ? SetUserInteger("select_bgm", arguments.Value.Value)
+        "home_bgm_update" => arguments?.Value is >= NoBgm ? SetUserInteger("select_bgm", arguments.Value.Value)
             : new(400, null, "Nonnegative music selection required."),
         "team_update" => UpdateTeam(arguments?.Team),
         "friend_setting_helper" => SetHelper(arguments),
