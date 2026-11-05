@@ -4,6 +4,8 @@ namespace TouhouLastWorld;
 
 public sealed partial class OfflineServer
 {
+    private const int NoBgm = -1;
+
     private LocalReply UpdateHome(LocalHomeUpdate? request)
     {
         if (request?.Units is null || request.Units.Length is < 1 or > 6 || request.RandomMode is not (0 or 1)
@@ -35,10 +37,10 @@ public sealed partial class OfflineServer
         return new(0, new() { ["user_update"] = new JsonObject { ["home_unit_info"] = info.DeepClone() } });
     }
 
-    private LocalReply SetUnitPreference(LocalArguments? request, string field)
+    private LocalReply SetUnitPreference(LocalArguments? request, string field, int minimum = 0)
     {
-        if (request?.EntityId is null or <= 0 || request.Value is null or < 0)
-            return new(400, null, "Positive unit ID and nonnegative preference required.");
+        if (request?.EntityId is null or <= 0 || request.Value is null || request.Value < minimum)
+            return new(400, null, "Invalid unit ID or preference.");
         var updated = user.DeepClone().AsObject();
         var unit = updated["unit"]!["unit_list"]!.AsArray()
             .FirstOrDefault(entry => entry!["user_unit_id"]!.GetValue<long>() == request.EntityId);

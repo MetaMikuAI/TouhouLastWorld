@@ -208,7 +208,7 @@
 | TutorialFirstGachaDoRequest | tutorial_first_gacha_do | 最小响应 | 仅返回已确认初始库存的本地用户快照，不额外抽取或发放；尚未确认时拒绝 | 未测 |
 | TutorialUpdateRequest | tutorial_update | 业务实现 | 校验并保存单调进度；不含阶段奖励 | 未测 |
 | UnitAllocatePointsRequest | allocate_points | 业务实现 | 按目标等级逐级校验主数据费用与提交前已用点数门槛，统一扣点并保存；拒绝降级和重复类型，不重算历史点数来源 | 未测 |
-| UnitBGMUpdateRequest | unit_bgm_update | 业务实现 | 校验成员归属，保存非负音乐编号；不校验资源可用性，不解锁音乐 | 未测 |
+| UnitBGMUpdateRequest | unit_bgm_update | 业务实现 | 校验成员归属，保存曲目编号或关闭状态 | 通过 |
 | UnitDestinyValueUpRequest | unit_destiny_value_up | 业务实现 | 三种物品按配置混合扣除并提升属性值，上限截断；校验归属和培养占用；单位材料尚不支持 | 未测 |
 | UnitEquipCostumeRequest | unit_equip_costume | 业务实现 | 批量切换默认、已持有或当前外观，校验主数据归属；不新增持有，未接入特殊进阶解锁 | 未测 |
 | UnitEquipPictureRequest | unit_equip_picture | 业务实现 | 局部更新 1–5 槽位与反向引用；校验持有、重复和占用，0 表示卸下；未校验槽位解锁 | 未测 |

@@ -460,7 +460,9 @@ Check(teams.Dispatch("home_select_unit_update", arguments: new(Value: 0)).Body![
 Check(teams.Dispatch("home_bgm_update", arguments: new(Value: -1)).Status == 400, "negative home music rejected");
 Check(teams.Dispatch("home_bgm_update", arguments: new(Value: 123)).Status == 0, "home music saved");
 Check(teams.Dispatch("unit_bgm_update", arguments: new(999, 123)).Status == 404, "unit music requires owned unit");
-Check(teams.Dispatch("unit_bgm_update", arguments: new(1, -1)).Status == 400, "negative unit music rejected");
+Check(teams.Dispatch("unit_bgm_update", arguments: new(1, -2)).Status == 400, "invalid negative unit music rejected");
+Check(teams.Dispatch("unit_bgm_update", arguments: new(1, -1)).Body!["user_update"]!["unit"]!["unit_list"]![0]!["select_bgm"]!.GetValue<int>() == -1,
+    "unit music can be turned off");
 Check(teams.Dispatch("unit_bgm_update", arguments: new(1, 456)).Status == 0, "unit music saved");
 var homeReload = new OfflineServer(teamDirectory, teamSeed.ToJsonString(), "offline://resources/");
 homeReload.Dispatch("game_init");
