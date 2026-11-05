@@ -14,7 +14,7 @@ public sealed partial class OfflineServer
         var entries = new JsonArray();
         foreach (var entry in request.Units)
         {
-            if (entry is null || entry.UserUnitId <= 0 || entry.UnitId <= 0 || entry.CostumeId < 0 || entry.Motion < 0 || entry.Music < 0)
+            if (entry is null || entry.UserUnitId <= 0 || entry.UnitId <= 0 || entry.CostumeId < 0 || entry.Motion < 0 || entry.Music < NoBgm)
                 return new(400, null, "Invalid home entry.");
             var owned = user["unit"]!["unit_list"]!.AsArray()
                 .FirstOrDefault(unit => unit!["user_unit_id"]!.GetValue<long>() == entry.UserUnitId);

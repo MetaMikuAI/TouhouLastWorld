@@ -480,9 +480,11 @@ Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry
     "home configuration ownership");
 Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry with { UnitId = 999 }], 0, 0))).Status == 400,
     "home identifiers must match");
-var configuredHome = teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry], 0, 1)))
+Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry with { Music = -2 }], 0, 0))).Status == 400,
+    "invalid negative layout music rejected");
+var configuredHome = teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry with { Music = -1 }], 0, 1)))
     .Body!["user_update"]!["home_unit_info"]!;
-Check(configuredHome["random_select_mode"]!.GetValue<int>() == 1 && configuredHome["unit_param"]![0]!["bgm"]!.GetValue<int>() == 123,
+Check(configuredHome["random_select_mode"]!.GetValue<int>() == 1 && configuredHome["unit_param"]![0]!["bgm"]!.GetValue<int>() == -1,
     "complete home configuration saved");
 var beforeInvalidHome = teams.Dispatch("login").Body!["user"]!["home_unit_info"]!.DeepClone();
 Check(teams.Dispatch("favorite_unit_update", arguments: new(Home: new([homeEntry, homeEntry with { UserUnitId = 999 }], 0, 0))).Status == 404
@@ -494,8 +496,9 @@ var configuredHomeReload = new OfflineServer(teamDirectory, teamSeed.ToJsonStrin
 configuredHomeReload.Dispatch("game_init");
 var configuredUser = configuredHomeReload.Dispatch("login").Body!["user"]!;
 Check(configuredUser["home_unit_info"]!["random_select_mode"]!.GetValue<int>() == 1
+    && configuredUser["home_unit_info"]!["unit_param"]![0]!["bgm"]!.GetValue<int>() == -1
     && configuredUser["unit"]!["unit_list"]![0]!["home_motion"]!.GetValue<int>() == 1, "home configuration and motion persist");
-Console.WriteLine("Passed 10 home configuration checks.");
+Console.WriteLine("Passed 11 home configuration checks.");
 Check(flags.Dispatch("anniversary_info_get").Body!["mail_address"]!.GetValue<string>() == "", "empty anniversary contact");
 var personal = flags.Dispatch("personal_info_get").Body!;
 Check(new[] { "user_name", "zip_code", "address", "phone_number" }.All(field => personal[field]!.GetValue<string>() == ""),

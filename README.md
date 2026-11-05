@@ -104,7 +104,7 @@
 | GoogleSwitchUserInfoGetRequest | 未确认 | 未实现 | — | 未测 |
 | HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存非负音乐编号，零值恢复默认；不校验资源可用性，不解锁音乐 | 未测 |
 | HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 | 未测 |
-| HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式；外观、动作及音乐仅保存编号，不校验素材可用性 | 未测 |
+| HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式，支持关闭音乐 | 通过（音乐配置） |
 | HomeRequest | home | 业务实现 | 同步设施产出库存；其余摘要按默认值返回 | 通过（进入及返回主页） |
 | IdleSearchCompleteUpgradeRequest | afk_complete_upgrade | 业务实现 | 到期后提升对应成长值一级并清槽；重验上限与开始快照，防重复领取；无附加奖励 | 未测 |
 | IdleSearchReceiveDropRequest | afk_receive_drop | 最小响应 | 仅空掉落响应；已有待领奖励返回 503，不生成、发放或清除奖励 | 未测 |
