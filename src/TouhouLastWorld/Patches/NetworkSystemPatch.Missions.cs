@@ -80,7 +80,7 @@ public partial class NetworkSystemPatch
                 continue;
             missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups)));
         }
-        missions.AddRange(ReadNoviceBattleMissions(master, definitions, rewards));
+        missions.AddRange(ReadNoviceStoryMissions(master, definitions, rewards));
         return missions.ToArray();
     }
 
@@ -89,10 +89,10 @@ public partial class NetworkSystemPatch
         var master = MasterDB.This();
         var definitions = master?.Mission?.ToList()?.ToArray();
         var rewards = master?.MissionReward?.ToList()?.ToArray().ToLookup(row => row.mission_reward_group_id);
-        return definitions is null || rewards is null ? [] : ReadNoviceBattleMissions(master!, definitions, rewards);
+        return definitions is null || rewards is null ? [] : ReadNoviceStoryMissions(master!, definitions, rewards);
     }
 
-    private static LocalStoryMission[] ReadNoviceBattleMissions(MasterDB master, MissionRecord[] definitions,
+    private static LocalStoryMission[] ReadNoviceStoryMissions(MasterDB master, MissionRecord[] definitions,
         ILookup<int, MissionRewardRecord> rewards)
     {
         var progress = User.This()?.playdata;
@@ -101,19 +101,28 @@ public partial class NetworkSystemPatch
         var missions = new List<LocalStoryMission>();
         foreach (var row in definitions)
         {
-            if (row.type != MissionBehavior.c_menu_novice || row.complete_type != 4 || row.complete_id <= 0
+            if (row.type != MissionBehavior.c_menu_novice || row.complete_type is not (3 or 4) || row.complete_id <= 0
                 || row.complete_value != 1 || row.event_id != 0 || !string.IsNullOrWhiteSpace(row.start_at)
                 || !string.IsNullOrWhiteSpace(row.end_at))
                 continue;
-            var episode = episodes.FirstOrDefault(entry => entry.normal_battle_id == row.complete_id
-                && master.Chapter?.Find(entry.chapter_id)?.type == 1);
-            if (episode == null || progress.GetEpisodeInfo(episode, PlayData.Difficulty.Normal)?.state is not >= PlayData.State.New)
+            var isBattle = row.complete_type == 4;
+            var episode = isBattle ? episodes.FirstOrDefault(entry => entry.normal_battle_id == row.complete_id)
+                : master.Episode?.Find(row.complete_id);
+            if (episode == null || (!isBattle && episode.type != 1) || master.Chapter?.Find(episode.chapter_id)?.type != 1
+                || progress.GetEpisodeInfo(episode, PlayData.Difficulty.Normal)?.state is not >= PlayData.State.New)
                 continue;
             var groups = ReadFixedMissionRewards(row, rewards);
             if (groups is null || !groups.Any(group => group.Reward != null) || groups.Any(group => group.Reward is { } reward
-                && (reward.object_type != 12 || master.Item.Find(reward.object_id) == null)))
+                && (reward.object_type switch
+                {
+                    var type when type == ObjectMaster.TYPE_ITEM => master.Item.Find(reward.object_id) == null,
+                    var type when type == ObjectMaster.TYPE_UNIT && !isBattle && reward.object_value == 1 =>
+                        ReadDefaultCostume(master, reward.object_id) == 0,
+                    _ => true
+                })))
                 continue;
-            missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups), row.type, row.complete_id));
+            missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups), row.type,
+                isBattle ? row.complete_id : 0));
         }
         return missions.ToArray();
     }
@@ -252,6 +261,8 @@ public partial class NetworkSystemPatch
         var setting = master?.Setting;
         var time = GameSystem.This()?.Time;
         if (definitions == null || rewards == null || setting == null || time == null) return null;
+        var unit = User.This()?.unit;
+        var unitCapacity = unit == null ? 0 : master!.UnitExpansion?.Find(unit.expansion_rank)?.unit_count ?? 0;
         var rules = new List<LocalMissionRule>();
         foreach (var definition in definitions)
         {
@@ -263,10 +274,12 @@ public partial class NetworkSystemPatch
                 {
                     2 => setting.PHANTASM_POINT_MAX,
                     3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
+                    var type when type == ObjectMaster.TYPE_UNIT && definition.type == MissionBehavior.c_menu_novice
+                        && definition.complete_type == 3 => unitCapacity,
                     12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX,
                     OfflineServer.DailySweepRewardType => int.MaxValue,
                     _ => 0
-                })).ToArray();
+                }, reward.object_type == ObjectMaster.TYPE_UNIT ? ReadDefaultCostume(master!, reward.object_id) : 0)).ToArray();
             rules.Add(new(definition.id, definition.type, definition.event_id, definition.complete_value,
                 (string.IsNullOrWhiteSpace(definition.start_at) && string.IsNullOrWhiteSpace(definition.end_at))
                     || time.IsActiveDate(definition.start_at, definition.end_at), grants));

@@ -187,7 +187,7 @@ public sealed partial class OfflineServer
             var objects = new JsonArray();
             foreach (var reward in rule.Rewards)
             {
-                var error = ApplyMissionReward(updated, reward);
+                var error = reward.Type == 9 ? ApplyMissionUnitReward(updated, reward) : ApplyMissionReward(updated, reward);
                 if (error is not null) return error;
                 var item = new JsonObject { ["object_type"] = reward.Type, ["object_id"] = reward.Id,
                     ["object_value"] = reward.Count, ["custom_parameter"] = "" };
@@ -214,6 +214,11 @@ public sealed partial class OfflineServer
             ["item"] = updated["item"]!.DeepClone() };
         if (rewards.Any(reward => reward?["object_type"]?.GetValue<int>() == 2))
             userUpdate["phantasm_point"] = updated["phantasm_point"]!.DeepClone();
+        if (rewards.Any(reward => reward?["object_type"]?.GetValue<int>() == 9))
+        {
+            userUpdate["unit"] = updated["unit"]!.DeepClone();
+            userUpdate["album"] = updated["album"]!.DeepClone();
+        }
         if (updated["mop_up_day_coupon"] is JsonNode coupons)
             userUpdate["mop_up_day_coupon"] = coupons.DeepClone();
         return new(0, new() { ["mission"] = BuildMissionLists(daily, story, dailyQuest), ["reward_list"] = rewards,
@@ -227,6 +232,17 @@ public sealed partial class OfflineServer
         DailySweepRewardType => ApplyDailySweepReward(updated, reward),
         _ => ApplyInventoryReward(updated, reward)
     };
+
+    private LocalReply? ApplyMissionUnitReward(JsonObject updated, LocalInventoryReward reward)
+    {
+        if (reward.Id <= 0 || reward.CostumeId <= 0 || reward.Count != 1 || reward.Capacity <= 0)
+            return new(503, null, "Mission partner definition unsupported.");
+        var sequence = GetLastUnitId(updated);
+        if (updated["unit"]!["unit_list"]!.AsArray().Count >= reward.Capacity || sequence is < 0 or long.MaxValue)
+            return new(409, null, "Mission partner exceeds inventory capacity.");
+        AddOwnedUnit(updated, reward.Id, reward.CostumeId, sequence + 1);
+        return null;
+    }
 
     private static LocalReply? ApplyMissionSpiritReward(JsonObject updated, LocalInventoryReward reward)
     {

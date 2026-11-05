@@ -3280,6 +3280,27 @@ Check(missionReload.Dispatch("mission_end", arguments: new(MissionClaim: mission
     && missionReload.Dispatch("mission_end", arguments: new(MissionClaim: missionClaim)).Body!["reward_list"]!.AsArray().Count == 0,
     "mission receipts survive restart and repeated batch claims grant no duplicate reward");
 Console.WriteLine("Passed 3 mission claim checks.");
+var noviceSeed = JsonNode.Parse(seed)!;
+noviceSeed["quest_playdata"]!.AsArray().Add(new JsonObject { ["episode_id"] = 100100501, ["scenario_status"] = 1 });
+var noviceDirectory = directory + "-novice-finale";
+var noviceServer = new OfflineServer(noviceDirectory, noviceSeed.ToJsonString(), "offline://resources/");
+noviceServer.Dispatch("game_init");
+noviceServer.Dispatch("login");
+var noviceFinale = new LocalStoryMission(400210, 100100501, "通关所有序章关卡", 2,
+    [(1117993, 1), (0, 0), (0, 0), (0, 0)], Type: 10);
+var finaleRule = new LocalMissionRule(400210, 10, 0, 1, true, [new(9, 1015, 1, 1, 101501)]);
+var finaleClaim = new LocalArguments(StoryMissions: [noviceFinale], MissionClaim: new(400210, 0, 10, 0, 0, [finaleRule]));
+Check(noviceServer.Dispatch("mission_end", arguments: finaleClaim).Status == 409, "novice partner claim checks roster capacity");
+finaleRule.Rewards[0] = finaleRule.Rewards[0] with { Capacity = 100 };
+var finaleReward = noviceServer.Dispatch("mission_end", arguments: finaleClaim).Body!["user_update"]!;
+Check(finaleReward["unit"]!["unit_list"]!.AsArray().Any(row => row?["unit_id"]?.GetValue<int>() == 1015)
+    && finaleReward["album"]!["unit_list"]!.AsArray().Any(row => row?["unit_id"]?.GetValue<int>() == 1015),
+    "novice finale grants its partner and album entry");
+var noviceReload = new OfflineServer(noviceDirectory, seed, "offline://resources/");
+noviceReload.Dispatch("game_init");
+noviceReload.Dispatch("login");
+Check(noviceReload.Dispatch("mission_end", arguments: finaleClaim).Status == 404,
+    "novice finale remains claimed after restart");
 var dailyLoginDirectory = directory + "-daily-login";
 var dailyLoginServer = new OfflineServer(dailyLoginDirectory, seed, "offline://resources/");
 dailyLoginServer.Dispatch("game_init");

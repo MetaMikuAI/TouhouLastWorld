@@ -105,7 +105,7 @@
 | HomeBGMUpdateRequest | home_bgm_update | 业务实现 | 保存旧版首页曲目编号或关闭状态 | 通过（原生探针） |
 | HomeCustomSelectUnitUpdateRequest | home_select_unit_update | 业务实现 | 校验已有首页列表索引并保存当前选择，保留其他设置 | 未测 |
 | HomeCustomSetUpdateRequest | favorite_unit_update | 业务实现 | 保存 1–6 项首页配置，校验成员归属、索引及随机模式，支持关闭音乐 | 通过（音乐配置） |
-| HomeRequest | home | 业务实现 | 同步设施产出库存及可领的新手战斗任务提示 | 通过 |
+| HomeRequest | home | 业务实现 | 同步设施产出库存及可领的新手剧情、战斗任务提示 | 通过 |
 | IdleSearchCompleteUpgradeRequest | afk_complete_upgrade | 业务实现 | 到期后提升对应成长值一级并清槽；重验上限与开始快照，防重复领取；无附加奖励 | 未测 |
 | IdleSearchReceiveDropRequest | afk_receive_drop | 最小响应 | 仅空掉落响应；已有待领奖励返回 503，不生成、发放或清除奖励 | 未测 |
 | IdleSearchSetRequest | afk_set | 业务实现 | 按主数据时长和成长限制保存、取消槽位；校验归属与占用；不结算成长或奖励 | 未测 |
@@ -126,8 +126,8 @@
 | MailReceiveRequest | mail_receive | 业务实现 | 无期限邮件的金币、结晶、道具入库并标记；按主数据限额整批校验、防重领；限期、特殊奖励或超额整批保留 | 未测 |
 | MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 | 通过（空邮箱） |
 | MiniGameRequest | mini_game_top | 最小响应 | 为全部主表项目返回本地首次奖励标记，默认未领取；剩余点数默认零，不生成进度或发放奖励 | 未测 |
-| MissionEndRequest | mission_end | 业务实现 | 领取登录、每日探索、主线剧情及新手战斗任务的固定奖励，每日任务按游戏日防重 | 通过（所列任务） |
-| MissionTopRequest | mission_top | 业务实现 | 生成普通任务和新手战斗任务列表，按主表开放当前特刊 | 通过（所列任务） |
+| MissionEndRequest | mission_end | 业务实现 | 领取登录、每日探索、主线剧情及新手剧情、战斗任务的固定奖励，支持序章伙伴奖励 | 通过（所列任务） |
+| MissionTopRequest | mission_top | 业务实现 | 生成普通任务及新手剧情、战斗任务列表，按主表开放当前特刊 | 通过（所列任务） |
 | MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 业务实现 | 按有效主表返回本地通关进度，未通关项返回初始记录；不生成奖励或排名 | 未测 |
 | MusicLikeRequest | music_collect | 未实现 | 请求 bgm_id/status，响应 is_success；status 取值含义待调用逻辑确认 | 未测 |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 | 未测 |

@@ -31,19 +31,10 @@ public sealed partial class OfflineServer
         var sequence = Math.Max(updated[sequenceName]?.GetValue<long>() ?? 0,
             owned.Select(entry => entry![idName]!.GetValue<long>()).DefaultIfEmpty().Max());
         if (sequence < 0 || sequence > long.MaxValue - rule.Count) return new(409, null, "Inventory identifier limit exceeded.");
-        var album = updated["album"]![listName]!.AsArray();
-        var isNew = album.All(entry => entry?[objectIdName]?.GetValue<int>() != rule.ObjectId) ? 1 : 0;
+        int isNew;
         if (isUnit)
         {
-            var unit = unitTemplate.DeepClone().AsObject();
-            unit[idName] = sequence + 1;
-            unit[objectIdName] = rule.ObjectId;
-            unit["equip_costume_id"] = rule.CostumeId;
-            unit["is_new"] = 1;
-            unit["last_motivation_at"] = DateTimeOffset.UtcNow.ToString("O");
-            owned.Add(unit);
-            if (isNew == 1) album.Add(new JsonObject { [objectIdName] = rule.ObjectId, ["talk_rank"] = 0,
-                ["voice_set_id"] = 0, ["character_episode_ids"] = new JsonArray(), ["home_motion_ids"] = new JsonArray() });
+            isNew = AddOwnedUnit(updated, rule.ObjectId, rule.CostumeId, sequence + 1);
         }
         else
         {
@@ -54,10 +45,12 @@ public sealed partial class OfflineServer
                 ["is_protection"] = 0, ["is_new"] = 1, ["parameter1_value"] = rule.Parameter1,
                 ["parameter2_value"] = rule.Parameter2, ["picture_characteristic_group_master_id"] = rule.Characteristic
             });
+            var album = updated["album"]![listName]!.AsArray();
+            isNew = album.All(entry => entry?[objectIdName]?.GetValue<int>() != rule.ObjectId) ? 1 : 0;
             if (isNew == 1) album.Add(new JsonObject { [objectIdName] = rule.ObjectId, ["potential_limitbreak"] = 0 });
+            updated[sequenceName] = sequence + rule.Count;
         }
         item["num"] = (int)(item["num"]!.GetValue<int>() - cost);
-        updated[sequenceName] = sequence + rule.Count;
         Save(updated);
         return new(0, new()
         {

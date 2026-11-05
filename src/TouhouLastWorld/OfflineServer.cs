@@ -280,8 +280,27 @@ public sealed partial class OfflineServer
         };
     }
 
-    private long LastUnitId => Math.Max(user["_local_unit_sequence"]?.GetValue<long>() ?? 0,
-        user["unit"]!["unit_list"]!.AsArray().Select(unit => unit!["user_unit_id"]!.GetValue<long>()).DefaultIfEmpty().Max());
+    private long LastUnitId => GetLastUnitId(user);
+
+    private static long GetLastUnitId(JsonObject state) => Math.Max(state["_local_unit_sequence"]?.GetValue<long>() ?? 0,
+        state["unit"]!["unit_list"]!.AsArray().Select(unit => unit!["user_unit_id"]!.GetValue<long>()).DefaultIfEmpty().Max());
+
+    private int AddOwnedUnit(JsonObject state, int unitId, int costumeId, long uniqueId)
+    {
+        var unit = unitTemplate.DeepClone().AsObject();
+        unit["user_unit_id"] = uniqueId;
+        unit["unit_id"] = unitId;
+        unit["equip_costume_id"] = costumeId;
+        unit["is_new"] = 1;
+        unit["last_motivation_at"] = DateTimeOffset.UtcNow.ToString("O");
+        state["unit"]!["unit_list"]!.AsArray().Add(unit);
+        state["_local_unit_sequence"] = uniqueId;
+        var album = state["album"]!["unit_list"]!.AsArray();
+        if (album.Any(entry => entry?["unit_id"]?.GetValue<int>() == unitId)) return 0;
+        album.Add(new JsonObject { ["unit_id"] = unitId, ["talk_rank"] = 0,
+            ["voice_set_id"] = 0, ["character_episode_ids"] = new JsonArray(), ["home_motion_ids"] = new JsonArray() });
+        return 1;
+    }
 
     private static JsonArray GachaButtons() => new(
         new JsonObject { ["gacha_button_id"] = 102, ["count"] = 0 },
