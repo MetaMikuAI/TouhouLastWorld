@@ -757,6 +757,17 @@ public partial class NetworkSystemPatch
             }
             if (api is "battle_start" or "roguelite_reroll" or "batch_search" or "multiple_spirits_weekly_battle_end" or "multiple_spirits_weekly_battle_start" or "arena_battle_end" or "arena_battle_start" or "event_point_gacha_do" or "tower_battle_end" or "series_battle_end" or "series_battle_start" or "gacha_point_exchange" or "mission_end" or "battle_pass_mission_end" or "battle_pass_receive_reward" or "get_series_battle_ranking_teaminfo" or "mini_game_top")
             {
+                if (api == "battle_start" && SceneSystem.This() is { } scene && scene.IsScreenOut()
+                    && FindActivePanel<BattleBehaviour>() != null)
+                {
+                    var destination = FormationArgs.isAnother ? "Assets/East/Scenes/QuestAnotherScene.unity" : "Assets/East/Scenes/QuestScene.unity";
+                    scene.IndicatorActive(false);
+                    PentopSystem.This()?.EnableEvent();
+                    SoundSystem.This()?.UnloadSE();
+                    BattleBehaviour.nextEpisodeID = 0;
+                    scene.LoadScene(destination, (Il2CppSystem.Action)(Action)(() => PopupSystem.This()?.CreateMessage(reply.Error)));
+                    yield break;
+                }
                 if (api is "battle_start" or "arena_battle_start" or "multiple_spirits_weekly_battle_start")
                 {
                     var formation = FindActivePanel<FormationBehaviour>();

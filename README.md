@@ -26,7 +26,7 @@
 | BattlePassReceiveRewardRequest | battle_pass_receive_reward | 业务实现 | 按本地档位状态领取已达等级的固定金币/晶体/物品，分别保存三档进度；要求完整等级定义，整批回滚，随机奖励与档位购买未实现 | 未测 |
 | BattlePassTopRequest | battle_pass_top | 业务实现 | 显示本期登录与每日探索任务的进度和领取状态，按游戏日刷新；其他任务待补 | 通过（登录、每日探索） |
 | BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 | 未测 |
-| BattleStartRequest | battle_start | 业务实现 | 校验无助战主线、普通每日探索、编队及可用灵点，每日类别按游戏日重置次数 | 通过（序章、寻找指南书） |
+| BattleStartRequest | battle_start | 业务实现 | 校验无助战主线、普通每日探索、编队及可用灵点，支持结果页沿用原编队再战 | 通过（序章、寻找指南书及再战） |
 | BootRequest | boot | 最小响应 | 初始化后确认启动；无需建号，不收集广告标识，不变更账号 | 未测 |
 | BuyGoodsRequest | pass_card/buy_goods | 业务实现 | 按配置扣币购买一份，校验限购和库存并保存；支持金币、晶体、普通物品 | 未测 |
 | CheckConditionalPackRequest | check_conditional_pack | 最小响应 | 空列表 | 通过（登录链） |

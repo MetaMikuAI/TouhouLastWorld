@@ -15,12 +15,33 @@ public partial class NetworkSystemPatch
         var team = formation?.m_teamData;
         var player = User.This();
         var master = MasterDB.This();
-        if (team == null || player?.unit == null || player.playdata == null || master?.Battle == null) return null;
-        var slots = Enumerable.Range(0, team.Length).Select(team.GetDisplayUnit)
-            .Where(slot => slot?.Unit?.UserUnitId > 0).ToArray();
-        var participants = slots.Select(slot => slot.Unit.UserUnitId).Distinct().ToArray();
-        // 剧情角色临时加入客户端角色表，固定槽位只参与战斗。
-        var owned = slots.Where(slot => !slot.IsFixedMember).Select(slot => slot.Unit.UserUnitId).Distinct().ToArray();
+        if (player?.unit == null || player.playdata == null || master?.Battle == null) return null;
+        long[] participants;
+        long[] owned;
+        int cost;
+        if (team != null)
+        {
+            var slots = Enumerable.Range(0, team.Length).Select(team.GetDisplayUnit)
+                .Where(slot => slot?.Unit?.UserUnitId > 0).ToArray();
+            participants = slots.Select(slot => slot.Unit.UserUnitId).Distinct().ToArray();
+            // 剧情角色临时加入客户端角色表，固定槽位只参与战斗。
+            owned = slots.Where(slot => !slot.IsFixedMember).Select(slot => slot.Unit.UserUnitId).Distinct().ToArray();
+            cost = formation!.TotalCost;
+        }
+        else
+        {
+            // 结算页再战时出发队伍场景已卸载，原生流程沿用保存的编队。
+            if (request.team_number <= 0 || FormationArgs.useNpc || FormationArgs.isUseHelper
+                || FormationArgs.replayMode || FormationArgs.autoRunMode || FindActivePanel<BattleBehaviour>() == null)
+                return null;
+            var saved = player.team?.Find(request.team_number)?.user_unit_id_list;
+            if (saved == null) return null;
+            owned = saved.ToArray().Where(id => id > 0).ToArray();
+            var units = owned.Select(player.unit.Find).ToArray();
+            if (units.Any(unit => unit == null)) return null;
+            participants = owned;
+            cost = FormationArgs.useCost > 0 ? FormationArgs.useCost : units.Sum(unit => unit.cost);
+        }
         if (request.daily_quest_stage_id > 0)
         {
             var stage = master.DailyQuestStage?.Find(request.daily_quest_stage_id);
@@ -35,7 +56,7 @@ public partial class NetworkSystemPatch
             var weekday = time.GetGameDayOfWeek();
             var open = quest.IsBeginHeld() && weekday is >= 0 and <= 6 && days[weekday] > 0;
             var attemptLimit = quest.count + master.Event.GetDailyQuestAddCount(quest);
-            return new(0, stage.battle_id, request.difficulty, request.team_number, open, formation!.TotalCost,
+            return new(0, stage.battle_id, request.difficulty, request.team_number, open, cost,
                 participants, owned, new(quest.id, stage.id, stage.open_level, attemptLimit));
         }
 
@@ -46,7 +67,7 @@ public partial class NetworkSystemPatch
         var progress = player.playdata.GetEpisodeInfo(episode, (PlayData.Difficulty)request.difficulty);
         return new(episode.id, battle.id, request.difficulty, request.team_number,
             episode.IsOpenedCondition() && progress != null && progress.state >= PlayData.State.New,
-            formation!.TotalCost, participants, owned);
+            cost, participants, owned);
     }
 
     private static LocalQuestBattleEnd? ReadQuestBattleEnd(BattleEndRequest? request)
