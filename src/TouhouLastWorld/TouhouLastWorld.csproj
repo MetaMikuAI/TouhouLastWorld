@@ -23,4 +23,26 @@
     <Compile Include="../TouhouLastWorld.Core/**/*.cs;../TouhouLastWorld.Storage/**/*.cs;../TouhouLastWorld.Protocol/**/*.cs"
              Exclude="../*/obj/**/*.cs;../*/bin/**/*.cs;../TouhouLastWorld.Core/Properties/**/*.cs" />
   </ItemGroup>
+  <Target Name="GeneratePluginBuildInfo" BeforeTargets="BeforeCompile">
+    <WriteLinesToFile File="$(IntermediateOutputPath)PluginBuildInfo.g.cs"
+                      Lines="namespace TouhouLastWorld { internal static class PluginBuildInfo { internal const string Id = &quot;$(PluginId)&quot;%3B internal const string Name = &quot;$(PluginName)&quot;%3B internal const string Version = &quot;$(Version)&quot;%3B } }"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)PluginBuildInfo.g.cs" />
+    </ItemGroup>
+  </Target>
+  <Target Name="PackageVersionedPlugin" AfterTargets="Build">
+    <PropertyGroup>
+      <DistributionDirectory Condition="'$(DistributionDirectory)' == '' and '$(BundleSources)' == 'true'">$(MSBuildProjectDirectory)/../../deliveries/$(Version)</DistributionDirectory>
+      <DistributionDirectory Condition="'$(DistributionDirectory)' == ''">$(TargetDir)distribution</DistributionDirectory>
+      <VersionedPluginPath>$(DistributionDirectory)/$(AssemblyName)-v$(Version)$(TargetExt)</VersionedPluginPath>
+    </PropertyGroup>
+    <MakeDir Directories="$(DistributionDirectory)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(VersionedPluginPath)" SkipUnchangedFiles="true" />
+    <ItemGroup Condition="'$(BundleSources)' != 'true'">
+      <DistributionDependencies Include="$(TargetDir)TouhouLastWorld.Core.dll;$(TargetDir)TouhouLastWorld.Storage.dll;$(TargetDir)TouhouLastWorld.Protocol.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DistributionDependencies)" DestinationFolder="$(DistributionDirectory)" SkipUnchangedFiles="true" Condition="'@(DistributionDependencies)' != ''" />
+    <Message Text="Plugin delivery: $(VersionedPluginPath)" Importance="High" />
+  </Target>
 </Project>

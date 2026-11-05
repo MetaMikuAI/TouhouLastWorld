@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.7.0</Version>
+    <PluginId>local.touhoulastworld</PluginId>
+    <PluginName>TouhouLastWorld</PluginName>
+  </PropertyGroup>
+</Project>

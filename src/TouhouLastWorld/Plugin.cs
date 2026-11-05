@@ -8,10 +8,10 @@ using TouhouLastWorld.Patches;
 
 namespace TouhouLastWorld;
 
-[BepInPlugin(Id, "TouhouLastWorld", "0.6.0")]
+[BepInPlugin(Id, PluginBuildInfo.Name, PluginBuildInfo.Version)]
 public sealed class Plugin : BasePlugin
 {
-    public const string Id = "local.touhoulastworld";
+    public const string Id = PluginBuildInfo.Id;
     public static Plugin Instance { get; private set; } = null!;
     public static OfflineServer Server { get; private set; } = null!;
     private readonly Harmony harmony = new(Id);
