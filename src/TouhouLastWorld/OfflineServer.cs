@@ -47,7 +47,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalIntroGrant? IntroGrant = null, LocalHistoryQuery? HistoryQuery = null,
     LocalHistoryDefinitions? HistoryDefinitions = null, LocalUnitRecycle? UnitRecycle = null,
     LocalDispatchSettlement? DispatchSettlement = null, LocalRetryFix? RetryFix = null, LocalMissionClaim? MissionClaim = null,
-    LocalDailyLoginMission? DailyLoginMission = null,
+    LocalDailyLoginMission? DailyLoginMission = null, LocalStoryMission[]? StoryMissions = null,
     LocalQuestBattleStart? QuestBattleStart = null, LocalQuestBattleEnd? QuestBattleEnd = null,
     LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null,
     LocalPointExchange? PointExchange = null, LocalSeriesStart? SeriesStart = null, LocalSeriesEnd? SeriesEnd = null, LocalTowerStart? TowerStart = null, LocalTowerEnd? TowerEnd = null, LocalTreasureDraw? TreasureDraw = null, LocalEventDraw? EventDraw = null, LocalArenaStart? ArenaStart = null, LocalArenaEnd? ArenaEnd = null, LocalVersusStart? VersusStart = null, LocalVersusEnd? VersusEnd = null, LocalBatchSearch? Batch = null, LocalReroll? Reroll = null);

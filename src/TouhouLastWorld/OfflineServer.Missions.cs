@@ -5,6 +5,7 @@ namespace TouhouLastWorld;
 
 public sealed record LocalMissionRule(int Id, int Type, int EventId, int Required, bool Active, LocalInventoryReward[] Rewards);
 public sealed record LocalMissionClaim(int Id, int All, int Type, int EventId, int ChapterId, LocalMissionRule[] Rules);
+public sealed record LocalStoryMission(int Id, int EpisodeId, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups);
 public sealed record LocalDailyLoginMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
     int SwitchingHour, DateTime Now)
 {
@@ -15,10 +16,10 @@ public sealed partial class OfflineServer
 {
     internal const int DailySweepRewardType = 104;
 
-    private LocalReply MissionOverview(LocalDailyLoginMission? daily)
+    private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalStoryMission[]? story)
     {
         var body = QueryTemplates["mission_top"].DeepClone().AsObject();
-        var overview = BuildMissionLists(daily);
+        var overview = BuildMissionLists(daily, story);
         body["mission"] = overview;
         var rows = overview["unlock_list"]!.AsArray().Concat(overview["clear_list"]!.AsArray()).ToArray();
         foreach (var field in new[] { "event_id", "chapter_id" })
@@ -27,14 +28,39 @@ public sealed partial class OfflineServer
         return new(0, body);
     }
 
-    private JsonObject BuildMissionLists(LocalDailyLoginMission? daily)
+    private JsonObject BuildMissionLists(LocalDailyLoginMission? daily, LocalStoryMission[]? story)
     {
         var saved = user["_local_missions"] as JsonObject;
         var overview = (saved ?? QueryTemplates["mission_top"]["mission"]!.AsObject()).DeepClone().AsObject();
         var login = DailyLoginRow(daily, overview);
         if (login is not null)
             overview[login["current_value"]!.GetValue<int>() == 1 ? "clear_list" : "unlock_list"]!.AsArray().Add(login);
+        foreach (var row in StoryMissionRows(story, overview))
+            overview[row["current_value"]!.GetValue<int>() == 1 ? "clear_list" : "unlock_list"]!.AsArray().Add(row);
         return overview;
+    }
+
+    private IEnumerable<JsonObject> StoryMissionRows(LocalStoryMission[]? story, JsonObject missions)
+    {
+        if (story is null) yield break;
+        var displayed = missions["unlock_list"]!.AsArray().Concat(missions["clear_list"]!.AsArray())
+            .Select(row => row?["id"]?.GetValue<int>() ?? 0).ToHashSet();
+        var received = (user["_local_received_missions"] as JsonArray)?.Select(id => id!.GetValue<int>()).ToHashSet() ?? [];
+        var completed = (user["quest_playdata"] as JsonArray)?.Where(row => row?["scenario_status"]?.GetValue<int>() == 1)
+            .Select(row => row!["episode_id"]!.GetValue<int>()).ToHashSet() ?? [];
+        foreach (var mission in story)
+        {
+            if (received.Contains(mission.Id) || !displayed.Add(mission.Id)) continue;
+            var row = new JsonObject
+            {
+                ["id"] = mission.Id, ["type"] = 1, ["name"] = mission.Name, ["complete_type"] = 3,
+                ["complete_id"] = mission.EpisodeId, ["complete_value"] = 1, ["display_order"] = mission.DisplayOrder,
+                ["open_mission_id"] = 0, ["event_id"] = 0, ["chapter_id"] = 0,
+                ["current_value"] = completed.Contains(mission.EpisodeId) ? 1 : 0, ["start_at"] = "", ["end_at"] = ""
+            };
+            SetMissionRewardGroups(row, mission.RewardGroups);
+            yield return row;
+        }
     }
 
     private JsonObject? DailyLoginRow(LocalDailyLoginMission? daily, JsonObject missions)
@@ -59,30 +85,36 @@ public sealed partial class OfflineServer
             ["start_at"] = day.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
             ["end_at"] = day.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
         };
-        for (var index = 0; index < daily.RewardGroups.Length; index++)
-        {
-            var reward = daily.RewardGroups[index];
-            login[$"reward_group{index + 1}_id"] = reward.Id;
-            login[$"reward_group{index + 1}_value"] = reward.Count;
-        }
+        SetMissionRewardGroups(login, daily.RewardGroups);
         return login;
     }
 
-    private LocalReply ReceiveMission(LocalMissionClaim? request, LocalDailyLoginMission? daily)
+    private static void SetMissionRewardGroups(JsonObject row, (int Id, int Count)[] groups)
+    {
+        for (var index = 0; index < groups.Length; index++)
+        {
+            var reward = groups[index];
+            row[$"reward_group{index + 1}_id"] = reward.Id;
+            row[$"reward_group{index + 1}_value"] = reward.Count;
+        }
+    }
+
+    private LocalReply ReceiveMission(LocalMissionClaim? request, LocalDailyLoginMission? daily, LocalStoryMission[]? story)
     {
         if (request is null || request.All is < 0 or > 1 || request.Type < 0 || request.EventId < 0 || request.ChapterId < 0
             || (request.All == 0 ? request.Id <= 0 : request.Id != 0))
             return new(400, null, "Invalid mission claim.");
         var updated = user.DeepClone().AsObject();
         var missions = updated["_local_missions"] as JsonObject;
-        if (missions is null && daily is null)
+        if (missions is null && daily is null && story is null)
             return new(404, null, "Mission state unavailable.");
         missions ??= QueryTemplates["mission_top"]["mission"]!.DeepClone().AsObject();
         var ready = missions["clear_list"] as JsonArray;
         if (ready is null || missions["unlock_list"] is not JsonArray)
             return new(404, null, "Mission state unavailable.");
         var login = DailyLoginRow(daily, missions);
-        var claimable = login?["current_value"]?.GetValue<int>() == 1 ? ready.Append(login) : ready;
+        var claimable = ready.Concat(StoryMissionRows(story, missions).Where(row => row["current_value"]!.GetValue<int>() == 1));
+        if (login?["current_value"]?.GetValue<int>() == 1) claimable = claimable.Append(login);
         var selected = claimable.Where(row => row is JsonObject
             && (request.All == 1 || row["id"]?.GetValue<int>() == request.Id)
             && (request.Type == 0 || row["type"]?.GetValue<int>() == request.Type)
@@ -131,7 +163,7 @@ public sealed partial class OfflineServer
             ["item"] = updated["item"]!.DeepClone() };
         if (updated["mop_up_day_coupon"] is JsonNode coupons)
             userUpdate["mop_up_day_coupon"] = coupons.DeepClone();
-        return new(0, new() { ["mission"] = BuildMissionLists(daily), ["reward_list"] = rewards,
+        return new(0, new() { ["mission"] = BuildMissionLists(daily, story), ["reward_list"] = rewards,
             ["receive_mission_list"] = receipts, ["not_receive_message"] = "",
             ["user_update"] = userUpdate });
     }

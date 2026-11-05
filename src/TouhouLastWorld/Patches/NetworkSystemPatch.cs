@@ -43,7 +43,7 @@ public partial class NetworkSystemPatch
         if (api == "get_clear_history_playerinfo") arguments = ReadHistoryPlayer(request.TryCast<ClearHistoryPlayerInfoRequest>()?.player_id);
         if (api == "friend_get_history") arguments = ReadHistoryPlayer(request.TryCast<FriendGetHistoryRequest>()?.player_id);
         if (api == "tower_unit_recovery") arguments = new(Text: request.TryCast<TowerUnitRecoveryRequest>()?.tower_unit_info);
-        if (api == "mission_top") arguments = new(DailyLoginMission: ReadDailyLoginMission());
+        if (api == "mission_top") arguments = ReadMissionOverview();
         if (api == "mission_end") arguments = ReadMissionClaim(request.TryCast<MissionEndRequest>());
         if (api == "battle_pass_mission_end") arguments = ReadBattlePassClaim(request.TryCast<BattlePassMissionEndRequest>());
         if (api == "battle_pass_receive_reward") arguments = ReadBattlePassRewards();

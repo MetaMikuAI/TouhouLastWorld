@@ -4,17 +4,18 @@ namespace TouhouLastWorld.Patches;
 
 public partial class NetworkSystemPatch
 {
-    private static LocalDailyLoginMission? ReadDailyLoginMission()
+    private static LocalArguments? ReadMissionOverview()
     {
         var master = MasterDB.This();
         var definitions = master?.Mission?.ToList()?.ToArray();
-        var rewards = master?.MissionReward?.ToList()?.ToArray();
+        var rewards = master?.MissionReward?.ToList()?.ToArray().ToLookup(row => row.mission_reward_group_id);
         var setting = master?.Setting;
         return definitions == null || rewards == null || setting == null ? null
-            : ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR);
+            : new(DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR),
+                StoryMissions: ReadStoryMissions(master!, definitions, rewards));
     }
 
-    private static LocalDailyLoginMission? ReadDailyLoginMission(MissionRecord[] definitions, MissionRewardRecord[] rewards,
+    private static LocalDailyLoginMission? ReadDailyLoginMission(MissionRecord[] definitions, ILookup<int, MissionRewardRecord> rewards,
         int switchingHour)
     {
         var daily = definitions.Where(row => row.type == MissionBehavior.c_menu_daily
@@ -22,18 +23,52 @@ public partial class NetworkSystemPatch
             && string.IsNullOrWhiteSpace(row.start_at) && string.IsNullOrWhiteSpace(row.end_at)).Take(2).ToArray();
         if (daily.Length != 1) return null;
         var row = daily[0];
+        var fixedRewards = ReadFixedMissionRewards(row, rewards);
+        return fixedRewards is null ? null
+            : new(row.id, row.name, row.display_order, MissionRewardDisplay(fixedRewards), switchingHour, DateTime.Now);
+    }
+
+    private static LocalStoryMission[] ReadStoryMissions(MasterDB master, MissionRecord[] definitions, ILookup<int, MissionRewardRecord> rewards)
+    {
+        var progress = User.This()?.playdata;
+        if (progress == null) return [];
+        var missions = new List<LocalStoryMission>();
+        foreach (var row in definitions)
+        {
+            if (row.type != MissionBehavior.c_menu_main || row.complete_type != 3 || row.complete_value != 1 || row.event_id != 0
+                || !string.IsNullOrWhiteSpace(row.start_at) || !string.IsNullOrWhiteSpace(row.end_at))
+                continue;
+            var episode = master.Episode?.Find(row.complete_id);
+            if (episode == null || episode.type != 1 || master.Chapter?.Find(episode.chapter_id)?.type != 1
+                || progress.GetEpisodeInfo(episode, PlayData.Difficulty.Normal)?.state is not >= PlayData.State.New)
+                continue;
+            var groups = ReadFixedMissionRewards(row, rewards);
+            if (groups is null || !groups.Any(group => group.Reward != null)
+                || groups.Any(group => group.Reward is { } reward && (reward.object_type != 6 || reward.object_id != 0)))
+                continue;
+            missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups)));
+        }
+        return missions.ToArray();
+    }
+
+    private static (int Id, int Count)[] MissionRewardDisplay((int Id, MissionRewardRecord? Reward)[] rewards) =>
+        rewards.Select(group => (group.Id, group.Reward?.object_value ?? 0)).ToArray();
+
+    private static (int Id, MissionRewardRecord? Reward)[]? ReadFixedMissionRewards(MissionRecord row,
+        ILookup<int, MissionRewardRecord> rewards)
+    {
         var groups = new[] { row.reward_group1_id, row.reward_group2_id, row.reward_group3_id, row.reward_group4_id };
-        var fixedRewards = new (int Id, int Count)[groups.Length];
+        var fixedRewards = new (int Id, MissionRewardRecord? Reward)[groups.Length];
         for (var index = 0; index < groups.Length; index++)
         {
             var id = groups[index];
             if (id == 0) continue;
-            var entries = rewards.Where(reward => reward.mission_reward_group_id == id).Take(2).ToArray();
+            var entries = rewards[id].Take(2).ToArray();
             if (entries.Length != 1 || entries[0].object_value <= 0 || !string.IsNullOrEmpty(entries[0].custom_parameter))
                 return null;
-            fixedRewards[index] = (id, entries[0].object_value);
+            fixedRewards[index] = (id, entries[0]);
         }
-        return new(row.id, row.name, row.display_order, fixedRewards, switchingHour, DateTime.Now);
+        return fixedRewards;
     }
 
     private static LocalArguments? ReadBattlePassRewards()
@@ -88,7 +123,7 @@ public partial class NetworkSystemPatch
         if (request == null) return null;
         var master = MasterDB.This();
         var definitions = master?.Mission?.ToList()?.ToArray();
-        var rewards = master?.MissionReward?.ToList()?.ToArray();
+        var rewards = master?.MissionReward?.ToList()?.ToArray().ToLookup(row => row.mission_reward_group_id);
         var setting = master?.Setting;
         var time = GameSystem.This()?.Time;
         if (definitions == null || rewards == null || setting == null || time == null) return null;
@@ -96,32 +131,22 @@ public partial class NetworkSystemPatch
         foreach (var definition in definitions)
         {
             if (request.is_all == 0 && definition.id != request.mission_id) continue;
-            var grants = new List<LocalInventoryReward>();
-            var supported = true;
-            foreach (var group in new[] { definition.reward_group1_id, definition.reward_group2_id,
-                definition.reward_group3_id, definition.reward_group4_id }.Where(id => id > 0))
-            {
-                var entries = rewards.Where(row => row.mission_reward_group_id == group).ToArray();
-                if (entries.Length != 1 || !string.IsNullOrEmpty(entries[0].custom_parameter))
-                {
-                    supported = false;
-                    break;
-                }
-                var reward = entries[0];
-                grants.Add(new(reward.object_type, reward.object_id, reward.object_value, reward.object_type switch
+            var groups = ReadFixedMissionRewards(definition, rewards);
+            if (groups is null) continue;
+            var grants = groups.Select(group => group.Reward).OfType<MissionRewardRecord>()
+                .Select(reward => new LocalInventoryReward(reward.object_type, reward.object_id, reward.object_value, reward.object_type switch
                 {
                     3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
                     12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX,
                     OfflineServer.DailySweepRewardType => int.MaxValue,
                     _ => 0
-                }));
-            }
-            if (supported)
-                rules.Add(new(definition.id, definition.type, definition.event_id, definition.complete_value,
-                    (string.IsNullOrWhiteSpace(definition.start_at) && string.IsNullOrWhiteSpace(definition.end_at))
-                        || time.IsActiveDate(definition.start_at, definition.end_at), grants.ToArray()));
+                })).ToArray();
+            rules.Add(new(definition.id, definition.type, definition.event_id, definition.complete_value,
+                (string.IsNullOrWhiteSpace(definition.start_at) && string.IsNullOrWhiteSpace(definition.end_at))
+                    || time.IsActiveDate(definition.start_at, definition.end_at), grants));
         }
         return new(MissionClaim: new(request.mission_id, request.is_all, request.mission_type, request.event_id, request.chapter_id, rules.ToArray()),
-            DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR));
+            DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR),
+            StoryMissions: ReadStoryMissions(master!, definitions, rewards));
     }
 }
