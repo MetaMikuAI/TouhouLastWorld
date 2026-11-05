@@ -5,8 +5,8 @@ namespace TouhouLastWorld;
 
 public sealed record LocalMissionRule(int Id, int Type, int EventId, int Required, bool Active, LocalInventoryReward[] Rewards);
 public sealed record LocalMissionClaim(int Id, int All, int Type, int EventId, int ChapterId, LocalMissionRule[] Rules);
-public sealed record LocalStoryMission(int Id, int EpisodeId, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
-    int Type = 1, int BattleId = 0);
+public sealed record LocalProgressMission(int Id, int EpisodeId, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
+    int Type = 1, int BattleId = 0, int RequiredUnitLevel = 0);
 public sealed record LocalDailyQuestMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
     LocalDailyQuestDay Day, int SwitchingHour);
 public sealed record LocalDailyLoginMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
@@ -20,15 +20,16 @@ public sealed partial class OfflineServer
     internal const int DailySweepRewardType = 104;
     internal const int DailyQuestMissionType = 8;
     internal const int NoviceMissionType = 10;
+    internal const int UnitLevelMissionType = 22;
     private const string DailyQuestMissionClaim = "_local_daily_quest_mission_claimed_on";
 
-    private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalStoryMission[]? story, LocalDailyQuestMission? dailyQuest,
+    private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalProgressMission[]? progress, LocalDailyQuestMission? dailyQuest,
         LocalBattlePassPeriod? period)
     {
         var body = QueryTemplates["mission_top"].DeepClone().AsObject();
         if (OpenBattlePassPeriod(period) is { } pass)
             body["user_update"] = new JsonObject { ["battle_pass"] = pass };
-        var overview = BuildMissionLists(daily, story, dailyQuest);
+        var overview = BuildMissionLists(daily, progress, dailyQuest);
         body["mission"] = overview;
         var rows = overview["unlock_list"]!.AsArray().Concat(overview["clear_list"]!.AsArray()).ToArray();
         foreach (var field in new[] { "event_id", "chapter_id" })
@@ -37,7 +38,7 @@ public sealed partial class OfflineServer
         return new(0, body);
     }
 
-    private JsonObject BuildMissionLists(LocalDailyLoginMission? daily, LocalStoryMission[]? story, LocalDailyQuestMission? dailyQuest)
+    private JsonObject BuildMissionLists(LocalDailyLoginMission? daily, LocalProgressMission[]? progress, LocalDailyQuestMission? dailyQuest)
     {
         var saved = user["_local_missions"] as JsonObject;
         var overview = (saved ?? QueryTemplates["mission_top"]["mission"]!.AsObject()).DeepClone().AsObject();
@@ -47,39 +48,49 @@ public sealed partial class OfflineServer
         var quest = DailyQuestMissionRow(dailyQuest, overview);
         if (quest is not null)
             overview[quest["current_value"]!.GetValue<int>() == 1 ? "clear_list" : "unlock_list"]!.AsArray().Add(quest);
-        foreach (var row in StoryMissionRows(story, overview))
-            overview[row["current_value"]!.GetValue<int>() == 1 ? "clear_list" : "unlock_list"]!.AsArray().Add(row);
+        foreach (var row in ProgressMissionRows(progress, overview))
+            overview[MissionComplete(row) ? "clear_list" : "unlock_list"]!.AsArray().Add(row);
         return overview;
     }
 
-    private IEnumerable<JsonObject> StoryMissionRows(LocalStoryMission[]? story, JsonObject missions)
+    private static bool MissionComplete(JsonObject row) => row["current_value"]!.GetValue<int>() >= row["complete_value"]!.GetValue<int>();
+
+    private IEnumerable<JsonObject> ProgressMissionRows(LocalProgressMission[]? progress, JsonObject missions)
     {
-        if (story is null) yield break;
+        if (progress is null) yield break;
         var displayed = missions["unlock_list"]!.AsArray().Concat(missions["clear_list"]!.AsArray())
             .Select(row => row?["id"]?.GetValue<int>() ?? 0).ToHashSet();
         var received = (user["_local_received_missions"] as JsonArray)?.Select(id => id!.GetValue<int>()).ToHashSet() ?? [];
         var episodes = (user["quest_playdata"] as JsonArray)?.ToLookup(row => row?["episode_id"]?.GetValue<int>() ?? 0);
-        foreach (var mission in story)
+        var highestLevel = HighestUnitLevel(user);
+        foreach (var mission in progress)
         {
             if (received.Contains(mission.Id) || !displayed.Add(mission.Id)) continue;
             var battle = mission.BattleId > 0;
+            var level = mission.RequiredUnitLevel > 0;
             var completed = episodes?[mission.EpisodeId].Any(episode => battle
                 ? episode?["normal"]?["status"]?.GetValue<int>() is >= 2
                 : episode?["scenario_status"]?.GetValue<int>() == 1) == true;
             var row = new JsonObject
             {
-                ["id"] = mission.Id, ["type"] = mission.Type, ["name"] = mission.Name, ["complete_type"] = battle ? 4 : 3,
-                ["complete_id"] = battle ? mission.BattleId : mission.EpisodeId, ["complete_value"] = 1, ["display_order"] = mission.DisplayOrder,
+                ["id"] = mission.Id, ["type"] = mission.Type, ["name"] = mission.Name,
+                ["complete_type"] = level ? UnitLevelMissionType : battle ? 4 : 3,
+                ["complete_id"] = battle ? mission.BattleId : mission.EpisodeId,
+                ["complete_value"] = level ? mission.RequiredUnitLevel : 1, ["display_order"] = mission.DisplayOrder,
                 ["open_mission_id"] = 0, ["event_id"] = 0, ["chapter_id"] = 0,
-                ["current_value"] = completed ? 1 : 0, ["start_at"] = "", ["end_at"] = ""
+                ["current_value"] = level ? Math.Min(highestLevel, mission.RequiredUnitLevel) : completed ? 1 : 0,
+                ["start_at"] = "", ["end_at"] = ""
             };
             SetMissionRewardGroups(row, mission.RewardGroups);
             yield return row;
         }
     }
 
-    private JsonArray NoviceMissionBadge(LocalStoryMission[]? story) => new(
-        BuildMissionLists(null, story, null)["clear_list"]!.AsArray()
+    private static int HighestUnitLevel(JsonObject state) => Math.Max(state["_local_highest_unit_level"]?.GetValue<int>() ?? 0,
+        (state["unit"]?["unit_list"] as JsonArray)?.Select(row => row?["level"]?.GetValue<int>() ?? 0).DefaultIfEmpty().Max() ?? 0);
+
+    private JsonArray NoviceMissionBadge(LocalProgressMission[]? progress) => new(
+        BuildMissionLists(null, progress, null)["clear_list"]!.AsArray()
             .Where(row => row?["type"]?.GetValue<int>() == NoviceMissionType)
             .OrderBy(row => row!["display_order"]?.GetValue<int>() ?? 0)
             .Select(row => row!["id"]!.DeepClone()).ToArray());
@@ -142,7 +153,7 @@ public sealed partial class OfflineServer
         return row;
     }
 
-    private LocalReply ReceiveMission(LocalMissionClaim? request, LocalDailyLoginMission? daily, LocalStoryMission[]? story,
+    private LocalReply ReceiveMission(LocalMissionClaim? request, LocalDailyLoginMission? daily, LocalProgressMission[]? progress,
         LocalDailyQuestMission? dailyQuest)
     {
         if (request is null || request.All is < 0 or > 1 || request.Type < 0 || request.EventId < 0 || request.ChapterId < 0
@@ -150,7 +161,7 @@ public sealed partial class OfflineServer
             return new(400, null, "Invalid mission claim.");
         var updated = user.DeepClone().AsObject();
         var missions = updated["_local_missions"] as JsonObject;
-        if (missions is null && daily is null && story is null && dailyQuest is null)
+        if (missions is null && daily is null && progress is null && dailyQuest is null)
             return new(404, null, "Mission state unavailable.");
         missions ??= QueryTemplates["mission_top"]["mission"]!.DeepClone().AsObject();
         var ready = missions["clear_list"] as JsonArray;
@@ -158,7 +169,7 @@ public sealed partial class OfflineServer
             return new(404, null, "Mission state unavailable.");
         var login = DailyLoginRow(daily, missions);
         var quest = DailyQuestMissionRow(dailyQuest, missions);
-        var claimable = ready.Concat(StoryMissionRows(story, missions).Where(row => row["current_value"]!.GetValue<int>() == 1));
+        var claimable = ready.Concat(ProgressMissionRows(progress, missions).Where(MissionComplete));
         if (login?["current_value"]?.GetValue<int>() == 1) claimable = claimable.Append(login);
         if (quest?["current_value"]?.GetValue<int>() == 1) claimable = claimable.Append(quest);
         var selected = claimable.Where(row => row is JsonObject
@@ -221,7 +232,7 @@ public sealed partial class OfflineServer
         }
         if (updated["mop_up_day_coupon"] is JsonNode coupons)
             userUpdate["mop_up_day_coupon"] = coupons.DeepClone();
-        return new(0, new() { ["mission"] = BuildMissionLists(daily, story, dailyQuest), ["reward_list"] = rewards,
+        return new(0, new() { ["mission"] = BuildMissionLists(daily, progress, dailyQuest), ["reward_list"] = rewards,
             ["receive_mission_list"] = receipts, ["not_receive_message"] = "",
             ["user_update"] = userUpdate });
     }

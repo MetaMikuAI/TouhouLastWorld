@@ -51,7 +51,7 @@ Console.WriteLine("Passed version manifest fallback check.");
 Check(fresh.Dispatch("gacha_do", 2).Status == 400, "invalid draw count");
 Check(fresh.Dispatch("battle_end").Status == 400, "missing battle result");
 var admission = new LocalQuestBattleStart(101, 201, 0, 1, true, 5, [1L], [1L]);
-var noviceMission = new LocalArguments(StoryMissions: [new(400200, 101, "序章探索", 450000, [(1117991, 1)], 10, 201)],
+var noviceMission = new LocalArguments(ProgressMissions: [new(400200, 101, "序章探索", 450000, [(1117991, 1)], 10, 201)],
     MissionClaim: new(400200, 0, 10, 0, 0, [new(400200, 10, 0, 1, true, [new(12, 100001, 1, 999)])]));
 Check(fresh.Dispatch("home", arguments: noviceMission).Body!["put_beginner_mission_id_list"]!.AsArray().Count == 0
     && fresh.Dispatch("mission_end", arguments: noviceMission).Status == 404, "novice mission requires a battle victory");
@@ -3286,10 +3286,10 @@ var noviceDirectory = directory + "-novice-finale";
 var noviceServer = new OfflineServer(noviceDirectory, noviceSeed.ToJsonString(), "offline://resources/");
 noviceServer.Dispatch("game_init");
 noviceServer.Dispatch("login");
-var noviceFinale = new LocalStoryMission(400210, 100100501, "通关所有序章关卡", 2,
+var noviceFinale = new LocalProgressMission(400210, 100100501, "通关所有序章关卡", 2,
     [(1117993, 1), (0, 0), (0, 0), (0, 0)], Type: 10);
 var finaleRule = new LocalMissionRule(400210, 10, 0, 1, true, [new(9, 1015, 1, 1, 101501)]);
-var finaleClaim = new LocalArguments(StoryMissions: [noviceFinale], MissionClaim: new(400210, 0, 10, 0, 0, [finaleRule]));
+var finaleClaim = new LocalArguments(ProgressMissions: [noviceFinale], MissionClaim: new(400210, 0, 10, 0, 0, [finaleRule]));
 Check(noviceServer.Dispatch("mission_end", arguments: finaleClaim).Status == 409, "novice partner claim checks roster capacity");
 finaleRule.Rewards[0] = finaleRule.Rewards[0] with { Capacity = 100 };
 var finaleReward = noviceServer.Dispatch("mission_end", arguments: finaleClaim).Body!["user_update"]!;

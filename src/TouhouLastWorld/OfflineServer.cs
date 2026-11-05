@@ -47,7 +47,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalIntroGrant? IntroGrant = null, LocalHistoryQuery? HistoryQuery = null,
     LocalHistoryDefinitions? HistoryDefinitions = null, LocalUnitRecycle? UnitRecycle = null,
     LocalDispatchSettlement? DispatchSettlement = null, LocalRetryFix? RetryFix = null, LocalMissionClaim? MissionClaim = null,
-    LocalDailyLoginMission? DailyLoginMission = null, LocalStoryMission[]? StoryMissions = null, LocalDailyQuestMission? DailyQuestMission = null,
+    LocalDailyLoginMission? DailyLoginMission = null, LocalProgressMission[]? ProgressMissions = null, LocalDailyQuestMission? DailyQuestMission = null,
     LocalQuestBattleStart? QuestBattleStart = null, LocalQuestBattleEnd? QuestBattleEnd = null, LocalDailyQuestDay? DailyQuestDay = null,
     LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null,
     LocalBattlePassPeriod? BattlePassPeriod = null, LocalBattlePassDaily? BattlePassDaily = null,
@@ -169,7 +169,7 @@ public sealed partial class OfflineServer
                 ["put_dispatch_popup"] = 0, ["unread_talk_id_list"] = new JsonArray(), ["friend_receive_tips"] = 0,
                 ["is_pass_card"] = 0, ["avatar_tips"] = 0, ["free_value_pack_tips"] = 0, ["pb_point"] = 0,
                 ["put_multiple_spirits_weekly_badge"] = 0, ["put_mini_game_badge"] = 0,
-                ["put_beginner_mission_id_list"] = NoviceMissionBadge(arguments?.StoryMissions), ["put_friend_badge"] = 0,
+                ["put_beginner_mission_id_list"] = NoviceMissionBadge(arguments?.ProgressMissions), ["put_friend_badge"] = 0,
                 ["friend_count"] = 0, ["friend_request_count"] = 0, ["put_battle_pass_badge"] = 0,
                 ["is_ranking_maintenance"] = 0, ["is_roguelite_free"] = 0
             },
@@ -308,6 +308,12 @@ public sealed partial class OfflineServer
 
     private void Save(JsonObject updated)
     {
+        if (updated["unit"] is JsonObject)
+        {
+            var highestUnitLevel = Math.Max(HighestUnitLevel(user), HighestUnitLevel(updated));
+            if (highestUnitLevel > (updated["_local_highest_unit_level"]?.GetValue<int>() ?? 0))
+                updated["_local_highest_unit_level"] = highestUnitLevel;
+        }
         File.WriteAllText(userPath + ".tmp", updated.ToJsonString());
         for (var attempt = 0; ; attempt++)
         {

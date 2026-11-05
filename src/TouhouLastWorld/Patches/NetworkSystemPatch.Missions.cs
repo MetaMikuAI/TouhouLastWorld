@@ -13,7 +13,7 @@ public partial class NetworkSystemPatch
         var day = ReadDailyQuestDay();
         return definitions == null || rewards == null || setting == null ? null
             : new(DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR),
-                StoryMissions: ReadStoryMissions(master!, definitions, rewards), DailyQuestDay: day,
+                ProgressMissions: ReadProgressMissions(master!, definitions, rewards), DailyQuestDay: day,
                 DailyQuestMission: ReadDailyQuestMission(definitions, rewards, day, setting.GAME_DATE_SWITCHING_HOUR),
                 BattlePassPeriod: ReadBattlePassPeriod(master!));
     }
@@ -60,11 +60,11 @@ public partial class NetworkSystemPatch
             : new(row.id, row.name, row.display_order, MissionRewardDisplay(groups), day, switchingHour);
     }
 
-    private static LocalStoryMission[] ReadStoryMissions(MasterDB master, MissionRecord[] definitions, ILookup<int, MissionRewardRecord> rewards)
+    private static LocalProgressMission[] ReadProgressMissions(MasterDB master, MissionRecord[] definitions, ILookup<int, MissionRewardRecord> rewards)
     {
         var progress = User.This()?.playdata;
         if (progress == null) return [];
-        var missions = new List<LocalStoryMission>();
+        var missions = new List<LocalProgressMission>();
         foreach (var row in definitions)
         {
             if (row.type != MissionBehavior.c_menu_main || row.complete_type != 3 || row.complete_value != 1 || row.event_id != 0
@@ -80,49 +80,53 @@ public partial class NetworkSystemPatch
                 continue;
             missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups)));
         }
-        missions.AddRange(ReadNoviceStoryMissions(master, definitions, rewards));
+        missions.AddRange(ReadNoviceMissions(master, definitions, rewards));
         return missions.ToArray();
     }
 
-    private static LocalStoryMission[] ReadHomeNoviceMissions()
+    private static LocalProgressMission[] ReadHomeNoviceMissions()
     {
         var master = MasterDB.This();
         var definitions = master?.Mission?.ToList()?.ToArray();
         var rewards = master?.MissionReward?.ToList()?.ToArray().ToLookup(row => row.mission_reward_group_id);
-        return definitions is null || rewards is null ? [] : ReadNoviceStoryMissions(master!, definitions, rewards);
+        return definitions is null || rewards is null ? [] : ReadNoviceMissions(master!, definitions, rewards);
     }
 
-    private static LocalStoryMission[] ReadNoviceStoryMissions(MasterDB master, MissionRecord[] definitions,
+    private static LocalProgressMission[] ReadNoviceMissions(MasterDB master, MissionRecord[] definitions,
         ILookup<int, MissionRewardRecord> rewards)
     {
         var progress = User.This()?.playdata;
         var episodes = master.Episode?.ToList()?.ToArray();
         if (progress == null || episodes == null || master.Item == null) return [];
-        var missions = new List<LocalStoryMission>();
+        var missions = new List<LocalProgressMission>();
         foreach (var row in definitions)
         {
-            if (row.type != MissionBehavior.c_menu_novice || row.complete_type is not (3 or 4) || row.complete_id <= 0
-                || row.complete_value != 1 || row.event_id != 0 || !string.IsNullOrWhiteSpace(row.start_at)
+            if (row.type != MissionBehavior.c_menu_novice || row.complete_type is not (3 or 4 or OfflineServer.UnitLevelMissionType)
+                || row.event_id != 0 || !string.IsNullOrWhiteSpace(row.start_at)
                 || !string.IsNullOrWhiteSpace(row.end_at))
                 continue;
+            var isUnitLevel = row.complete_type == OfflineServer.UnitLevelMissionType;
+            if (isUnitLevel ? row.complete_id != 0 || row.complete_value <= 0 : row.complete_id <= 0 || row.complete_value != 1)
+                continue;
             var isBattle = row.complete_type == 4;
+            var isStory = row.complete_type == 3;
             var episode = isBattle ? episodes.FirstOrDefault(entry => entry.normal_battle_id == row.complete_id)
-                : master.Episode?.Find(row.complete_id);
-            if (episode == null || (!isBattle && episode.type != 1) || master.Chapter?.Find(episode.chapter_id)?.type != 1
-                || progress.GetEpisodeInfo(episode, PlayData.Difficulty.Normal)?.state is not >= PlayData.State.New)
+                : isStory ? master.Episode?.Find(row.complete_id) : null;
+            if (!isUnitLevel && (episode == null || (isStory && episode.type != 1) || master.Chapter?.Find(episode.chapter_id)?.type != 1
+                || progress.GetEpisodeInfo(episode, PlayData.Difficulty.Normal)?.state is not >= PlayData.State.New))
                 continue;
             var groups = ReadFixedMissionRewards(row, rewards);
             if (groups is null || !groups.Any(group => group.Reward != null) || groups.Any(group => group.Reward is { } reward
                 && (reward.object_type switch
                 {
                     var type when type == ObjectMaster.TYPE_ITEM => master.Item.Find(reward.object_id) == null,
-                    var type when type == ObjectMaster.TYPE_UNIT && !isBattle && reward.object_value == 1 =>
+                    var type when type == ObjectMaster.TYPE_UNIT && isStory && reward.object_value == 1 =>
                         ReadDefaultCostume(master, reward.object_id) == 0,
                     _ => true
                 })))
                 continue;
-            missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups), row.type,
-                isBattle ? row.complete_id : 0));
+            missions.Add(new(row.id, episode?.id ?? 0, row.name, row.display_order, MissionRewardDisplay(groups), row.type,
+                isBattle ? row.complete_id : 0, isUnitLevel ? row.complete_value : 0));
         }
         return missions.ToArray();
     }
@@ -287,7 +291,7 @@ public partial class NetworkSystemPatch
         var day = ReadDailyQuestDay();
         return new(MissionClaim: new(request.mission_id, request.is_all, request.mission_type, request.event_id, request.chapter_id, rules.ToArray()),
             DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR),
-            StoryMissions: ReadStoryMissions(master!, definitions, rewards), DailyQuestDay: day,
+            ProgressMissions: ReadProgressMissions(master!, definitions, rewards), DailyQuestDay: day,
             DailyQuestMission: ReadDailyQuestMission(definitions, rewards, day, setting.GAME_DATE_SWITCHING_HOUR));
     }
 }
