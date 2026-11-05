@@ -101,12 +101,12 @@ public partial class NetworkSystemPatch
         var missions = new List<LocalProgressMission>();
         foreach (var row in definitions)
         {
-            if (row.type != MissionBehavior.c_menu_novice || row.complete_type is not (3 or 4 or OfflineServer.UnitLevelMissionType
-                    or OfflineServer.UnitLimitBreakMissionType)
+            var isUnitProgress = row.complete_type is OfflineServer.UnitLevelMissionType or OfflineServer.UnitLimitBreakMissionType
+                or OfflineServer.UnitAwakeningMissionType;
+            if (row.type != MissionBehavior.c_menu_novice || (!isUnitProgress && row.complete_type is not (3 or 4))
                 || row.event_id != 0 || !string.IsNullOrWhiteSpace(row.start_at)
                 || !string.IsNullOrWhiteSpace(row.end_at))
                 continue;
-            var isUnitProgress = row.complete_type is OfflineServer.UnitLevelMissionType or OfflineServer.UnitLimitBreakMissionType;
             if (isUnitProgress ? row.complete_id != 0 : row.complete_id <= 0) continue;
             if (row.complete_type == OfflineServer.UnitLevelMissionType ? row.complete_value <= 0 : row.complete_value != 1) continue;
             var isBattle = row.complete_type == 4;

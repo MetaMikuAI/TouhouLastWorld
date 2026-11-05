@@ -127,7 +127,7 @@
 | MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 | 通过（空邮箱） |
 | MiniGameRequest | mini_game_top | 最小响应 | 为全部主表项目返回本地首次奖励标记，默认未领取；剩余点数默认零，不生成进度或发放奖励 | 未测 |
 | MissionEndRequest | mission_end | 业务实现 | 领取登录、每日探索、主线剧情及新手任务的固定奖励，支持序章伙伴奖励 | 通过（所列任务） |
-| MissionTopRequest | mission_top | 业务实现 | 生成普通任务及新手剧情、战斗、伙伴等级和突破任务，按主表开放当前特刊 | 通过（所列任务） |
+| MissionTopRequest | mission_top | 业务实现 | 生成普通任务及新手剧情、战斗、伙伴等级、突破和觉醒任务，按主表开放当前特刊 | 通过（所列任务） |
 | MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 业务实现 | 按有效主表返回本地通关进度，未通关项返回初始记录；不生成奖励或排名 | 未测 |
 | MusicLikeRequest | music_collect | 未实现 | 请求 bgm_id/status，响应 is_success；status 取值含义待调用逻辑确认 | 未测 |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 | 未测 |
@@ -220,7 +220,7 @@
 | UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 | 通过 |
 | UnitRankPromoteItemSetRequest | unit_rank_promote_item_set | 业务实现 | 按当前阶数和槽位配置扣除物品或金币、保存材料槽；校验归属和重复填充，暂不支持装备实例材料 | 未测 |
 | UnitRankPromoteRequest | unit_rank_promote | 业务实现 | 校验归属、阶数与等级，扣除升阶金币及未填槽位的物品或金币，一次保存升阶并重置六槽；已填槽位不重复扣费，暂不支持未填的装备实例材料 | 未测 |
-| UnitRareAwakenRequest | unit_rare_awaken | 业务实现 | 按下一阶配置消耗碎片并保存觉醒阶数；校验归属、当前阶数及同类挂机互斥，属性仍由客户端配置计算 | 未测 |
+| UnitRareAwakenRequest | unit_rare_awaken | 业务实现 | 按主表消耗割符，保存觉醒阶数并更新新手任务 | 通过 |
 | UnitRecycleRequest | unit_recycle | 业务实现 | 按主表回收未保护、未占用角色，汇总金币、点数、碎片及物品，卸下装备并保存；拒绝超容量整批操作，保留至少一个角色及图鉴 | 未测 |
 | UnitResetPointAllocationRequest | reset_point_allocation | 业务实现 | 清空九类分配并返还已用点数；首次或主数据免费期不扣款，其余扣金币；本地无分配时不收费，不重算历史点数来源 | 未测 |
 | UnitSpecActualizeRequest | unit_spec_actualize | 业务实现 | 按六项基础材料类型和转生消耗系数增加属性；校验库存、整除数量与当前上限，批量一次保存 | 未测 |

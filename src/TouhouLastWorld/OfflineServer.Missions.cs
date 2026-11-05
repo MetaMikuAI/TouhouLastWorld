@@ -22,8 +22,10 @@ public sealed partial class OfflineServer
     internal const int NoviceMissionType = 10;
     internal const int UnitLevelMissionType = 22;
     internal const int UnitLimitBreakMissionType = 23;
+    internal const int UnitAwakeningMissionType = 25;
     private const string DailyQuestMissionClaim = "_local_daily_quest_mission_claimed_on";
     private const string UnitLimitBreakMilestone = "_local_unit_limit_break_completed";
+    private const string UnitAwakeningMilestone = "_local_unit_awakening_completed";
 
     private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalProgressMission[]? progress, LocalDailyQuestMission? dailyQuest,
         LocalBattlePassPeriod? period)
@@ -65,8 +67,11 @@ public sealed partial class OfflineServer
         var received = (user["_local_received_missions"] as JsonArray)?.Select(id => id!.GetValue<int>()).ToHashSet() ?? [];
         var episodes = (user["quest_playdata"] as JsonArray)?.ToLookup(row => row?["episode_id"]?.GetValue<int>() ?? 0);
         var highestLevel = HighestUnitLevel(user);
+        var units = user["unit"]?["unit_list"] as JsonArray;
         var limitBroken = user[UnitLimitBreakMilestone]?.GetValue<bool>() == true
-            || (user["unit"]?["unit_list"] as JsonArray)?.Any(row => row?["level_limitbreak"]?.GetValue<int>() is > 0) == true;
+            || units?.Any(row => row?["level_limitbreak"]?.GetValue<int>() is > 0) == true;
+        var awakened = user[UnitAwakeningMilestone]?.GetValue<bool>() == true
+            || units?.Any(row => row?["rare"]?.GetValue<int>() is > 1) == true;
         foreach (var mission in progress)
         {
             if (received.Contains(mission.Id) || !displayed.Add(mission.Id)) continue;
@@ -78,6 +83,7 @@ public sealed partial class OfflineServer
             {
                 UnitLevelMissionType => Math.Min(highestLevel, mission.Required),
                 UnitLimitBreakMissionType => limitBroken ? 1 : 0,
+                UnitAwakeningMissionType => awakened ? 1 : 0,
                 _ => completed ? 1 : 0
             };
             var row = new JsonObject

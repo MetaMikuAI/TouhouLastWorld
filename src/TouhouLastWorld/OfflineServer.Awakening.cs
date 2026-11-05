@@ -26,6 +26,7 @@ public sealed partial class OfflineServer
         if (piece < rule.PieceCost) return new(409, null, "Insufficient pieces.");
         updated["piece"] = piece - rule.PieceCost;
         unit["rare"] = rule.NextRare;
+        if (rule.PieceCost > 0) updated[UnitAwakeningMilestone] = true;
         Save(updated);
         return new(0, new()
         {
