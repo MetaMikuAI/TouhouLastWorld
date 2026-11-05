@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace TouhouLastWorld;
@@ -5,11 +6,79 @@ namespace TouhouLastWorld;
 public sealed record LocalHistoryQuery(int Kind, int FirstId, int SecondId, int Type, string? PlayerId);
 public sealed record LocalHistoryDefinitions(int[] Units, Dictionary<int, int> Costumes, int[] Pictures,
     int[]? Achievements = null, int[]? StageGroups = null);
+public sealed record LocalClearScore(int Actions, long Damage, int[] TeamPowers);
 
 public sealed partial class OfflineServer
 {
     private const string QuestWinCount = "_local_quest_win_count";
     private const string DispatchCompletionCount = "_local_dispatch_completion_count";
+    private const string QuestClearRecords = "_local_quest_clear_records";
+
+    private LocalReply ClearHistoryOverview(LocalHistoryQuery? query)
+    {
+        if (query is null || query.Kind is not (1 or 2) || query.FirstId <= 0 || query.SecondId < 0)
+            return new(400, null, "Invalid clear history query.");
+        var best = FindQuestClear(query)?.DeepClone().AsObject();
+        if (best is not null)
+        {
+            best.Remove("units");
+            var roster = user["unit"]!["unit_list"]!.AsArray();
+            var favorite = (user["home_unit_info"]?["unit_param"] as JsonArray)?.FirstOrDefault()?["user_unit_id"]?.GetValue<long>();
+            var avatar = roster.FirstOrDefault(unit => unit?["user_unit_id"]?.GetValue<long>() == favorite)
+                ?? best["team_units"]!.AsArray()[0]!;
+            best["player_id"] = account!.PublicId;
+            best["player_name"] = user["player_name"]?.DeepClone();
+            best["selected_achievement_id"] = user["achievement"]?["selected_achievement_id"]?.DeepClone();
+            best["unit_id"] = avatar["unit_id"]!.DeepClone();
+            best["equip_costume_id"] = avatar["equip_costume_id"]!.DeepClone();
+        }
+        return new(0, new() { ["best"] = best, ["ranking"] = new JsonArray(), ["justnow"] = new JsonArray() });
+    }
+
+    private JsonNode? FindQuestClear(LocalHistoryQuery query) => query.Kind == 1 && query.SecondId == 0
+        ? user[QuestClearRecords]?[query.FirstId.ToString(CultureInfo.InvariantCulture)] : null;
+
+    private static void RecordQuestClear(JsonObject updated, int battleId, long[] members, LocalClearScore score)
+    {
+        if (score.Actions <= 0 || score.Damage <= 0 || members.Length is < 1 or > 6 || score.TeamPowers.Length != members.Length)
+            return;
+        var records = updated[QuestClearRecords] as JsonObject ?? new JsonObject();
+        var key = battleId.ToString(CultureInfo.InvariantCulture);
+        if (records[key] is { } previous)
+        {
+            var actions = previous["action"]!.GetValue<int>();
+            if (score.Actions > actions || score.Actions == actions && score.Damage <= previous["damage"]!.GetValue<long>())
+                return;
+        }
+
+        var owned = updated["unit"]!["unit_list"]!.AsArray();
+        var pictures = updated["picture"]!["picture_list"]!.AsArray();
+        var team = new JsonArray();
+        var details = new JsonArray();
+        for (var index = 0; index < members.Length; index++)
+        {
+            var member = owned.FirstOrDefault(row => row?["user_unit_id"]?.GetValue<long>() == members[index]);
+            if (member is null) return;
+            var detail = new JsonObject { ["unit_info"] = member.DeepClone() };
+            for (var slot = 1; slot <= 5; slot++)
+            {
+                var pictureId = member[$"equip_spellcard{slot}_user_picture_id"]?.GetValue<long>() ?? 0;
+                if (pictureId <= 0) continue;
+                var picture = pictures.FirstOrDefault(row => row?["user_picture_id"]?.GetValue<long>() == pictureId);
+                if (picture is null) return;
+                detail[$"spellcard_picture_info_{slot}"] = picture.DeepClone();
+            }
+            var summary = new JsonObject { ["total_power"] = score.TeamPowers[index] };
+            foreach (var field in new[] { "unit_id", "reincarnation_stage", "level", "level_limitbreak", "rare",
+                "equip_costume_id", "destiny_value" })
+                summary[field] = member[field]?.DeepClone();
+            team.Add(summary);
+            details.Add(detail);
+        }
+        records[key] = new JsonObject { ["action"] = score.Actions, ["damage"] = score.Damage,
+            ["team_units"] = team, ["units"] = details };
+        if (records.Parent is null) updated[QuestClearRecords] = records;
+    }
 
     private LocalReply ProfileHistory()
     {
@@ -114,7 +183,8 @@ public sealed partial class OfflineServer
         if (query is null || query.Kind < 0 || query.FirstId < 0 || query.SecondId < 0 || query.Type < 0
             || string.IsNullOrWhiteSpace(query.PlayerId) || query.PlayerId.Any(char.IsControl))
             return new(400, null, "Complete history query required.");
-        var matches = (user["_local_history_teams"] as JsonArray)?.Where(row =>
+        var personal = query.Type == 0 && query.PlayerId == account!.PublicId ? FindQuestClear(query) : null;
+        var matches = personal is not null ? new[] { personal } : (user["_local_history_teams"] as JsonArray)?.Where(row =>
             row?["kind"]?.GetValue<int>() == query.Kind && row["uniq_id1"]?.GetValue<int>() == query.FirstId
             && row["uniq_id2"]?.GetValue<int>() == query.SecondId && row["type"]?.GetValue<int>() == query.Type
             && row["player_id"]?.GetValue<string>() == query.PlayerId).ToArray();

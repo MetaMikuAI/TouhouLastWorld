@@ -60,7 +60,7 @@ foreach (var _ in Enumerable.Range(0, 2))
 }
 var rewards = new LocalBattleRewards(100, 100, 99999, 25, 10, [2, 1, 0],
     [new(1, 0), new(2, 20), new(3, 40)], [new(1L, [new(1, 0), new(2, 10)])]);
-var settlement = new LocalQuestBattleEnd(201, 1, [], rewards);
+var settlement = new LocalQuestBattleEnd(201, 1, [], rewards, new(3, 250L, [238]));
 Check(fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: settlement with { BattleId = 202 })).Status == 409,
     "settlement must match entry");
 var win = fresh.Dispatch("battle_end", arguments: new(QuestBattleEnd: settlement)).Body!;
@@ -85,6 +85,14 @@ var profileHistory = gameRestart.Dispatch("get_history").Body!;
 Check(profileHistory["unit_get_count"]!.GetValue<int>() == 1
     && profileHistory["quest_complete_count"]!.GetValue<int>() == 1,
     "history counts unique partners and settled wins after relogin");
+var clearRecord = gameRestart.Dispatch("get_clear_history", arguments: new(HistoryQuery: new(1, 201, 0, 0, null))).Body!["best"]!;
+var clearDetail = gameRestart.Dispatch("get_clear_history_teaminfo", arguments: new(
+    HistoryQuery: new(1, 201, 0, 0, clearRecord["player_id"]!.GetValue<string>()),
+    HistoryDefinitions: new([1001], new() { [100101] = 1001 }, []))).Body!;
+Check(clearRecord["action"]!.GetValue<int>() == 3 && clearRecord["damage"]!.GetValue<long>() == 250
+    && clearDetail["units"]![0]!["unit_info"]!["level"]!.GetValue<int>() == 1
+    && clearRecord["team_units"]![0]!["total_power"]!.GetValue<int>() == 238,
+    "personal clear history preserves the battle team before awarding experience");
 Check(saved["gold"]!.GetValue<int>() == 5100 && saved["crystal"]!.GetValue<int>() == 0
     && saved["phantasm_point"]!["points"]!.GetValue<int>() == 90 && saved["exp"]!.GetValue<long>() == 25
     && saved["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3, "gameplay changes survive restart");
@@ -226,7 +234,7 @@ foreach (var route in new[] { "pass_card/show_task", "pass_card/show_shop" })
     Check(pass["is_vip"]!.GetValue<int>() == 0 && pass["tasks"]!.AsArray().Count == 0
         && pass["pass_card_goods"]!.AsArray().Count == 0, "inactive pass contract: " + route);
 }
-var history = flags.Dispatch("get_clear_history").Body!;
+var history = flags.Dispatch("get_clear_history", arguments: new(HistoryQuery: new(1, 201, 0, 0, null))).Body!;
 Check(history.ContainsKey("best") && history["best"] is null && history["ranking"]!.AsArray().Count == 0
     && history["justnow"]!.AsArray().Count == 0, "absent history contract");
 var contacts = flags.Dispatch("friend_top").Body!;

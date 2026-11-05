@@ -36,7 +36,21 @@ public partial class NetworkSystemPatch
         if (request?.battle_end is not { } result) return null;
         var defeated = result.defeated_unit_id_list?.ToArray().Select(id => id).ToArray() ?? [];
         return new(request.battle_id, result.result, defeated,
-            result.result == 1 ? ReadQuestBattleRewards(request.battle_id) : null);
+            result.result == 1 ? ReadQuestBattleRewards(request.battle_id) : null,
+            result.result == 1 ? ReadQuestClearScore(result) : null);
+    }
+
+    private static LocalClearScore? ReadQuestClearScore(BattleEnd result)
+    {
+        if (result.action_to_clear <= 0 || result.damege_to_clear <= 0
+            || FormationArgs.replayMode || FormationArgs.isCostCut || FormationArgs.autoRunMode)
+            return null;
+        var player = User.This();
+        var owned = Plugin.Server.PendingQuestBattleOwnedUnits;
+        if (player?.unit == null || owned.Length == 0) return null;
+        var units = owned.Select(player.unit.Find).ToArray();
+        if (units.Any(unit => unit == null)) return null;
+        return new(result.action_to_clear, result.damege_to_clear, units.Select(unit => unit.power).ToArray());
     }
 
     private static LocalBattleRewards? ReadQuestBattleRewards(int battleId)

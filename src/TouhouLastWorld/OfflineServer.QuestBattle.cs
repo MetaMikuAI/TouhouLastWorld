@@ -8,7 +8,8 @@ public sealed record LocalBattleLevel(int Level, int Exp);
 public sealed record LocalBattleUnitGrowth(long UnitId, LocalBattleLevel[] Levels);
 public sealed record LocalBattleRewards(int GoldMin, int GoldMax, int GoldCapacity, int PlayerExp, int UnitExp,
     int[] DefeatLimits, LocalBattleLevel[] PlayerLevels, LocalBattleUnitGrowth[] Units);
-public sealed record LocalQuestBattleEnd(int BattleId, int Result, long[] Defeated, LocalBattleRewards? Rewards);
+public sealed record LocalQuestBattleEnd(int BattleId, int Result, long[] Defeated, LocalBattleRewards? Rewards,
+    LocalClearScore? ClearScore = null);
 
 public sealed partial class OfflineServer
 {
@@ -112,6 +113,8 @@ public sealed partial class OfflineServer
         var changes = new JsonObject();
         if (won && rewards is not null)
         {
+            if (request.ClearScore is { } score && participants.SetEquals(PendingQuestBattleOwnedUnits))
+                RecordQuestClear(updated, request.BattleId, PendingQuestBattleOwnedUnits, score);
             updated[QuestWinCount] = (int)Math.Min((long)MainQuestWins() + 1, int.MaxValue);
             for (var index = 0; index < rewards.DefeatLimits.Length; index++)
                 if (request.Defeated.Length <= rewards.DefeatLimits[index]) challenges.Add(index + 1);

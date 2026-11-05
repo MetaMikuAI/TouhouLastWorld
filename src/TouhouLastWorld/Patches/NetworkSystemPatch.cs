@@ -37,6 +37,8 @@ public partial class NetworkSystemPatch
         var arguments = protection == null ? null : new LocalArguments(protection.user_unit_id, protection.is_protection);
         if (api == "battle_start") arguments = new(QuestBattleStart: ReadQuestBattleStart(request.TryCast<BattleStartRequest>()));
         if (api == "battle_end") arguments = new(QuestBattleEnd: ReadQuestBattleEnd(request.TryCast<BattleEndRequest>()));
+        if (api == "get_clear_history" && request.TryCast<ClearHistoryRequest>() is { } clearHistory)
+            arguments = new(HistoryQuery: new(clearHistory.kind, clearHistory.uniq_id1, clearHistory.uniq_id2, 0, null));
         if (api == "unit_recycle") arguments = ReadUnitRecycle(request.TryCast<UnitRecycleRequest>());
         if (api == "get_clear_history_playerinfo") arguments = ReadHistoryPlayer(request.TryCast<ClearHistoryPlayerInfoRequest>()?.player_id);
         if (api == "friend_get_history") arguments = ReadHistoryPlayer(request.TryCast<FriendGetHistoryRequest>()?.player_id);
