@@ -51,6 +51,10 @@ Console.WriteLine("Passed version manifest fallback check.");
 Check(fresh.Dispatch("gacha_do", 2).Status == 400, "invalid draw count");
 Check(fresh.Dispatch("battle_end").Status == 400, "missing battle result");
 var admission = new LocalQuestBattleStart(101, 201, 0, 1, true, 5, [1L], [1L]);
+var noviceMission = new LocalArguments(StoryMissions: [new(400200, 101, "序章探索", 450000, [(1117991, 1)], 10, 201)],
+    MissionClaim: new(400200, 0, 10, 0, 0, [new(400200, 10, 0, 1, true, [new(12, 100001, 1, 999)])]));
+Check(fresh.Dispatch("home", arguments: noviceMission).Body!["put_beginner_mission_id_list"]!.AsArray().Count == 0
+    && fresh.Dispatch("mission_end", arguments: noviceMission).Status == 404, "novice mission requires a battle victory");
 Check(fresh.Dispatch("battle_start", arguments: new(QuestBattleStart: admission with { Open = false })).Status == 409,
     "locked quest does not start");
 foreach (var _ in Enumerable.Range(0, 2))
@@ -98,6 +102,12 @@ Check(saved["gold"]!.GetValue<int>() == 5100 && saved["crystal"]!.GetValue<int>(
     && saved["phantasm_point"]!["points"]!.GetValue<int>() == 95 && saved["exp"]!.GetValue<long>() == 25
     && saved["quest_playdata"]![0]!["normal"]!["status"]!.GetValue<int>() == 3, "gameplay changes survive restart");
 Check(saved["unit"]!["unit_list"]!.AsArray().Select(unit => unit!["user_unit_id"]!.GetValue<long>()).Distinct().Count() == 11, "unique saved unit ids");
+Check(gameRestart.Dispatch("home", arguments: noviceMission).Body!["put_beginner_mission_id_list"]![0]!.GetValue<int>() == 400200,
+    "a saved victory opens the novice mission badge");
+var noviceGrant = gameRestart.Dispatch("mission_end", arguments: noviceMission).Body!["user_update"]!["item"]!["item_list"]!.AsArray();
+Check(noviceGrant.Any(item => item!["item_id"]!.GetValue<int>() == 100001 && item["num"]!.GetValue<int>() == 1)
+    && gameRestart.Dispatch("home", arguments: noviceMission).Body!["put_beginner_mission_id_list"]!.AsArray().Count == 0
+    && gameRestart.Dispatch("mission_end", arguments: noviceMission).Status == 404, "novice mission grants its ticket once");
 var npcAdmission = admission with { TeamNumber = 0, Participants = [long.MaxValue - 807], OwnedParticipants = [] };
 Check(gameRestart.Dispatch("battle_start", arguments: new(QuestBattleStart: npcAdmission)).Status == 0,
     "fixed story party does not require a saved player team");

@@ -737,6 +737,8 @@ public partial class NetworkSystemPatch
             arguments = ReadFacilityIncome(arguments ?? new());
         if (api is "home" or "login" or "battle_end" || arguments?.QuestBattleStart?.Daily is not null)
             arguments = (arguments ?? new()) with { DailyQuestDay = ReadDailyQuestDay() };
+        if (api == "home")
+            arguments = (arguments ?? new()) with { StoryMissions = ReadHomeNoviceMissions() };
         var reply = Plugin.Server.Dispatch(api, gacha?.count, gacha?.gacha_id, gacha?.gacha_button_id, arguments);
         Log.Info($"Offline API: {api}; status={reply.Status}");
         network.m_recv.status = reply.Status;

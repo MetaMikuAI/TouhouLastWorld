@@ -80,6 +80,41 @@ public partial class NetworkSystemPatch
                 continue;
             missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups)));
         }
+        missions.AddRange(ReadNoviceBattleMissions(master, definitions, rewards));
+        return missions.ToArray();
+    }
+
+    private static LocalStoryMission[] ReadHomeNoviceMissions()
+    {
+        var master = MasterDB.This();
+        var definitions = master?.Mission?.ToList()?.ToArray();
+        var rewards = master?.MissionReward?.ToList()?.ToArray().ToLookup(row => row.mission_reward_group_id);
+        return definitions is null || rewards is null ? [] : ReadNoviceBattleMissions(master!, definitions, rewards);
+    }
+
+    private static LocalStoryMission[] ReadNoviceBattleMissions(MasterDB master, MissionRecord[] definitions,
+        ILookup<int, MissionRewardRecord> rewards)
+    {
+        var progress = User.This()?.playdata;
+        var episodes = master.Episode?.ToList()?.ToArray();
+        if (progress == null || episodes == null || master.Item == null) return [];
+        var missions = new List<LocalStoryMission>();
+        foreach (var row in definitions)
+        {
+            if (row.type != MissionBehavior.c_menu_novice || row.complete_type != 4 || row.complete_id <= 0
+                || row.complete_value != 1 || row.event_id != 0 || !string.IsNullOrWhiteSpace(row.start_at)
+                || !string.IsNullOrWhiteSpace(row.end_at))
+                continue;
+            var episode = episodes.FirstOrDefault(entry => entry.normal_battle_id == row.complete_id
+                && master.Chapter?.Find(entry.chapter_id)?.type == 1);
+            if (episode == null || progress.GetEpisodeInfo(episode, PlayData.Difficulty.Normal)?.state is not >= PlayData.State.New)
+                continue;
+            var groups = ReadFixedMissionRewards(row, rewards);
+            if (groups is null || !groups.Any(group => group.Reward != null) || groups.Any(group => group.Reward is { } reward
+                && (reward.object_type != 12 || master.Item.Find(reward.object_id) == null)))
+                continue;
+            missions.Add(new(row.id, episode.id, row.name, row.display_order, MissionRewardDisplay(groups), row.type, row.complete_id));
+        }
         return missions.ToArray();
     }
 

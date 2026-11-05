@@ -169,7 +169,7 @@ public sealed partial class OfflineServer
                 ["put_dispatch_popup"] = 0, ["unread_talk_id_list"] = new JsonArray(), ["friend_receive_tips"] = 0,
                 ["is_pass_card"] = 0, ["avatar_tips"] = 0, ["free_value_pack_tips"] = 0, ["pb_point"] = 0,
                 ["put_multiple_spirits_weekly_badge"] = 0, ["put_mini_game_badge"] = 0,
-                ["put_beginner_mission_id_list"] = new JsonArray(), ["put_friend_badge"] = 0,
+                ["put_beginner_mission_id_list"] = NoviceMissionBadge(arguments?.StoryMissions), ["put_friend_badge"] = 0,
                 ["friend_count"] = 0, ["friend_request_count"] = 0, ["put_battle_pass_badge"] = 0,
                 ["is_ranking_maintenance"] = 0, ["is_roguelite_free"] = 0
             },

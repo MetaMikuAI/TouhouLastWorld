@@ -5,7 +5,8 @@ namespace TouhouLastWorld;
 
 public sealed record LocalMissionRule(int Id, int Type, int EventId, int Required, bool Active, LocalInventoryReward[] Rewards);
 public sealed record LocalMissionClaim(int Id, int All, int Type, int EventId, int ChapterId, LocalMissionRule[] Rules);
-public sealed record LocalStoryMission(int Id, int EpisodeId, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups);
+public sealed record LocalStoryMission(int Id, int EpisodeId, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
+    int Type = 1, int BattleId = 0);
 public sealed record LocalDailyQuestMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
     LocalDailyQuestDay Day, int SwitchingHour);
 public sealed record LocalDailyLoginMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
@@ -18,6 +19,7 @@ public sealed partial class OfflineServer
 {
     internal const int DailySweepRewardType = 104;
     internal const int DailyQuestMissionType = 8;
+    internal const int NoviceMissionType = 10;
     private const string DailyQuestMissionClaim = "_local_daily_quest_mission_claimed_on";
 
     private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalStoryMission[]? story, LocalDailyQuestMission? dailyQuest,
@@ -56,22 +58,31 @@ public sealed partial class OfflineServer
         var displayed = missions["unlock_list"]!.AsArray().Concat(missions["clear_list"]!.AsArray())
             .Select(row => row?["id"]?.GetValue<int>() ?? 0).ToHashSet();
         var received = (user["_local_received_missions"] as JsonArray)?.Select(id => id!.GetValue<int>()).ToHashSet() ?? [];
-        var completed = (user["quest_playdata"] as JsonArray)?.Where(row => row?["scenario_status"]?.GetValue<int>() == 1)
-            .Select(row => row!["episode_id"]!.GetValue<int>()).ToHashSet() ?? [];
+        var episodes = (user["quest_playdata"] as JsonArray)?.ToLookup(row => row?["episode_id"]?.GetValue<int>() ?? 0);
         foreach (var mission in story)
         {
             if (received.Contains(mission.Id) || !displayed.Add(mission.Id)) continue;
+            var battle = mission.BattleId > 0;
+            var completed = episodes?[mission.EpisodeId].Any(episode => battle
+                ? episode?["normal"]?["status"]?.GetValue<int>() is >= 2
+                : episode?["scenario_status"]?.GetValue<int>() == 1) == true;
             var row = new JsonObject
             {
-                ["id"] = mission.Id, ["type"] = 1, ["name"] = mission.Name, ["complete_type"] = 3,
-                ["complete_id"] = mission.EpisodeId, ["complete_value"] = 1, ["display_order"] = mission.DisplayOrder,
+                ["id"] = mission.Id, ["type"] = mission.Type, ["name"] = mission.Name, ["complete_type"] = battle ? 4 : 3,
+                ["complete_id"] = battle ? mission.BattleId : mission.EpisodeId, ["complete_value"] = 1, ["display_order"] = mission.DisplayOrder,
                 ["open_mission_id"] = 0, ["event_id"] = 0, ["chapter_id"] = 0,
-                ["current_value"] = completed.Contains(mission.EpisodeId) ? 1 : 0, ["start_at"] = "", ["end_at"] = ""
+                ["current_value"] = completed ? 1 : 0, ["start_at"] = "", ["end_at"] = ""
             };
             SetMissionRewardGroups(row, mission.RewardGroups);
             yield return row;
         }
     }
+
+    private JsonArray NoviceMissionBadge(LocalStoryMission[]? story) => new(
+        BuildMissionLists(null, story, null)["clear_list"]!.AsArray()
+            .Where(row => row?["type"]?.GetValue<int>() == NoviceMissionType)
+            .OrderBy(row => row!["display_order"]?.GetValue<int>() ?? 0)
+            .Select(row => row!["id"]!.DeepClone()).ToArray());
 
     private JsonObject? DailyLoginRow(LocalDailyLoginMission? daily, JsonObject missions)
     {
