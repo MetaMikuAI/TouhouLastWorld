@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 namespace TouhouLastWorld;
 
 public sealed record LocalQuestBattleStart(int EpisodeId, int BattleId, int Difficulty, int TeamNumber,
-    bool Open, int Cost, long[] Participants, long[] OwnedParticipants);
+    bool Open, int Cost, long[] Participants, long[] OwnedParticipants, LocalDailyQuestEntry? Daily = null);
 public sealed record LocalBattleLevel(int Level, int Exp);
 public sealed record LocalBattleUnitGrowth(long UnitId, LocalBattleLevel[] Levels);
 public sealed record LocalBattleRewards(int GoldMin, int GoldMax, int GoldCapacity, int PlayerExp, int UnitExp,
@@ -25,12 +25,15 @@ public sealed partial class OfflineServer
     private LocalReply StartQuestBattle(LocalQuestBattleStart? request)
     {
         if (request is null) return new(501, null, "This battle entry is unavailable offline.");
-        if (request.EpisodeId <= 0 || request.BattleId <= 0 || request.Difficulty is < 0 or > 2
+        var daily = request.Daily;
+        if ((daily is null ? request.EpisodeId <= 0 : request.EpisodeId != 0 || request.Difficulty != 0 || request.TeamNumber == 0)
+            || request.BattleId <= 0 || request.Difficulty is < 0 or > 2
             || request.TeamNumber < 0
             || request.Cost < 0 || request.Participants.Length == 0
             || request.Participants.Any(id => id <= 0) || request.OwnedParticipants.Any(id => !request.Participants.Contains(id)))
             return new(400, null, "Invalid quest battle entry.");
         if (!request.Open) return new(409, null, "Quest battle is locked.");
+        if (daily is not null && CheckDailyQuest(daily) is { } unavailable) return unavailable;
         if (request.TeamNumber == 0)
         {
             if (!request.OwnedParticipants.SequenceEqual(storyTeamMembers))
@@ -50,6 +53,8 @@ public sealed partial class OfflineServer
         var pending = user[PendingQuestBattle];
         if (pending?["episode_id"]?.GetValue<int>() == request.EpisodeId
             && pending["battle_id"]?.GetValue<int>() == request.BattleId
+            && (daily is null || pending["daily_stage_id"]?.GetValue<int>() == daily.StageId
+                && pending[DailyQuestDay]?.GetValue<int>() == user[DailyQuestDay]?.GetValue<int>())
             && pending["difficulty"]?.GetValue<int>() == request.Difficulty
             && pending["team_number"]?.GetValue<int>() == request.TeamNumber
             && pending["cost"]?.GetValue<int>() == request.Cost
@@ -65,6 +70,13 @@ public sealed partial class OfflineServer
             ["participants"] = new JsonArray(request.Participants.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray()),
             ["owned"] = new JsonArray(request.OwnedParticipants.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray())
         };
+        if (daily is not null)
+        {
+            var entry = updated[PendingQuestBattle]!;
+            entry["daily_stage_id"] = daily.StageId;
+            entry["daily_quest_id"] = daily.QuestId;
+            entry[DailyQuestDay] = updated[DailyQuestDay]!.DeepClone();
+        }
         Save(updated);
         return QuestBattleAdmissionReply();
     }
@@ -81,7 +93,8 @@ public sealed partial class OfflineServer
         var pending = user[PendingQuestBattle];
         var episodeId = PendingQuestBattleEpisode;
         var difficulty = PendingQuestBattleDifficulty;
-        if (episodeId <= 0 || difficulty is < 0 or > 2 || pending?["battle_id"]?.GetValue<int>() != request.BattleId)
+        var isDaily = PendingDailyQuestStage > 0;
+        if ((!isDaily && episodeId <= 0) || difficulty is < 0 or > 2 || pending?["battle_id"]?.GetValue<int>() != request.BattleId)
             return new(409, null, "Matching quest battle entry required.");
         var participants = pending["participants"]!.AsArray().Select(id => id!.GetValue<long>()).ToHashSet();
         if (request.Defeated.Distinct().Count() != request.Defeated.Length
@@ -97,18 +110,6 @@ public sealed partial class OfflineServer
             return new(503, null, "Quest battle reward definitions unavailable.");
 
         var updated = user.DeepClone().AsObject();
-        var episodes = updated["quest_playdata"] as JsonArray ?? new JsonArray();
-        var episode = episodes.FirstOrDefault(row => row?["episode_id"]?.GetValue<int>() == episodeId) as JsonObject;
-        if (episode is null)
-        {
-            episode = new JsonObject { ["episode_id"] = episodeId, ["scenario_status"] = 0 };
-            episodes.Add(episode);
-        }
-        foreach (var key in QuestDifficulties)
-            episode[key] ??= new JsonObject { ["status"] = -2, ["battle_challenge"] = new JsonArray() };
-        if (episodes.Parent is null) updated["quest_playdata"] = episodes;
-
-        var entry = episode[QuestDifficulties[difficulty]]!;
         var challenges = new JsonArray();
         var drops = new JsonArray();
         var changes = new JsonObject();
@@ -119,13 +120,11 @@ public sealed partial class OfflineServer
             if (points < cost) return new(409, null, "Not enough spirit points.");
             updated["phantasm_point"]!["points"] = points - cost;
             changes["phantasm_point"] = updated["phantasm_point"]!.DeepClone();
-            if (request.ClearScore is { } score && participants.SetEquals(PendingQuestBattleOwnedUnits))
+            if (!isDaily && request.ClearScore is { } score && participants.SetEquals(PendingQuestBattleOwnedUnits))
                 RecordQuestClear(updated, request.BattleId, PendingQuestBattleOwnedUnits, score);
-            updated[QuestWinCount] = (int)Math.Min((long)MainQuestWins() + 1, int.MaxValue);
+            updated[QuestWinCount] = (int)Math.Min((long)QuestWins() + 1, int.MaxValue);
             for (var index = 0; index < rewards.DefeatLimits.Length; index++)
                 if (request.Defeated.Length <= rewards.DefeatLimits[index]) challenges.Add(index + 1);
-            var previous = (entry["battle_challenge"] as JsonArray)?.Count ?? 0;
-            if (challenges.Count > previous) entry["battle_challenge"] = challenges.DeepClone();
             var gold = updated["gold"]!.GetValue<int>();
             var rolledGold = (int)Random.Shared.NextInt64(rewards.GoldMin, (long)rewards.GoldMax + 1);
             var earned = Math.Min(rolledGold, Math.Max(0, rewards.GoldCapacity - gold));
@@ -144,15 +143,41 @@ public sealed partial class OfflineServer
                 changes[key] = updated[key]!.DeepClone();
         }
         var resultState = won ? (challenges.Count == 3 ? 3 : 2) : 1;
-        entry["status"] = Math.Max(entry["status"]?.GetValue<int>() ?? -2, resultState);
+        if (isDaily)
+            UpdateDailyQuestProgress(updated, pending.AsObject(), resultState, challenges, won, changes);
+        else
+            UpdateStoryBattleProgress(updated, episodeId, difficulty, resultState, challenges, changes);
         updated.Remove(PendingQuestBattle);
-        changes["quest_playdata"] = episodes.DeepClone();
         Save(updated);
         return new(0, new()
         {
             ["drop_list"] = drops, ["destiny_drop_list"] = new JsonArray(),
             ["battle_challenge_result"] = challenges.Count, ["user_update"] = changes
         });
+    }
+
+    private static void UpdateStoryBattleProgress(JsonObject updated, int episodeId, int difficulty, int state,
+        JsonArray challenges, JsonObject changes)
+    {
+        var episodes = updated["quest_playdata"] as JsonArray ?? new JsonArray();
+        var episode = episodes.FirstOrDefault(row => row?["episode_id"]?.GetValue<int>() == episodeId) as JsonObject;
+        if (episode is null)
+        {
+            episode = new JsonObject { ["episode_id"] = episodeId, ["scenario_status"] = 0 };
+            episodes.Add(episode);
+        }
+        foreach (var key in QuestDifficulties)
+            episode[key] ??= new JsonObject { ["status"] = -2, ["battle_challenge"] = new JsonArray() };
+        SetQuestProgress(episode[QuestDifficulties[difficulty]]!, state, challenges);
+        if (episodes.Parent is null) updated["quest_playdata"] = episodes;
+        changes["quest_playdata"] = episodes.DeepClone();
+    }
+
+    private static void SetQuestProgress(JsonNode entry, int state, JsonArray challenges)
+    {
+        var previous = entry["battle_challenge"] as JsonArray;
+        if (previous is null || challenges.Count > previous.Count) entry["battle_challenge"] = challenges.DeepClone();
+        entry["status"] = Math.Max(entry["status"]?.GetValue<int>() ?? -2, state);
     }
 
     private static bool RefundInterruptedQuest(JsonObject updated)

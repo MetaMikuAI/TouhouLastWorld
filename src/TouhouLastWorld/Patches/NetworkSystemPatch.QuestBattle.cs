@@ -4,9 +4,10 @@ public partial class NetworkSystemPatch
 {
     private static LocalQuestBattleStart? ReadQuestBattleStart(BattleStartRequest? request)
     {
-        if (request is null || request.episode_id <= 0 || request.difficulty is < 0 or > 2
-            || request.daily_quest_stage_id != 0 || request.character_quest_id != 0 || request.relic_quest_id != 0
+        if (request is null || request.difficulty is < 0 or > 2
+            || request.character_quest_id != 0 || request.relic_quest_id != 0
             || request.helper_info_dict != null || FormationArgs.episodeID != request.episode_id
+            || FormationArgs.dailyQuestStageID != request.daily_quest_stage_id
             || FormationArgs.activeTeamNumber != request.team_number || FormationArgs.difficulty != request.difficulty)
             return null;
 
@@ -14,18 +15,35 @@ public partial class NetworkSystemPatch
         var team = formation?.m_teamData;
         var player = User.This();
         var master = MasterDB.This();
-        var episode = master?.Episode?.Find(request.episode_id);
-        if (team == null || player?.unit == null || player.playdata == null || episode == null || episode.type != 0
-            || master?.Chapter?.Find(episode.chapter_id)?.type != 1
-            || master.Battle?.Find(EpisodeBattleId(episode, request.difficulty)) is not { } battle)
-            return null;
-        var difficulty = (PlayData.Difficulty)request.difficulty;
-        var progress = player.playdata.GetEpisodeInfo(episode, difficulty);
+        if (team == null || player?.unit == null || player.playdata == null || master?.Battle == null) return null;
         var slots = Enumerable.Range(0, team.Length).Select(team.GetDisplayUnit)
             .Where(slot => slot?.Unit?.UserUnitId > 0).ToArray();
         var participants = slots.Select(slot => slot.Unit.UserUnitId).Distinct().ToArray();
         // 剧情角色临时加入客户端角色表，固定槽位只参与战斗。
         var owned = slots.Where(slot => !slot.IsFixedMember).Select(slot => slot.Unit.UserUnitId).Distinct().ToArray();
+        if (request.daily_quest_stage_id > 0)
+        {
+            var stage = master.DailyQuestStage?.Find(request.daily_quest_stage_id);
+            var quest = stage == null ? null : master.DailyQuest?.Find(stage.daily_quest_id);
+            var time = Applet.GameSystem.This()?.Time;
+            if (stage == null || quest == null || time == null || quest.required_unit_id != 0
+                || quest.GetResetType() != DailyQuestRecord.ResetType.Daily || master.Event == null
+                || master.Battle.Find(stage.battle_id) == null || FormationArgs.battleID != stage.battle_id)
+                return null;
+            var days = new[] { quest.is_open_week0, quest.is_open_week1, quest.is_open_week2, quest.is_open_week3,
+                quest.is_open_week4, quest.is_open_week5, quest.is_open_week6 };
+            var weekday = time.GetGameDayOfWeek();
+            var open = quest.IsBeginHeld() && weekday is >= 0 and <= 6 && days[weekday] > 0;
+            var attemptLimit = quest.count + master.Event.GetDailyQuestAddCount(quest);
+            return new(0, stage.battle_id, request.difficulty, request.team_number, open, formation!.TotalCost,
+                participants, owned, new(quest.id, stage.id, stage.open_level, attemptLimit));
+        }
+
+        var episode = master.Episode?.Find(request.episode_id);
+        if (episode == null || episode.type != 0 || master.Chapter?.Find(episode.chapter_id)?.type != 1
+            || master.Battle.Find(EpisodeBattleId(episode, request.difficulty)) is not { } battle)
+            return null;
+        var progress = player.playdata.GetEpisodeInfo(episode, (PlayData.Difficulty)request.difficulty);
         return new(episode.id, battle.id, request.difficulty, request.team_number,
             episode.IsOpenedCondition() && progress != null && progress.state >= PlayData.State.New,
             formation!.TotalCost, participants, owned);
@@ -58,16 +76,25 @@ public partial class NetworkSystemPatch
         var server = Plugin.Server;
         var master = MasterDB.This();
         var player = User.This();
-        var episode = master?.Episode?.Find(server.PendingQuestBattleEpisode);
         var difficulty = server.PendingQuestBattleDifficulty;
         var battle = master?.Battle?.Find(battleId);
-        if (episode == null || difficulty is < 0 or > 2 || battle == null || battleId != EpisodeBattleId(episode, difficulty)
+        if (difficulty is < 0 or > 2 || battle == null
             || master?.Setting == null || master.PlayerExp == null || master.UnitExp == null || player?.playdata == null)
             return null;
-        var progress = player.playdata.GetEpisodeInfo(episode, (PlayData.Difficulty)difficulty);
-        if (progress == null || progress.exp_rate <= 0) return null;
-        var playerExp = (long)battle.player_exp * progress.exp_rate;
-        var unitExp = (long)battle.unit_exp * progress.exp_rate;
+        var rate = 1;
+        if (server.PendingDailyQuestStage > 0)
+        {
+            if (master.DailyQuestStage?.Find(server.PendingDailyQuestStage)?.battle_id != battleId) return null;
+        }
+        else
+        {
+            var episode = master.Episode?.Find(server.PendingQuestBattleEpisode);
+            if (episode == null || battleId != EpisodeBattleId(episode, difficulty)) return null;
+            rate = player.playdata.GetEpisodeInfo(episode, (PlayData.Difficulty)difficulty)?.exp_rate ?? 0;
+            if (rate <= 0) return null;
+        }
+        var playerExp = (long)battle.player_exp * rate;
+        var unitExp = (long)battle.unit_exp * rate;
         if (playerExp is < 0 or > int.MaxValue || unitExp is < 0 or > int.MaxValue) return null;
         var challenge = battle.challenge_id == 0 ? null : master.BattleChallenge?.Find(battle.challenge_id);
         if (battle.challenge_id != 0 && (challenge == null || challenge.challenge1_condition_type != 2
@@ -92,6 +119,16 @@ public partial class NetworkSystemPatch
         }
         return new(battle.gold_lower_limit, battle.gold_upper_limit, master.Setting.GOLD_MAX,
             (int)playerExp, (int)unitExp, defeatLimits, playerLevels, growth.ToArray());
+    }
+
+    private static LocalDailyQuestDay? ReadDailyQuestDay()
+    {
+        var quests = MasterDB.This()?.DailyQuest?.ToList()?.ToArray();
+        var time = Applet.GameSystem.This()?.Time;
+        if (quests == null || time == null) return null;
+        var day = time.GetGameDate();
+        return new(day.Year * 10000 + day.Month * 100 + day.Day,
+            quests.Where(quest => quest.GetResetType() == DailyQuestRecord.ResetType.Daily).Select(quest => quest.id).ToArray());
     }
 
     private static int EpisodeBattleId(EpisodeRecord episode, int difficulty) => difficulty switch

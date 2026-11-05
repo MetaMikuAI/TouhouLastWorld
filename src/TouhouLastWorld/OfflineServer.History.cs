@@ -88,12 +88,12 @@ public sealed partial class OfflineServer
             .Where(id => id > 0).Distinct().Count();
         return new(0, new()
         {
-            ["unit_get_count"] = acquired, ["quest_complete_count"] = MainQuestWins(),
+            ["unit_get_count"] = acquired, ["quest_complete_count"] = QuestWins(),
             ["dispatch_complete_count"] = user[DispatchCompletionCount]?.GetValue<int>() ?? 0
         });
     }
 
-    private int MainQuestWins()
+    private int QuestWins()
     {
         if (user[QuestWinCount]?.GetValue<int>() is { } count) return count;
         // 旧存档只保留各难度的最佳通关状态。

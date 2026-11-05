@@ -102,6 +102,25 @@ var npcAdmission = admission with { TeamNumber = 0, Participants = [long.MaxValu
 Check(gameRestart.Dispatch("battle_start", arguments: new(QuestBattleStart: npcAdmission)).Status == 0,
     "fixed story party does not require a saved player team");
 Console.WriteLine("Passed battle/gacha persistence checks.");
+var dailyServer = new OfflineServer(directory + "-daily", seed, "offline://resources/");
+dailyServer.Dispatch("game_init");
+dailyServer.Dispatch("user_create");
+var dailyDay = new LocalDailyQuestDay(20261105, [20000]);
+var dailyAdmission = admission with { EpisodeId = 0, Daily = new(20000, 200001, 1, 1) };
+var dailyStart = new LocalArguments(QuestBattleStart: dailyAdmission, DailyQuestDay: dailyDay);
+Check(dailyServer.Dispatch("battle_start", arguments: dailyStart).Status == 0, "daily battle admits an eligible team");
+var dailyResult = new LocalArguments(QuestBattleEnd: settlement, DailyQuestDay: dailyDay);
+var dailyWin = dailyServer.Dispatch("battle_end", arguments: dailyResult).Body!["user_update"]!["daily_quest_count_list"]![0]!;
+Check(dailyWin["count"]!.GetValue<int>() == 1 && dailyWin["cleared_info"]![0]!["normal"]!["status"]!.GetValue<int>() == 3
+    && dailyServer.Dispatch("battle_end", arguments: dailyResult).Status == 409, "daily win consumes one attempt");
+var anotherStage = dailyAdmission with { Daily = dailyAdmission.Daily! with { StageId = 200002 } };
+Check(dailyServer.Dispatch("battle_start", arguments: dailyStart with { QuestBattleStart = anotherStage }).Status == 409,
+    "daily stages share the category attempt limit");
+var nextDay = dailyDay with { Date = 20261106 };
+var dailyReset = dailyServer.Dispatch("home", arguments: new(DailyQuestDay: nextDay)).Body!["user_update"]!["daily_quest_count_list"]![0]!;
+Check(dailyReset["count"]!.GetValue<int>() == 0 && dailyReset["cleared_info"]!.AsArray().Count == 1
+    && dailyServer.Dispatch("battle_start", arguments: dailyStart with { DailyQuestDay = nextDay }).Status == 0,
+    "daily reset restores attempts and preserves cleared stages");
 Check(version["master_path"]!.GetValue<string>() == "offline://resources/master", "master resource path");
 Check(version["assetbundle_path"]!.GetValue<string>() == "offline://resources/assetbundle/android", "bundle resource path");
 var resourcePaths = new LocalResourcePaths("https://cdn.example/resource", "https://cdn.example/master",
