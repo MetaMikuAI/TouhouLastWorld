@@ -217,7 +217,7 @@
 | UnitLevelLimitbreakRequest | unit_level_limitbreak | 业务实现 | 通用物品材料路径：按配置校验等级与数量，扣除金币和物品、提升突破阶数并增加命运值；暂不支持同名单位材料 | 未测 |
 | UnitLimitbreakStrongFragrantWoodRequest | limitbreak_strong_fragrantwood | 业务实现 | 按下一阶配置消耗解锁材料并保存单项上限阶数；检查功能开关、当前阶数和属性上限，属性值不变 | 未测 |
 | UnitNewUpdateRequest | unit_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 | 通过 |
-| UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 | 未测 |
+| UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 | 通过 |
 | UnitRankPromoteItemSetRequest | unit_rank_promote_item_set | 业务实现 | 按当前阶数和槽位配置扣除物品或金币、保存材料槽；校验归属和重复填充，暂不支持装备实例材料 | 未测 |
 | UnitRankPromoteRequest | unit_rank_promote | 业务实现 | 校验归属、阶数与等级，扣除升阶金币及未填槽位的物品或金币，一次保存升阶并重置六槽；已填槽位不重复扣费，暂不支持未填的装备实例材料 | 未测 |
 | UnitRareAwakenRequest | unit_rare_awaken | 业务实现 | 按下一阶配置消耗碎片并保存觉醒阶数；校验归属、当前阶数及同类挂机互斥，属性仍由客户端配置计算 | 未测 |
