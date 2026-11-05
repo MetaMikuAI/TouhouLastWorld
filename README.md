@@ -127,7 +127,7 @@
 | MailTopRequest | mail_top | 业务实现 | 读取本地邮件列表；默认空，不生成邮件或附件 | 通过（空邮箱） |
 | MiniGameRequest | mini_game_top | 最小响应 | 为全部主表项目返回本地首次奖励标记，默认未领取；剩余点数默认零，不生成进度或发放奖励 | 未测 |
 | MissionEndRequest | mission_end | 业务实现 | 领取登录、每日探索、主线剧情及新手任务的固定奖励，支持序章伙伴奖励 | 通过（所列任务） |
-| MissionTopRequest | mission_top | 业务实现 | 生成普通任务及新手剧情、战斗、伙伴等级任务列表，按主表开放当前特刊 | 通过（所列任务） |
+| MissionTopRequest | mission_top | 业务实现 | 生成普通任务及新手剧情、战斗、伙伴等级和突破任务，按主表开放当前特刊 | 通过（所列任务） |
 | MultipleSpiritsWeeklyTopRequest | multiple_spirits_weekly_top | 业务实现 | 按有效主表返回本地通关进度，未通关项返回初始记录；不生成奖励或排名 | 未测 |
 | MusicLikeRequest | music_collect | 未实现 | 请求 bgm_id/status，响应 is_success；status 取值含义待调用逻辑确认 | 未测 |
 | MusicShowRequest | music_list | 最小响应 | 空收藏与解锁列表；不含解锁规则 | 未测 |
@@ -214,7 +214,7 @@
 | UnitEquipPictureRequest | unit_equip_picture | 业务实现 | 局部更新 1–5 槽位与反向引用；校验持有、重复和占用，0 表示卸下；未校验槽位解锁 | 未测 |
 | UnitEquipPictureResetRequest | unit_equip_picture_reset | 业务实现 | 清空持有实例的 5 个装备槽与装备反向引用；保留装备、保护状态及其他实例配置 | 未测 |
 | UnitExtraSpecActualizeRequest | unit_extra_spec_actualize | 业务实现 | 独立保存六项额外属性、按一比一消耗对应材料；使用当前解锁上限及生命系数，整批校验后保存 | 未测 |
-| UnitLevelLimitbreakRequest | unit_level_limitbreak | 业务实现 | 通用物品材料路径：按配置校验等级与数量，扣除金币和物品、提升突破阶数并增加命运值；暂不支持同名单位材料 | 未测 |
+| UnitLevelLimitbreakRequest | unit_level_limitbreak | 业务实现 | 以替身材料突破，校验等级和费用，更新命运值与新手任务；同名伙伴材料待实现 | 通过（替身） |
 | UnitLimitbreakStrongFragrantWoodRequest | limitbreak_strong_fragrantwood | 业务实现 | 按下一阶配置消耗解锁材料并保存单项上限阶数；检查功能开关、当前阶数和属性上限，属性值不变 | 未测 |
 | UnitNewUpdateRequest | unit_new_update | 业务实现 | 批量清除新标记；校验完整列表后保存 | 通过 |
 | UnitProtectionRequest | unit_protection | 业务实现 | 保护标记校验、更新与保存 | 通过 |

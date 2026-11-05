@@ -101,18 +101,19 @@ public partial class NetworkSystemPatch
         var missions = new List<LocalProgressMission>();
         foreach (var row in definitions)
         {
-            if (row.type != MissionBehavior.c_menu_novice || row.complete_type is not (3 or 4 or OfflineServer.UnitLevelMissionType)
+            if (row.type != MissionBehavior.c_menu_novice || row.complete_type is not (3 or 4 or OfflineServer.UnitLevelMissionType
+                    or OfflineServer.UnitLimitBreakMissionType)
                 || row.event_id != 0 || !string.IsNullOrWhiteSpace(row.start_at)
                 || !string.IsNullOrWhiteSpace(row.end_at))
                 continue;
-            var isUnitLevel = row.complete_type == OfflineServer.UnitLevelMissionType;
-            if (isUnitLevel ? row.complete_id != 0 || row.complete_value <= 0 : row.complete_id <= 0 || row.complete_value != 1)
-                continue;
+            var isUnitProgress = row.complete_type is OfflineServer.UnitLevelMissionType or OfflineServer.UnitLimitBreakMissionType;
+            if (isUnitProgress ? row.complete_id != 0 : row.complete_id <= 0) continue;
+            if (row.complete_type == OfflineServer.UnitLevelMissionType ? row.complete_value <= 0 : row.complete_value != 1) continue;
             var isBattle = row.complete_type == 4;
             var isStory = row.complete_type == 3;
             var episode = isBattle ? episodes.FirstOrDefault(entry => entry.normal_battle_id == row.complete_id)
                 : isStory ? master.Episode?.Find(row.complete_id) : null;
-            if (!isUnitLevel && (episode == null || (isStory && episode.type != 1) || master.Chapter?.Find(episode.chapter_id)?.type != 1
+            if (!isUnitProgress && (episode == null || (isStory && episode.type != 1) || master.Chapter?.Find(episode.chapter_id)?.type != 1
                 || progress.GetEpisodeInfo(episode, PlayData.Difficulty.Normal)?.state is not >= PlayData.State.New))
                 continue;
             var groups = ReadFixedMissionRewards(row, rewards);
@@ -120,13 +121,15 @@ public partial class NetworkSystemPatch
                 && (reward.object_type switch
                 {
                     var type when type == ObjectMaster.TYPE_ITEM => master.Item.Find(reward.object_id) == null,
+                    var type when type == ObjectMaster.TYPE_PIECE && row.complete_type == OfflineServer.UnitLimitBreakMissionType =>
+                        reward.object_id != 0,
                     var type when type == ObjectMaster.TYPE_UNIT && isStory && reward.object_value == 1 =>
                         ReadDefaultCostume(master, reward.object_id) == 0,
                     _ => true
                 })))
                 continue;
             missions.Add(new(row.id, episode?.id ?? 0, row.name, row.display_order, MissionRewardDisplay(groups), row.type,
-                isBattle ? row.complete_id : 0, isUnitLevel ? row.complete_value : 0));
+                isBattle ? row.complete_id : 0, isUnitProgress ? row.complete_type : 0, row.complete_value));
         }
         return missions.ToArray();
     }
@@ -278,6 +281,7 @@ public partial class NetworkSystemPatch
                 {
                     2 => setting.PHANTASM_POINT_MAX,
                     3 => setting.GOLD_MAX, 6 => setting.CRYSTAL_MAX,
+                    5 when definition.type == MissionBehavior.c_menu_novice && definition.complete_type == OfflineServer.UnitLimitBreakMissionType => int.MaxValue,
                     var type when type == ObjectMaster.TYPE_UNIT && definition.type == MissionBehavior.c_menu_novice
                         && definition.complete_type == 3 => unitCapacity,
                     12 when master?.Item?.Find(reward.object_id) != null => setting.ITEM_MAX,

@@ -6,7 +6,7 @@ namespace TouhouLastWorld;
 public sealed record LocalMissionRule(int Id, int Type, int EventId, int Required, bool Active, LocalInventoryReward[] Rewards);
 public sealed record LocalMissionClaim(int Id, int All, int Type, int EventId, int ChapterId, LocalMissionRule[] Rules);
 public sealed record LocalProgressMission(int Id, int EpisodeId, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
-    int Type = 1, int BattleId = 0, int RequiredUnitLevel = 0);
+    int Type = 1, int BattleId = 0, int UnitProgressType = 0, int Required = 1);
 public sealed record LocalDailyQuestMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
     LocalDailyQuestDay Day, int SwitchingHour);
 public sealed record LocalDailyLoginMission(int Id, string Name, int DisplayOrder, (int Id, int Count)[] RewardGroups,
@@ -21,7 +21,9 @@ public sealed partial class OfflineServer
     internal const int DailyQuestMissionType = 8;
     internal const int NoviceMissionType = 10;
     internal const int UnitLevelMissionType = 22;
+    internal const int UnitLimitBreakMissionType = 23;
     private const string DailyQuestMissionClaim = "_local_daily_quest_mission_claimed_on";
+    private const string UnitLimitBreakMilestone = "_local_unit_limit_break_completed";
 
     private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalProgressMission[]? progress, LocalDailyQuestMission? dailyQuest,
         LocalBattlePassPeriod? period)
@@ -63,22 +65,29 @@ public sealed partial class OfflineServer
         var received = (user["_local_received_missions"] as JsonArray)?.Select(id => id!.GetValue<int>()).ToHashSet() ?? [];
         var episodes = (user["quest_playdata"] as JsonArray)?.ToLookup(row => row?["episode_id"]?.GetValue<int>() ?? 0);
         var highestLevel = HighestUnitLevel(user);
+        var limitBroken = user[UnitLimitBreakMilestone]?.GetValue<bool>() == true
+            || (user["unit"]?["unit_list"] as JsonArray)?.Any(row => row?["level_limitbreak"]?.GetValue<int>() is > 0) == true;
         foreach (var mission in progress)
         {
             if (received.Contains(mission.Id) || !displayed.Add(mission.Id)) continue;
             var battle = mission.BattleId > 0;
-            var level = mission.RequiredUnitLevel > 0;
             var completed = episodes?[mission.EpisodeId].Any(episode => battle
                 ? episode?["normal"]?["status"]?.GetValue<int>() is >= 2
                 : episode?["scenario_status"]?.GetValue<int>() == 1) == true;
+            var current = mission.UnitProgressType switch
+            {
+                UnitLevelMissionType => Math.Min(highestLevel, mission.Required),
+                UnitLimitBreakMissionType => limitBroken ? 1 : 0,
+                _ => completed ? 1 : 0
+            };
             var row = new JsonObject
             {
                 ["id"] = mission.Id, ["type"] = mission.Type, ["name"] = mission.Name,
-                ["complete_type"] = level ? UnitLevelMissionType : battle ? 4 : 3,
+                ["complete_type"] = mission.UnitProgressType > 0 ? mission.UnitProgressType : battle ? 4 : 3,
                 ["complete_id"] = battle ? mission.BattleId : mission.EpisodeId,
-                ["complete_value"] = level ? mission.RequiredUnitLevel : 1, ["display_order"] = mission.DisplayOrder,
+                ["complete_value"] = mission.Required, ["display_order"] = mission.DisplayOrder,
                 ["open_mission_id"] = 0, ["event_id"] = 0, ["chapter_id"] = 0,
-                ["current_value"] = level ? Math.Min(highestLevel, mission.RequiredUnitLevel) : completed ? 1 : 0,
+                ["current_value"] = current,
                 ["start_at"] = "", ["end_at"] = ""
             };
             SetMissionRewardGroups(row, mission.RewardGroups);
@@ -225,6 +234,8 @@ public sealed partial class OfflineServer
             ["item"] = updated["item"]!.DeepClone() };
         if (rewards.Any(reward => reward?["object_type"]?.GetValue<int>() == 2))
             userUpdate["phantasm_point"] = updated["phantasm_point"]!.DeepClone();
+        if (rewards.Any(reward => reward?["object_type"]?.GetValue<int>() == 5))
+            userUpdate["piece"] = updated["piece"]!.DeepClone();
         if (rewards.Any(reward => reward?["object_type"]?.GetValue<int>() == 9))
         {
             userUpdate["unit"] = updated["unit"]!.DeepClone();
@@ -240,9 +251,20 @@ public sealed partial class OfflineServer
     private static LocalReply? ApplyMissionReward(JsonObject updated, LocalInventoryReward reward) => reward.Type switch
     {
         2 => ApplyMissionSpiritReward(updated, reward),
+        5 => ApplyMissionPieceReward(updated, reward),
         DailySweepRewardType => ApplyDailySweepReward(updated, reward),
         _ => ApplyInventoryReward(updated, reward)
     };
+
+    private static LocalReply? ApplyMissionPieceReward(JsonObject updated, LocalInventoryReward reward)
+    {
+        if (reward.Id != 0 || reward.Count <= 0 || reward.Capacity <= 0)
+            return new(503, null, "Mission piece definition unsupported.");
+        var total = (long)updated["piece"]!.GetValue<int>() + reward.Count;
+        if (total > reward.Capacity) return new(409, null, "Mission pieces exceed capacity.");
+        updated["piece"] = (int)total;
+        return null;
+    }
 
     private LocalReply? ApplyMissionUnitReward(JsonObject updated, LocalInventoryReward reward)
     {

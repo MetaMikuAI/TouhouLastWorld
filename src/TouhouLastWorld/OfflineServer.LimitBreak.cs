@@ -35,6 +35,7 @@ public sealed partial class OfflineServer
         if (destiny < 0 || destiny > rule.DestinyMaximum) return new(503, null, "Invalid destiny value.");
         unit["destiny_value"] = (int)Math.Clamp(destiny + (long)rule.MaterialCount * rule.DestinyPerItem, 1, rule.DestinyMaximum);
         unit["level_limitbreak"] = rule.NextStep;
+        updated[UnitLimitBreakMilestone] = true;
         updated["gold"] = gold - rule.GoldCost;
         item["num"] = item["num"]!.GetValue<int>() - rule.MaterialCount;
         Save(updated);
