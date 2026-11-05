@@ -46,6 +46,7 @@ public partial class NetworkSystemPatch
         if (api == "mission_top") arguments = ReadMissionOverview();
         if (api == "mission_end") arguments = ReadMissionClaim(request.TryCast<MissionEndRequest>());
         if (api == "battle_pass_mission_end") arguments = ReadBattlePassClaim(request.TryCast<BattlePassMissionEndRequest>());
+        if (api == "battle_pass_top") arguments = ReadBattlePassDailyOverview();
         if (api == "battle_pass_receive_reward") arguments = ReadBattlePassRewards();
         if (api == "get_series_battle_ranking_teaminfo") arguments = ReadRankingHistory(request.TryCast<SeriesBattleRankingGetTeamInfoRequest>());
         if (api == "mini_game_top") arguments = new(Ids: MasterDB.This()?.MiniGame?.GetAll()?.ToArray().Select(row => (long)row.id).ToArray());

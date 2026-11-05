@@ -111,18 +111,14 @@ public sealed partial class OfflineServer
 
     private JsonObject? DailyQuestMissionRow(LocalDailyQuestMission? definition, JsonObject missions)
     {
-        if (definition is null || definition.Id <= 0 || definition.SwitchingHour is < 0 or > 23
+        if (definition is null || definition.Id <= 0 || definition.Day.StartAt(definition.SwitchingHour) is not { } start
             || definition.RewardGroups.Length != 4
             || definition.Day.Date != user[DailyQuestDay]?.GetValue<int>()
             || definition.Day.Date <= (user[DailyQuestMissionClaim]?.GetValue<int>() ?? 0)
-            || !DateOnly.TryParseExact(definition.Day.Date.ToString(CultureInfo.InvariantCulture), "yyyyMMdd",
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
             || missions["unlock_list"]!.AsArray().Concat(missions["clear_list"]!.AsArray())
                 .Any(row => row?["id"]?.GetValue<int>() == definition.Id))
             return null;
-        var start = date.ToDateTime(new TimeOnly(definition.SwitchingHour, 0));
-        var won = (user[DailyQuestList] as JsonArray)?.Any(quest => quest?["count"]?.GetValue<int>() is > 0
-            && definition.Day.QuestIds.Contains(quest["daily_quest_id"]!.GetValue<int>())) == true;
+        var won = HasDailyQuestWin(definition.Day);
         var row = new JsonObject
         {
             ["id"] = definition.Id, ["type"] = 3, ["name"] = definition.Name, ["complete_type"] = DailyQuestMissionType,
@@ -180,12 +176,7 @@ public sealed partial class OfflineServer
             var objects = new JsonArray();
             foreach (var reward in rule.Rewards)
             {
-                var error = reward.Type switch
-                {
-                    2 => ApplyMissionSpiritReward(updated, reward),
-                    DailySweepRewardType => ApplyDailySweepReward(updated, reward),
-                    _ => ApplyInventoryReward(updated, reward)
-                };
+                var error = ApplyMissionReward(updated, reward);
                 if (error is not null) return error;
                 var item = new JsonObject { ["object_type"] = reward.Type, ["object_id"] = reward.Id,
                     ["object_value"] = reward.Count, ["custom_parameter"] = "" };
@@ -218,6 +209,13 @@ public sealed partial class OfflineServer
             ["receive_mission_list"] = receipts, ["not_receive_message"] = "",
             ["user_update"] = userUpdate });
     }
+
+    private static LocalReply? ApplyMissionReward(JsonObject updated, LocalInventoryReward reward) => reward.Type switch
+    {
+        2 => ApplyMissionSpiritReward(updated, reward),
+        DailySweepRewardType => ApplyDailySweepReward(updated, reward),
+        _ => ApplyInventoryReward(updated, reward)
+    };
 
     private static LocalReply? ApplyMissionSpiritReward(JsonObject updated, LocalInventoryReward reward)
     {

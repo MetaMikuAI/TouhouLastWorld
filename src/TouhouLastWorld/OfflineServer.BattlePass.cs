@@ -1,9 +1,14 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace TouhouLastWorld;
 
 public sealed record LocalBattlePassPeriod(int Id, int InitialLevel);
-public sealed record LocalBattlePassTask(int Id, int Required, int Experience, bool Active);
+public sealed record LocalBattlePassTask(int Id, int Required, int Experience, bool Active, LocalInventoryReward[]? Rewards = null);
+public sealed record LocalBattlePassDailyTask(LocalBattlePassTask Rule, int CompleteType, string Name, int DisplayOrder,
+    (int Id, int Count)[] RewardGroups);
+public sealed record LocalBattlePassDaily(int PassId, LocalDailyQuestDay Day, int SwitchingHour, DateTime Now,
+    LocalBattlePassDailyTask[] Tasks);
 public sealed record LocalBattlePassClaim(int Id, int All, int PassId, bool Active,
     LocalBattlePassTask[] Tasks, Dictionary<int, int> Levels);
 public sealed record LocalBattlePassLevelReward(int Level, LocalInventoryReward[]? Normal,
@@ -78,16 +83,59 @@ public sealed partial class OfflineServer
         return new(0, result);
     }
 
-    private LocalReply BattlePassOverview()
+    private LocalReply BattlePassOverview(LocalBattlePassDaily? daily)
     {
         var body = QueryTemplates["battle_pass_top"].DeepClone().AsObject();
         if (user["_local_battle_pass_top"] is JsonObject saved)
             foreach (var field in body.Select(pair => pair.Key).ToArray())
                 if (saved[field] is { } value) body[field] = value.DeepClone();
+        PopulateBattlePassDaily(body["battle_pass_mission"]!.AsObject(), daily);
         return new(0, body);
     }
 
-    private LocalReply ReceiveBattlePassMission(LocalBattlePassClaim? request)
+    private LocalBattlePassTask[] PopulateBattlePassDaily(JsonObject missions, LocalBattlePassDaily? daily)
+    {
+        if (daily is null || user["battle_pass"]?["battle_pass_id"]?.GetValue<int>() != daily.PassId
+            || user[DailyQuestDay]?.GetValue<int>() != daily.Day.Date || daily.Day.StartAt(daily.SwitchingHour) is not { } start
+            || missions["unlock_list"] is not JsonArray open || missions["clear_list"] is not JsonArray ready
+            || missions["received_list"] is not JsonArray received)
+            return [];
+        var startAt = start.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        var endAt = start.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        var rules = daily.Tasks.Select(task => task.Rule).ToArray();
+        var ids = rules.Select(rule => rule.Id).ToHashSet();
+        foreach (var list in new[] { open, ready, received })
+            foreach (var row in list.Where(row => ids.Contains(row?["id"]?.GetValue<int>() ?? 0)
+                && (!ReferenceEquals(list, received) || row?["start_at"]?.GetValue<string>() != startAt)).ToArray())
+                list.Remove(row);
+        var claimed = received.Select(row => row?["id"]?.GetValue<int>() ?? 0).ToHashSet();
+        foreach (var task in daily.Tasks)
+        {
+            var rule = task.Rule;
+            var receivedToday = claimed.Contains(rule.Id);
+            var completed = receivedToday || (task.CompleteType switch
+            {
+                1 => lastLoginAt >= start && lastLoginAt <= daily.Now,
+                DailyQuestMissionType => HasDailyQuestWin(daily.Day),
+                _ => false
+            });
+            var row = new JsonObject
+            {
+                ["id"] = rule.Id, ["type"] = 1, ["name"] = task.Name, ["complete_type"] = task.CompleteType,
+                ["complete_id"] = 0, ["complete_value"] = rule.Required, ["display_order"] = task.DisplayOrder,
+                ["open_mission_id"] = 0, ["event_id"] = 0, ["chapter_id"] = 0, ["current_value"] = completed ? 1 : 0,
+                ["start_at"] = startAt, ["end_at"] = endAt, ["battle_pass_id"] = daily.PassId,
+                ["reward_battle_pass_exp"] = rule.Experience
+            };
+            SetMissionRewardGroups(row, task.RewardGroups);
+            // 原生任务面板从开放列表创建卡片，再通过完成及已领奖列表设置状态。
+            open.Add(row);
+            if (completed && !receivedToday) ready.Add(row.DeepClone());
+        }
+        return rules;
+    }
+
+    private LocalReply ReceiveBattlePassMission(LocalBattlePassClaim? request, LocalBattlePassDaily? daily)
     {
         if (request is null || request.All is < 0 or > 1 || (request.All == 0 ? request.Id <= 0 : request.Id != 0))
             return new(400, null, "Invalid stage mission claim.");
@@ -107,14 +155,16 @@ public sealed partial class OfflineServer
             || levels.Zip(levels.Skip(1)).Any(pair => pair.Second.Key != pair.First.Key + 1 || pair.Second.Value <= pair.First.Value)
             || levels.LastOrDefault(row => row.Value <= exp).Key != level || exp < request.Levels[level])
             return new(503, null, "Stage experience definition unavailable.");
+        var rules = request.Tasks.Concat(PopulateBattlePassDaily(missions, daily)).ToLookup(rule => rule.Id);
         var selected = ready.Where(row => request.All == 1 || row?["id"]?.GetValue<int>() == request.Id).ToArray();
         if (selected.Length == 0 && request.All == 0) return new(404, null, "Stage mission is not claimable.");
         long total = exp;
         var ids = new HashSet<int>();
+        var rewards = new JsonArray();
         foreach (var mission in selected)
         {
             var id = mission?["id"]?.GetValue<int>() ?? 0;
-            var matches = request.Tasks.Where(row => row.Id == id).ToArray();
+            var matches = rules[id].ToArray();
             if (id <= 0 || !ids.Add(id) || received.Any(row => row?["id"]?.GetValue<int>() == id))
                 return new(409, null, "Stage mission already received or duplicated.");
             if (matches.Length != 1) return new(503, null, "Stage mission definition unavailable.");
@@ -127,13 +177,22 @@ public sealed partial class OfflineServer
                 return new(503, null, "Stage progress or reward definition unavailable.");
             total += rule.Experience;
             if (total > int.MaxValue) return new(409, null, "Stage experience exceeds capacity.");
+            foreach (var reward in rule.Rewards ?? [])
+            {
+                if (ApplyMissionReward(updated, reward) is { } error) return error;
+                rewards.Add(new JsonObject { ["object_id"] = reward.Id, ["object_type"] = reward.Type, ["object_value"] = reward.Count });
+            }
             ready.Remove(mission);
             received.Add(mission);
         }
         status["battle_pass_exp"] = (int)total;
         status["battle_pass_level"] = levels.Last(row => row.Value <= total).Key;
         if (selected.Length > 0) Save(updated);
-        return new(0, new() { ["battle_pass_mission"] = missions.DeepClone(), ["reward_list"] = new JsonArray(),
-            ["user_update"] = new JsonObject { ["battle_pass"] = status.DeepClone() } });
+        var userUpdate = new JsonObject { ["battle_pass"] = status.DeepClone() };
+        if (rewards.Count > 0)
+            foreach (var field in new[] { "gold", "crystal", "item", "phantasm_point", "mop_up_day_coupon" })
+                if (updated[field] is { } value) userUpdate[field] = value.DeepClone();
+        return new(0, new() { ["battle_pass_mission"] = missions.DeepClone(), ["reward_list"] = rewards,
+            ["user_update"] = userUpdate });
     }
 }

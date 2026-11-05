@@ -50,7 +50,7 @@ public sealed record LocalArguments(long? EntityId = null, int? Value = null, lo
     LocalDailyLoginMission? DailyLoginMission = null, LocalStoryMission[]? StoryMissions = null, LocalDailyQuestMission? DailyQuestMission = null,
     LocalQuestBattleStart? QuestBattleStart = null, LocalQuestBattleEnd? QuestBattleEnd = null, LocalDailyQuestDay? DailyQuestDay = null,
     LocalBattlePassClaim? BattlePassClaim = null, LocalBattlePassRewards? BattlePassRewards = null,
-    LocalBattlePassPeriod? BattlePassPeriod = null,
+    LocalBattlePassPeriod? BattlePassPeriod = null, LocalBattlePassDaily? BattlePassDaily = null,
     LocalPointExchange? PointExchange = null, LocalSeriesStart? SeriesStart = null, LocalSeriesEnd? SeriesEnd = null, LocalTowerStart? TowerStart = null, LocalTowerEnd? TowerEnd = null, LocalTreasureDraw? TreasureDraw = null, LocalEventDraw? EventDraw = null, LocalArenaStart? ArenaStart = null, LocalArenaEnd? ArenaEnd = null, LocalVersusStart? VersusStart = null, LocalVersusEnd? VersusEnd = null, LocalBatchSearch? Batch = null, LocalReroll? Reroll = null);
 
 public sealed partial class OfflineServer

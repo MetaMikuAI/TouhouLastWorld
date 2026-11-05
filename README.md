@@ -22,9 +22,9 @@
 | AutoReplayStartRequest | auto_replay_start | 最小响应 | 无运行任务时返回原生“未启动”状态，不扣费；已有任务拒绝覆盖；后台执行与奖励结算尚未实现 | 未测 |
 | BatchSearchRequest | batch_search | 业务实现 | 校验成员资格及最高难度完成状态，按主表与活动剩余次数每次扣 12 点，原子领取本地预置金币/晶体/物品结果并更新次数；随机结果生成、每日重置未实现 | 未测 |
 | BattleEndRequest | battle_end | 业务实现 | 结算主线和普通每日探索的灵点、赛钱、经验与挑战，保存通关和每日次数；物品和缘分掉落待补 | 通过（序章、寻找指南书） |
-| BattlePassMissionEndRequest | battle_pass_mission_end | 业务实现 | 单个或批量领取本地已完成任务经验，按主表累计阈值升级并保存领取记录；仅纯经验任务，任务进度生成、附加奖励与周期重置未实现 | 未测 |
+| BattlePassMissionEndRequest | battle_pass_mission_end | 业务实现 | 单领或批领登录和每日探索任务的经验及固定奖励，按游戏日防重；其余任务进度待补 | 通过（登录、每日探索） |
 | BattlePassReceiveRewardRequest | battle_pass_receive_reward | 业务实现 | 按本地档位状态领取已达等级的固定金币/晶体/物品，分别保存三档进度；要求完整等级定义，整批回滚，随机奖励与档位购买未实现 | 未测 |
-| BattlePassTopRequest | battle_pass_top | 最小响应 | 返回本地任务及领取等级快照，默认空；不生成任务或奖励 | 未测 |
+| BattlePassTopRequest | battle_pass_top | 业务实现 | 显示本期登录与每日探索任务的进度和领取状态，按游戏日刷新；其他任务待补 | 通过（登录、每日探索） |
 | BattleReplayInfoRequest | get_replay_info / update_replay_info | 业务实现 | 两种派生请求按任务类型、目标和难度读写原始重放，空内容清除；不验证战斗合法性 | 未测 |
 | BattleStartRequest | battle_start | 业务实现 | 校验无助战主线、普通每日探索、编队及可用灵点，每日类别按游戏日重置次数 | 通过（序章、寻找指南书） |
 | BootRequest | boot | 最小响应 | 初始化后确认启动；无需建号，不收集广告标识，不变更账号 | 未测 |

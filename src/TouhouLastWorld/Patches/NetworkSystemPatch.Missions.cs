@@ -140,14 +140,71 @@ public partial class NetworkSystemPatch
         var levels = master?.BattlePassExp?.ToList()?.ToArray();
         var time = GameSystem.This()?.Time;
         if (pass == null || tasks == null || levels == null || time == null) return null;
+        var day = ReadDailyQuestDay();
         return new(BattlePassClaim: new(request.mission_id, request.is_all, pass.id,
-            time.IsActiveDate(pass.start_at, pass.end_at),
+            pass.IsBeginHeld(),
             tasks.Where(row => row.battle_pass_id == pass.id && row.reward_group1_id == 0 && row.reward_group2_id == 0
                 && row.reward_group3_id == 0 && row.reward_group4_id == 0)
                 .Select(row => new LocalBattlePassTask(row.id, row.complete_value, row.reward_battle_pass_exp,
                     (string.IsNullOrWhiteSpace(row.start_at) && string.IsNullOrWhiteSpace(row.end_at))
                     || time.IsActiveDate(row.start_at, row.end_at))).ToArray(),
-            levels.Where(row => row.exp_group_id == pass.exp_group_id).ToDictionary(row => row.level, row => row.exp)));
+            levels.Where(row => row.exp_group_id == pass.exp_group_id).ToDictionary(row => row.level, row => row.exp)),
+            DailyQuestDay: day, BattlePassDaily: ReadBattlePassDaily(master!, pass, tasks, day));
+    }
+
+    private static LocalArguments? ReadBattlePassDailyOverview()
+    {
+        var master = MasterDB.This();
+        var status = User.This()?.battle_pass;
+        var pass = status == null ? null : master?.BattlePass?.Find(status.battle_pass_id);
+        var tasks = master?.BattlePassMission?.ToList()?.ToArray();
+        var day = ReadDailyQuestDay();
+        return pass == null || tasks == null ? null
+            : new(DailyQuestDay: day, BattlePassDaily: ReadBattlePassDaily(master!, pass, tasks, day));
+    }
+
+    private static LocalBattlePassDaily? ReadBattlePassDaily(MasterDB master, BattlePassRecord pass,
+        BattlePassMissionRecord[] tasks, LocalDailyQuestDay? day)
+    {
+        if (day is null || !pass.IsBeginHeld() || master.Setting is not { } setting) return null;
+        var rewards = master.BattlePassReward?.ToList()?.ToArray().ToLookup(reward => reward.battle_pass_reward_group_id);
+        if (rewards is null) return null;
+        var result = new List<LocalBattlePassDailyTask>();
+        foreach (var task in tasks)
+        {
+            if (task.battle_pass_id != 0 || task.type != (int)BattlePassMissionEndRequest.MissionType.Daily
+                || task.complete_type is not (1 or OfflineServer.DailyQuestMissionType) || task.complete_id != 0
+                || task.complete_value != 1 || task.event_id != 0 || task.chapter_id != 0 || task.reward_battle_pass_exp <= 0
+                || !string.IsNullOrWhiteSpace(task.start_at) || !string.IsNullOrWhiteSpace(task.end_at))
+                continue;
+            var groups = new[] { task.reward_group1_id, task.reward_group2_id, task.reward_group3_id, task.reward_group4_id };
+            var display = new (int Id, int Count)[groups.Length];
+            var grants = new List<LocalInventoryReward>();
+            for (var index = 0; index < groups.Length; index++)
+            {
+                var groupId = groups[index];
+                if (groupId == 0) continue;
+                var entries = rewards[groupId].Take(2).ToArray();
+                if (entries.Length != 1 || entries[0].custom_parameter != 0 || entries[0].object_value <= 0) break;
+                var reward = entries[0];
+                var capacity = reward.object_type switch
+                {
+                    2 when reward.object_id == 0 => setting.PHANTASM_POINT_MAX,
+                    3 when reward.object_id == 0 => setting.GOLD_MAX,
+                    6 when reward.object_id == 0 => setting.CRYSTAL_MAX,
+                    12 when master.Item?.Find(reward.object_id) != null => setting.ITEM_MAX,
+                    OfflineServer.DailySweepRewardType when reward.object_id == 0 => int.MaxValue,
+                    _ => 0
+                };
+                if (capacity <= 0) break;
+                display[index] = (groupId, reward.object_value);
+                grants.Add(new(reward.object_type, reward.object_id, reward.object_value, capacity));
+            }
+            if (grants.Count != groups.Count(id => id != 0)) continue;
+            result.Add(new(new(task.id, task.complete_value, task.reward_battle_pass_exp, true, grants.ToArray()),
+                task.complete_type, task.name, task.display_order, display));
+        }
+        return new(pass.id, day, setting.GAME_DATE_SWITCHING_HOUR, DateTime.Now, result.ToArray());
     }
 
     private static LocalArguments? ReadMissionClaim(MissionEndRequest? request)

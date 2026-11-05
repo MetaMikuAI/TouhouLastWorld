@@ -121,6 +121,17 @@ Check(dailyWin["count"]!.GetValue<int>() == 1 && dailyWin["cleared_info"]![0]!["
 var dailyGrant = dailyServer.Dispatch("mission_end", arguments: dailyMissions).Body!["user_update"]!;
 Check(dailyGrant["phantasm_point"]!["points"]!.GetValue<int>() == 115
     && dailyServer.Dispatch("mission_end", arguments: dailyMissions).Status == 404, "daily quest mission grants spirit once");
+dailyServer.Dispatch("mission_top", arguments: new(BattlePassPeriod: new(100, 0)));
+var dailyPass = new LocalBattlePassDaily(100, dailyDay, 4, new DateTime(2026, 11, 5, 14, 0, 0),
+    [new(new(1003, 1, 20, true, [new(6, 0, 2, 999)]), 8, "通关1次每日探索", 1, [(1, 2), (0, 0), (0, 0), (0, 0)])]);
+var dailyPassClaim = new LocalArguments(DailyQuestDay: dailyDay, BattlePassDaily: dailyPass,
+    BattlePassClaim: new(1003, 0, 100, true, [], new() { [0] = 0, [1] = 100 }));
+var passMissions = dailyServer.Dispatch("battle_pass_top", arguments: dailyPassClaim).Body!["battle_pass_mission"]!;
+Check(passMissions["unlock_list"]!.AsArray().Count == 1 && passMissions["clear_list"]!.AsArray().Count == 1,
+    "completed news pass mission remains visible");
+var passGrant = dailyServer.Dispatch("battle_pass_mission_end", arguments: dailyPassClaim).Body!["user_update"]!;
+Check(passGrant["battle_pass"]!["battle_pass_exp"]!.GetValue<int>() == 20 && passGrant["crystal"]!.GetValue<int>() == 54
+    && dailyServer.Dispatch("battle_pass_mission_end", arguments: dailyPassClaim).Status == 404, "news pass daily rewards once");
 var anotherStage = dailyAdmission with { Daily = dailyAdmission.Daily! with { StageId = 200002 } };
 Check(dailyServer.Dispatch("battle_start", arguments: dailyStart with { QuestBattleStart = anotherStage }).Status == 409,
     "daily stages share the category attempt limit");
@@ -129,6 +140,10 @@ var dailyReset = dailyServer.Dispatch("home", arguments: new(DailyQuestDay: next
 Check(dailyReset["count"]!.GetValue<int>() == 0 && dailyReset["cleared_info"]!.AsArray().Count == 1
     && dailyServer.Dispatch("battle_start", arguments: dailyStart with { DailyQuestDay = nextDay }).Status == 0,
     "daily reset restores attempts and preserves cleared stages");
+var nextPassMissions = dailyServer.Dispatch("battle_pass_top", arguments: new(DailyQuestDay: nextDay,
+    BattlePassDaily: dailyPass with { Day = nextDay })).Body!["battle_pass_mission"]!;
+Check(nextPassMissions["received_list"]!.AsArray().Count == 0 && nextPassMissions["unlock_list"]!.AsArray().Count == 1,
+    "news pass daily mission reopens on the next day");
 Check(version["master_path"]!.GetValue<string>() == "offline://resources/master", "master resource path");
 Check(version["assetbundle_path"]!.GetValue<string>() == "offline://resources/assetbundle/android", "bundle resource path");
 var resourcePaths = new LocalResourcePaths("https://cdn.example/resource", "https://cdn.example/master",

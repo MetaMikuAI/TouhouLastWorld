@@ -1,9 +1,17 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace TouhouLastWorld;
 
 public sealed record LocalDailyQuestEntry(int QuestId, int StageId, int RequiredLevel, int AttemptLimit);
-public sealed record LocalDailyQuestDay(int Date, int[] QuestIds);
+public sealed record LocalDailyQuestDay(int Date, int[] QuestIds)
+{
+    internal DateTime? StartAt(int switchingHour) =>
+        switchingHour is >= 0 and <= 23
+        && DateOnly.TryParseExact(Date.ToString(CultureInfo.InvariantCulture), "yyyyMMdd",
+            CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
+            ? day.ToDateTime(new TimeOnly(switchingHour, 0)) : null;
+}
 
 public sealed partial class OfflineServer
 {
@@ -11,6 +19,11 @@ public sealed partial class OfflineServer
     private const string DailyQuestList = "daily_quest_count_list";
 
     internal int PendingDailyQuestStage => user[PendingQuestBattle]?["daily_stage_id"]?.GetValue<int>() ?? 0;
+
+    private bool HasDailyQuestWin(LocalDailyQuestDay day) =>
+        user[DailyQuestDay]?.GetValue<int>() == day.Date
+        && (user[DailyQuestList] as JsonArray)?.Any(quest => quest?["count"]?.GetValue<int>() is > 0
+            && day.QuestIds.Contains(quest["daily_quest_id"]!.GetValue<int>())) == true;
 
     private bool RefreshDailyQuestDay(LocalDailyQuestDay? day)
     {
