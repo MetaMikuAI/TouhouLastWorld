@@ -243,6 +243,6 @@
 | VersionGetRequest | version_get | 最小响应 | 固定版本与资源路径 | 通过（登录链） |
 | VersusBattleEndRequest | multiple_spirits_weekly_battle_end | 业务实现 | 核对入场等级、规则与成员，保存基础及追加通关等级，发放新增档位固定金币/晶体/物品；按客户端最高等级领取标记实现，重复结算拒绝；随机掉落、排名登记未实现，保留待结算记录 | 未测 |
 | VersusBattleStartRequest | multiple_spirits_weekly_battle_start | 业务实现 | 校验开放条件、基础等级与主表追加规则、队伍，按本地配置扣点并保存待结算记录；重试不重复扣点，助战及消耗规则自动生成未实现 | 未测 |
-| VotivePictureExchangeRequest | votive_picture_exchange | 业务实现 | 按配置消耗材料兑换装备，校验有效期与容量，创建独立对象并更新图鉴；角色等其他对象未实现 | 未测 |
+| VotivePictureExchangeRequest | votive_picture_exchange | 业务实现 | 按主表兑换指定伙伴或绘卷，校验有效期、容量和材料，更新库存与图鉴 | 伙伴通过，绘卷未测 |
 | WeeklyArenaBattleScoreResetRequest | weekly_arena_battle_score_reset | 业务实现 | 清零本地场次总分与参战编号；保留累计最高分、难度、分项与敌方配置，缺少场次返回错误；不生成周配置 | 未测 |
 | WeeklyArenaTopRequest | weekly_arena_top | 最小响应 | 读取本地四场配置与累计最高分；缺少配置返回 503，不生成敌方配置、不轮换周期、不验证资源完整性 | 未测 |

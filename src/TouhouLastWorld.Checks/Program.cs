@@ -2897,7 +2897,32 @@ ticketReload.Dispatch("login");
 Check(ticketReload.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: ticketRule with { Count = 1 })).Status == 409
     && ticketReload.Dispatch("login").Body!["user"]!["picture"]!["picture_list"]!.AsArray().Count == 2,
     "ticket exchange inventory and remaining materials survive restart");
-Console.WriteLine("Passed 3 ticket exchange checks.");
+var partnerTicketSeed = JsonNode.Parse(seed)!;
+partnerTicketSeed["item"]!["item_list"]!.AsArray().Add(new JsonObject { ["item_id"] = 100001, ["num"] = 2 });
+var partnerTicketDirectory = directory + "-partner-ticket-exchange";
+var partnerTicketServer = new OfflineServer(partnerTicketDirectory, partnerTicketSeed.ToJsonString(), "offline://resources/");
+partnerTicketServer.Dispatch("game_init");
+partnerTicketServer.Dispatch("login");
+var partnerTicket = new LocalTicketExchange(1001002, 1001, 100001, 1, 1, 1002, 10, true,
+    ObjectType: 9, CostumeId: 100201);
+Check(partnerTicketServer.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: partnerTicket with { Count = 2 })).Status == 400,
+    "partner ticket exchanges accept only one selection");
+var partnerReply = partnerTicketServer.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: partnerTicket)).Body!;
+var partnerId = partnerReply["reward_object"]!["unique_id"]!.GetValue<long>();
+var partner = partnerReply["user_update"]!["unit"]!["unit_list"]!.AsArray().Single(row => row!["user_unit_id"]!.GetValue<long>() == partnerId)!;
+Check(partner["unit_id"]!.GetValue<int>() == 1002 && partner["equip_costume_id"]!.GetValue<int>() == 100201
+    && partner["level"]!.GetValue<int>() == 1 && partnerReply["reward_object"]!["is_new"]!.GetValue<int>() == 1,
+    "partner ticket grants the selected partner with its default costume");
+var partnerTicketReload = new OfflineServer(partnerTicketDirectory, seed, "offline://resources/");
+partnerTicketReload.Dispatch("game_init");
+partnerTicketReload.Dispatch("login");
+var duplicatePartner = partnerTicketReload.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: partnerTicket)).Body!;
+Check(duplicatePartner["reward_object"]!["is_new"]!.GetValue<int>() == 0
+    && duplicatePartner["reward_object"]!["unique_id"]!.GetValue<long>() > partnerId
+    && duplicatePartner["user_update"]!["album"]!["unit_list"]!.AsArray().Count(row => row!["unit_id"]!.GetValue<int>() == 1002) == 1
+    && partnerTicketReload.Dispatch("votive_picture_exchange", arguments: new(TicketExchange: partnerTicket)).Status == 409,
+    "partner tickets are spent once per grant and duplicate partners share an album entry across restart");
+Console.WriteLine("Passed 6 ticket exchange checks.");
 var releaseSeed = JsonNode.Parse(seed)!;
 var releaseUnit = releaseSeed["unit"]!["unit_list"]![0]!;
 var releaseUnitId = releaseUnit["user_unit_id"]!.GetValue<long>();
