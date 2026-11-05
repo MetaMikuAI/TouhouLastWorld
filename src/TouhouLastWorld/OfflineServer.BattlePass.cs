@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace TouhouLastWorld;
 
+public sealed record LocalBattlePassPeriod(int Id, int InitialLevel);
 public sealed record LocalBattlePassTask(int Id, int Required, int Experience, bool Active);
 public sealed record LocalBattlePassClaim(int Id, int All, int PassId, bool Active,
     LocalBattlePassTask[] Tasks, Dictionary<int, int> Levels);
@@ -11,6 +12,25 @@ public sealed record LocalBattlePassRewards(int PassId, bool Active, LocalBattle
 
 public sealed partial class OfflineServer
 {
+    private JsonObject? OpenBattlePassPeriod(LocalBattlePassPeriod? period)
+    {
+        if (period is null || period.Id <= 0 || period.InitialLevel < 0) return null;
+        var samePeriod = user["battle_pass"]?["battle_pass_id"]?.GetValue<int>() == period.Id;
+        if (!samePeriod || user["_local_battle_pass_top"] is not JsonObject)
+        {
+            var updated = user.DeepClone().AsObject();
+            if (!samePeriod)
+                updated["battle_pass"] = new JsonObject
+                {
+                    ["battle_pass_id"] = period.Id, ["is_premium"] = 0, ["is_premium_2"] = 0,
+                    ["battle_pass_level"] = period.InitialLevel, ["battle_pass_exp"] = 0
+                };
+            updated["_local_battle_pass_top"] = QueryTemplates["battle_pass_top"].DeepClone();
+            Save(updated);
+        }
+        return user["battle_pass"]!.DeepClone().AsObject();
+    }
+
     private LocalReply ReceiveBattlePassRewards(LocalBattlePassRewards? request)
     {
         var updated = user.DeepClone().AsObject();

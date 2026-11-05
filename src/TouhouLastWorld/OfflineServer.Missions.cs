@@ -20,9 +20,12 @@ public sealed partial class OfflineServer
     internal const int DailyQuestMissionType = 8;
     private const string DailyQuestMissionClaim = "_local_daily_quest_mission_claimed_on";
 
-    private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalStoryMission[]? story, LocalDailyQuestMission? dailyQuest)
+    private LocalReply MissionOverview(LocalDailyLoginMission? daily, LocalStoryMission[]? story, LocalDailyQuestMission? dailyQuest,
+        LocalBattlePassPeriod? period)
     {
         var body = QueryTemplates["mission_top"].DeepClone().AsObject();
+        if (OpenBattlePassPeriod(period) is { } pass)
+            body["user_update"] = new JsonObject { ["battle_pass"] = pass };
         var overview = BuildMissionLists(daily, story, dailyQuest);
         body["mission"] = overview;
         var rows = overview["unlock_list"]!.AsArray().Concat(overview["clear_list"]!.AsArray()).ToArray();

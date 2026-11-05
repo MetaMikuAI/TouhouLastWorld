@@ -62,7 +62,7 @@ public sealed partial class OfflineServer
         "friend_get_history" => HistoryPlayer(arguments, summaryOnly: true),
         "tower_unit_recovery" => RecoverTowerUnits(arguments),
         "mission_end" => ReceiveMission(arguments?.MissionClaim, arguments?.DailyLoginMission, arguments?.StoryMissions, arguments?.DailyQuestMission),
-        "mission_top" => MissionOverview(arguments?.DailyLoginMission, arguments?.StoryMissions, arguments?.DailyQuestMission),
+        "mission_top" => MissionOverview(arguments?.DailyLoginMission, arguments?.StoryMissions, arguments?.DailyQuestMission, arguments?.BattlePassPeriod),
         "battle_pass_mission_end" => ReceiveBattlePassMission(arguments?.BattlePassClaim),
         "battle_pass_top" => BattlePassOverview(),
         "battle_pass_receive_reward" => ReceiveBattlePassRewards(arguments?.BattlePassRewards),

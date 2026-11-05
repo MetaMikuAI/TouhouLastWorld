@@ -14,7 +14,22 @@ public partial class NetworkSystemPatch
         return definitions == null || rewards == null || setting == null ? null
             : new(DailyLoginMission: ReadDailyLoginMission(definitions, rewards, setting.GAME_DATE_SWITCHING_HOUR),
                 StoryMissions: ReadStoryMissions(master!, definitions, rewards), DailyQuestDay: day,
-                DailyQuestMission: ReadDailyQuestMission(definitions, rewards, day, setting.GAME_DATE_SWITCHING_HOUR));
+                DailyQuestMission: ReadDailyQuestMission(definitions, rewards, day, setting.GAME_DATE_SWITCHING_HOUR),
+                BattlePassPeriod: ReadBattlePassPeriod(master!));
+    }
+
+    private static LocalBattlePassPeriod? ReadBattlePassPeriod(MasterDB master)
+    {
+        var panel = FindActivePanel<MissionBehavior>();
+        if (panel?.m_battlePassPanel == null || panel.m_battlePassMissionToggle == null) return null;
+        var periods = master.BattlePass?.ToList()?.ToArray().Where(row => row.IsBeginHeld()).ToArray();
+        var existingId = User.This()?.battle_pass?.battle_pass_id;
+        var period = periods?.FirstOrDefault(row => row.id == existingId);
+        if (period == null && periods is { Length: 1 }) period = periods[0];
+        if (period == null) return null;
+        var initial = master.BattlePassExp?.ToList()?.ToArray()
+            .Where(row => row.exp_group_id == period.exp_group_id && row.exp == 0).Take(2).ToArray();
+        return initial is { Length: 1 } ? new(period.id, initial[0].level) : null;
     }
 
     private static LocalDailyLoginMission? ReadDailyLoginMission(MissionRecord[] definitions, ILookup<int, MissionRewardRecord> rewards,
